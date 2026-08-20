@@ -1075,6 +1075,31 @@ body {
 }
 .fc1-var-actions { display: flex; justify-content: flex-end; gap: 12px; margin-bottom: 6px; }
 
+/* 开始剧情 */
+.fc1-start-wrap { display: flex; flex-direction: column; gap: 14px; }
+.fc1-start-mode { display: flex; gap: 10px; flex-wrap: wrap; }
+.fc1-start-mode-btn {
+    padding: 8px 18px; border-radius: 6px; border: 1px solid var(--color-primary-dark);
+    background: rgba(253,246,227,0.5); color: var(--color-text-dark); cursor: pointer;
+    font-family: inherit; font-size: 0.9rem; font-weight: bold; transition: all 0.2s;
+}
+.fc1-start-mode-btn:hover { background: rgba(212,175,55,0.2); }
+.fc1-start-mode-btn.active {
+    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+    color: #1a0f2e; box-shadow: 0 2px 8px rgba(212,175,55,0.4);
+}
+.fc1-start-panel { display: flex; flex-direction: column; gap: 6px; }
+.fc1-start-label { font-weight: bold; color: #5d4037; font-size: 0.9rem; }
+.fc1-start-preview {
+    padding: 12px 14px; border: 1px dashed rgba(184,134,11,0.4); border-radius: 8px;
+    background: rgba(212,175,55,0.08); color: var(--color-text-dark); line-height: 1.7; min-height: 60px; white-space: pre-wrap; word-break: break-all;
+}
+.fc1-start-manual {
+    width: 100%; min-height: 180px; resize: vertical; padding: 10px; box-sizing: border-box;
+    border: 1px solid rgba(184,134,11,0.4); border-radius: 6px; background: rgba(253,246,227,0.5);
+    color: var(--color-text-dark); font-family: inherit; font-size: 0.95rem; line-height: 1.7;
+}
+
 /* 移动端：堆叠为单列 */
 @media (max-width: 768px) {
     .fc1-char-top { grid-template-columns: 1fr; grid-template-rows: auto; }

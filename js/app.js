@@ -312,6 +312,7 @@ window.selectRegion = function(region) {
     fc1RenderIdentity();
     fc1ClosePopup();
     fc1RenderVariables();
+    fc1RenderStartPreview();
     goToSubTab('FC1', 'FC1-sub3');
 };
 
@@ -370,6 +371,7 @@ window.selectIdentity = function(id) {
     fc1RenderIdentity();
     fc1SyncUserVariable();
     fc1RenderVariables();
+    fc1RenderStartPreview();
 };
 
 // ===== FC1 角色背景（性别身份 / 角色设定 / 身份组设定） =====
@@ -392,6 +394,7 @@ window.fc1InitCharacterBackground = function() {
     fc1RenderIdentity();
     fc1ClosePopup();
     fc1RenderVariables();
+    fc1RenderStartPreview();
 };
 
 window.fc1SelectGender = function(val) {
@@ -722,41 +725,124 @@ window.fc1RenderVariables = function() {
     box.innerHTML = html;
 };
 
-window.fc1SaveVariables = function() {
+window.fc1CollectVariable = function() {
     var dm = tabsDataMap['FC1'];
-    if (!dm) return;
-    function readJSON(id) {
-        var el = document.getElementById(id);
-        if (!el) return {};
-        var v = JSON.parse(el.value);
-        return (v && typeof v === 'object' && !Array.isArray(v)) ? v : {};
+    if (!dm) return null;
+    var v = dm.data.variable;
+    v.world = v.world || {};
+    v.user = v.user || {};
+
+    var idInput = document.getElementById('fc1-identity-input');
+    if (idInput) v.user.identity = idInput.value.trim();
+    v.user.gender = __fc1Gender || v.user.gender;
+
+    var posEl = document.getElementById('fc1-var-position');
+    if (posEl) {
+        v.world.position = posEl.value.trim();
+        var wealthEl = document.getElementById('fc1-var-wealth');
+        var bodyEl = document.getElementById('fc1-var-body');
+        if (wealthEl) v.user.wealth = wealthEl.value.trim();
+        if (bodyEl) v.user.body_state = bodyEl.value.trim();
+
+        function readJSON(id) {
+            var el = document.getElementById(id);
+            if (!el) return null;
+            var val = JSON.parse(el.value);
+            return (val && typeof val === 'object' && !Array.isArray(val)) ? val : null;
+        }
+        var ships = readJSON('fc1-var-ships');
+        var estate = readJSON('fc1-var-estate');
+        var relationship = readJSON('fc1-var-relationship');
+        var reputation = readJSON('fc1-var-reputation');
+        if (ships !== null) v.ships = ships;
+        if (estate !== null) v.estate = estate;
+        if (relationship !== null) v.relationship = relationship;
+        if (reputation !== null) v.reputation = reputation;
+    } else if (__fc1Variables) {
+        v.world.position = __fc1Variables.position || v.world.position;
+        v.user.wealth = __fc1Variables.wealth || v.user.wealth;
+        v.user.body_state = __fc1Variables.body_state || v.user.body_state;
+        if (__fc1Variables.ships) v.ships = __fc1Variables.ships;
+        if (__fc1Variables.estate) v.estate = __fc1Variables.estate;
+        if (__fc1Variables.relationship) v.relationship = __fc1Variables.relationship;
+        if (__fc1Variables.reputation) v.reputation = __fc1Variables.reputation;
     }
-    var ships, estate, relationship, reputation;
+
+    v.setting = v.setting || {};
+    v.setting.mode = __currentMode || "free";
+    v.setting.worldview = __currentWorldviewId || "colony";
+
+    return v;
+};
+
+window.fc1SaveVariables = function() {
+    var v;
     try {
-        ships = readJSON('fc1-var-ships');
-        estate = readJSON('fc1-var-estate');
-        relationship = readJSON('fc1-var-relationship');
-        reputation = readJSON('fc1-var-reputation');
+        v = fc1CollectVariable();
     } catch(e) {
         showCustomAlert("存在 JSON 格式有误的变量，请检查后重试");
         return;
     }
+    if (!v) { showCustomAlert("请先选择身份组"); return; }
+    showCustomAlert("\u2728 变量已保存，可在「开始剧情」时投递");
+};
 
-    var v = dm.data.variable;
-    v.world = v.world || {};
-    v.user = v.user || {};
-    v.world.position = document.getElementById('fc1-var-position').value.trim();
-    v.user.wealth = document.getElementById('fc1-var-wealth').value.trim();
-    v.user.body_state = document.getElementById('fc1-var-body').value.trim();
+// ===== FC1 开始剧情 =====
+var __fc1StartMode = "auto";
+
+window.fc1BuildAutoPrompt = function() {
+    var it = FC1_IDENTITIES.find(function(x) { return x.id === __fc1Identity; });
     var idInput = document.getElementById('fc1-identity-input');
-    if (idInput && idInput.value.trim()) v.user.identity = idInput.value.trim();
-    v.user.gender = __fc1Gender || v.user.gender;
-    v.ships = ships;
-    v.estate = estate;
-    v.relationship = relationship;
-    v.reputation = reputation;
+    var identity = (idInput && idInput.value.trim()) ? idInput.value.trim() : (it ? it.name : '');
+    if (!identity) return null;
+    var desc = it ? it.desc : '';
+    return '生成开场白，以下是' + identity + '的相关信息：' + desc;
+};
 
-    showCustomAlert("\u2728 变量已保存，可在「开始自由模式」时投递");
+window.fc1RenderStartPreview = function() {
+    var el = document.getElementById('fc1-start-preview');
+    if (!el) return;
+    var prompt = fc1BuildAutoPrompt();
+    el.textContent = prompt !== null ? prompt : '请先在「角色背景」中选择身份组';
+};
+
+window.fc1SelectStartMode = function(mode) {
+    __fc1StartMode = mode;
+    var autoBtn = document.getElementById('fc1-start-auto-btn');
+    var manualBtn = document.getElementById('fc1-start-manual-btn');
+    var autoPanel = document.getElementById('fc1-start-auto-panel');
+    var manualPanel = document.getElementById('fc1-start-manual-panel');
+    if (autoBtn) autoBtn.className = 'fc1-start-mode-btn' + (mode === 'auto' ? ' active' : '');
+    if (manualBtn) manualBtn.className = 'fc1-start-mode-btn' + (mode === 'manual' ? ' active' : '');
+    if (autoPanel) autoPanel.style.display = (mode === 'auto' ? '' : 'none');
+    if (manualPanel) manualPanel.style.display = (mode === 'manual' ? '' : 'none');
+    if (mode === 'auto') fc1RenderStartPreview();
+};
+
+window.fc1StartGame = async function() {
+    if (!__fc1Identity) { showCustomAlert("请先在「角色背景」中选择身份组"); return; }
+    var v;
+    try {
+        v = fc1CollectVariable();
+    } catch(e) {
+        showCustomAlert("存在 JSON 格式有误的变量，请到「变量设定」检查后重试");
+        return;
+    }
+    if (!v) return;
+
+    var prompt;
+    if (__fc1StartMode === 'manual') {
+        var ta = document.getElementById('fc1-start-manual-text');
+        prompt = ta ? ta.value.trim() : "";
+        if (!prompt) { showCustomAlert("请先填写你的自定义开局"); return; }
+    } else {
+        prompt = fc1BuildAutoPrompt();
+        if (prompt === null) { showCustomAlert("请先在「角色背景」中选择身份组"); return; }
+    }
+
+    var agree = await showCustomConfirm("确认开始自由模式并发送开局信息吗");
+    if (!agree) return;
+    triggerSTSlashSend(prompt, v);
 };
 
 
