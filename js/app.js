@@ -310,7 +310,7 @@ window.selectRegion = function(region) {
     fc1SyncUserVariable();
     fc1RenderRegion();
     fc1RenderIdentity();
-    fc1RenderArea3();
+    fc1ClosePopup();
     goToSubTab('FC1', 'FC1-sub3');
 };
 
@@ -368,17 +368,12 @@ window.selectIdentity = function(id) {
     }
     fc1RenderIdentity();
     fc1SyncUserVariable();
-    if (__fc1Area3Mode === 'setting') { fc1CloseArea3(); }
-    fc1RenderArea3();
 };
 
-// ===== FC1 角色背景（区域一 ~ 区域四） =====
-var FC1_GENDERS = ["男性", "伊芙", "伊菈"];
+// ===== FC1 角色背景（性别身份 / 角色设定 / 身份组设定） =====
 var __fc1Gender = "";
-var __fc1MasterOn = true;
 var __fc1SettingEntries = [];
 var __fc1ActiveSettingUid = null;
-var __fc1Area3Mode = "identity";
 
 function fc1EscapeHtml(s) {
     return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -389,27 +384,15 @@ function fc1EscapeAttr(s) {
 
 window.fc1InitCharacterBackground = function() {
     fc1RenderRegion();
-    fc1RenderGender();
-    fc1RenderMasterToggle();
+    var sel = document.getElementById('fc1-gender-select');
+    if (sel) sel.value = __fc1Gender;
     fc1RenderSettingGrid();
     fc1RenderIdentity();
-    fc1RenderArea3();
+    fc1ClosePopup();
 };
 
-window.fc1RenderGender = function() {
-    var box = document.getElementById('fc1-gender-options');
-    if (!box) return;
-    var html = '';
-    FC1_GENDERS.forEach(function(g) {
-        var sel = (__fc1Gender === g) ? ' selected' : '';
-        html += '<button class="fc1-gender-btn' + sel + '" onclick="fc1SelectGender(\'' + g + '\')">' + g + '</button>';
-    });
-    box.innerHTML = html;
-};
-
-window.fc1SelectGender = function(g) {
-    __fc1Gender = g;
-    fc1RenderGender();
+window.fc1SelectGender = function(val) {
+    __fc1Gender = val;
     fc1SyncUserVariable();
 };
 
@@ -426,26 +409,8 @@ window.fc1SyncUserVariable = function() {
     if (input) dm.data.variable.user.identity = input.value.trim();
 };
 
-window.fc1RenderMasterToggle = function() {
-    var btn = document.getElementById('fc1-master-toggle');
-    if (!btn) return;
-    if (__fc1MasterOn) {
-        btn.innerHTML = '\u25CF 角色设定：已开启';
-        btn.className = 'fc1-master-toggle on';
-    } else {
-        btn.innerHTML = '\u25CB 角色设定：已关闭';
-        btn.className = 'fc1-master-toggle off';
-    }
-};
-
-window.fc1ToggleMaster = function() {
-    __fc1MasterOn = !__fc1MasterOn;
-    fc1RenderMasterToggle();
-    fc1RenderSettingGrid();
-};
-
 window.fc1OnShowSettingToggle = function(chk) {
-    // 勾选态由 fc1OpenSetting 读取；此处仅保留事件位
+    // 勾选态由 fc1ClickSetting 读取
 };
 
 window.fetchFc1SettingEntries = async function() {
@@ -464,69 +429,62 @@ window.fc1RenderSettingGrid = async function() {
     if (__fc1SettingEntries.length === 0) {
         __fc1SettingEntries = await fetchFc1SettingEntries();
     }
-    var entries = __fc1SettingEntries;
     var html = '';
-    if (entries.length === 0) {
+    if (__fc1SettingEntries.length === 0) {
         html = '<div class="fc1-setting-empty">未找到世界书角色设定条目</div>';
     } else {
-        entries.forEach(function(e) {
-            var label = (e.comment && e.comment.trim()) ? e.comment.trim() : ('#' + e.uid);
-            var active = (__fc1Area3Mode === 'setting' && __fc1ActiveSettingUid === e.uid) ? ' active' : '';
-            var disabled = __fc1MasterOn ? '' : ' disabled';
-            html += '<button class="fc1-setting-btn' + active + disabled + '" data-uid="' + e.uid + '" onclick="fc1OpenSetting(' + e.uid + ')">' + mtH(label) + '</button>';
+        __fc1SettingEntries.forEach(function(e) {
+            var fullName = (e.comment && e.comment.trim()) ? e.comment.trim() : ('#' + e.uid);
+            var label = fullName.charAt(0);
+            var onCls = e.enabled ? ' on' : '';
+            html += '<button class="fc1-setting-btn' + onCls + '" data-uid="' + e.uid + '" title="' + fc1EscapeAttr(fullName) + '" onclick="fc1ClickSetting(' + e.uid + ')">' + mtH(label) + '</button>';
         });
     }
     grid.innerHTML = html;
 };
 
-window.fc1OpenSetting = function(uid) {
-    if (!__fc1MasterOn) return;
+window.fc1ClickSetting = async function(uid) {
+    var entry = __fc1SettingEntries.find(function(e) { return e.uid === uid; });
+    if (!entry) return;
+    var newEnabled = !entry.enabled;
+    entry.enabled = newEnabled;
+    fc1RenderSettingGrid();
+    if (typeof setLorebookEntries === 'function') {
+        try {
+            await setLorebookEntries(LOREBOOK_NAME, [{ uid: uid, enabled: newEnabled }]);
+        } catch(e) {
+            entry.enabled = !newEnabled;
+            fc1RenderSettingGrid();
+            showCustomAlert("切换条目状态失败，请重试");
+        }
+    }
     var chk = document.getElementById('fc1-show-setting-chk');
-    if (chk && !chk.checked) return;
+    if (chk && chk.checked) {
+        fc1OpenPopup(uid);
+    }
+};
+
+window.fc1OpenPopup = function(uid) {
     var entry = __fc1SettingEntries.find(function(e) { return e.uid === uid; });
     if (!entry) return;
     __fc1ActiveSettingUid = uid;
-    __fc1Area3Mode = 'setting';
-    fc1RenderSettingGrid();
-    fc1RenderArea3();
-};
-
-window.fc1RenderArea3 = function() {
-    var titleEl = document.getElementById('fc1-area3-title');
-    var bodyEl = document.getElementById('fc1-area3-body');
-    var closeBtn = document.getElementById('fc1-area3-close');
-    if (!bodyEl) return;
-
-    if (__fc1Area3Mode === 'setting' && __fc1ActiveSettingUid !== null) {
-        var entry = __fc1SettingEntries.find(function(e) { return e.uid === __fc1ActiveSettingUid; });
-        if (!entry) { fc1CloseArea3(); return; }
-        var nameText = (entry.comment && entry.comment.trim()) ? entry.comment.trim() : ('#' + entry.uid);
-        if (titleEl) titleEl.textContent = '区域三 · 角色设定：' + nameText;
-        if (closeBtn) closeBtn.style.display = '';
+    var popup = document.getElementById('fc1-setting-popup');
+    var titleEl = document.getElementById('fc1-popup-title');
+    var bodyEl = document.getElementById('fc1-setting-popup-body');
+    var nameText = (entry.comment && entry.comment.trim()) ? entry.comment.trim() : ('#' + entry.uid);
+    if (titleEl) titleEl.textContent = '世界书条目设定 · ' + nameText;
+    if (bodyEl) {
         bodyEl.innerHTML =
             '<div class="fc1-setting-editor">' +
                 '<div class="fc1-setting-name-row"><span class="fc1-field-label">名称</span><input type="text" id="fc1-setting-name" value="' + fc1EscapeAttr(entry.comment || '') + '"></div>' +
                 '<textarea id="fc1-setting-content" class="fc1-setting-content">' + fc1EscapeHtml(entry.content || '') + '</textarea>' +
                 '<div class="fc1-setting-actions">' +
                     '<button class="fc1-setting-save" onclick="fc1SaveSetting()">保存</button>' +
-                    '<button class="fc1-setting-cancel" onclick="fc1CloseArea3()">关闭</button>' +
+                    '<button class="fc1-setting-cancel" onclick="fc1ClosePopup()">关闭</button>' +
                 '</div>' +
             '</div>';
-    } else {
-        if (titleEl) titleEl.textContent = '区域三 · 身份组设定';
-        if (closeBtn) closeBtn.style.display = 'none';
-        var it = __fc1Identity ? FC1_IDENTITIES.find(function(x) { return x.id === __fc1Identity; }) : null;
-        if (it) {
-            bodyEl.innerHTML =
-                '<div class="fc1-identity-detail">' +
-                    '<div class="fc1-identity-detail-name">' + mtH(it.name) + '</div>' +
-                    '<div class="fc1-identity-detail-desc">' + mtH(it.desc) + '</div>' +
-                    '<div class="fc1-identity-detail-res">起始：' + mtH(it.res) + '</div>' +
-                '</div>';
-        } else {
-            bodyEl.innerHTML = '<div class="fc1-area3-hint">请在下方的区域四中选择一个身份组</div>';
-        }
     }
+    if (popup) popup.style.display = '';
 };
 
 window.fc1SaveSetting = async function() {
@@ -544,15 +502,14 @@ window.fc1SaveSetting = async function() {
         showCustomAlert("\u2728 已保存设定");
         __fc1SettingEntries = [];
         await fc1RenderSettingGrid();
-        fc1RenderArea3();
+        fc1ClosePopup();
     } catch(e) { showCustomAlert("保存失败，请刷新或重新连接世界书"); }
 };
 
-window.fc1CloseArea3 = function() {
-    __fc1Area3Mode = 'identity';
+window.fc1ClosePopup = function() {
     __fc1ActiveSettingUid = null;
-    fc1RenderSettingGrid();
-    fc1RenderArea3();
+    var popup = document.getElementById('fc1-setting-popup');
+    if (popup) popup.style.display = 'none';
 };
 
 
