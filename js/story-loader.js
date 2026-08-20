@@ -1,13 +1,33 @@
 // 故事清单：每个故事对应一个 JSON 文件
 var STORY_MANIFEST = [
-    { id: "tab5",  name: "灰姑娘",            file: "data/stories/灰姑娘.json", headers: ["背景信息", "剧情线", "参数调整", "开始剧情"] },
-    { id: "tab7",  name: "小红帽",            file: "data/stories/小红帽.json", headers: ["背景信息", "剧情线", "参数调整", "开始剧情"] },
-    { id: "tab8",  name: "卖火柴的小女孩",    file: "data/stories/卖火柴的小女孩.json", headers: ["背景信息", "剧情线", "参数调整", "开始剧情"] },
-    { id: "tab10", name: "小裁缝一次干七个！", file: "data/stories/小裁缝一次干七个！.json", headers: ["背景信息", "剧情线", "参数调整", "开始剧情"] },
-    { id: "tab4",  name: "白雪公主（制作中）", file: "data/stories/白雪公主.json", headers: ["背景信息", "剧情线", "参数调整", "开始剧情"] },
-    { id: "tab11", name: "自定义开局",        file: null, headers: ["背景信息", "人物信息", "参数调整", "开始剧情"] },
-    { id: "tab12", name: "自定义剧本",        file: null, headers: ["背景信息", "剧情线", "人物信息", "参数调整", "开始剧情"] }
+    { id: "SM1", name: "灰姑娘",            file: "data/stories/灰姑娘.json", mode: "script", worldview: "medieval", headers: ["背景信息", "剧情线", "参数调整", "开始剧情"] },
+    { id: "SM2", name: "小红帽",            file: "data/stories/小红帽.json", mode: "script", worldview: "medieval", headers: ["背景信息", "剧情线", "参数调整", "开始剧情"] },
+    { id: "SM3", name: "卖火柴的小女孩",    file: "data/stories/卖火柴的小女孩.json", mode: "script", worldview: "medieval", headers: ["背景信息", "剧情线", "参数调整", "开始剧情"] },
+    { id: "SM4", name: "小裁缝一次干七个！", file: "data/stories/小裁缝一次干七个！.json", mode: "script", worldview: "medieval", headers: ["背景信息", "剧情线", "参数调整", "开始剧情"] },
+    { id: "SM5", name: "白雪公主（制作中）", file: "data/stories/白雪公主.json", mode: "script", worldview: "medieval", headers: ["背景信息", "剧情线", "参数调整", "开始剧情"] },
+    { id: "FC1", name: "自由模式-贩奴贸易",  file: null, mode: "free", worldview: "colony", headers: ["背景信息", "剧情线", "参数调整", "开始剧情"] },
+    { id: "tab5", name: "自定义开局",        file: null, headers: ["背景信息", "人物信息", "参数调整", "开始剧情"] },
+    { id: "tab6", name: "自定义剧本",        file: null, headers: ["背景信息", "剧情线", "人物信息", "参数调整", "开始剧情"] }
 ];
+
+// 根据当前模式 + 世界观动态插入/移除故事选项卡按钮（插入到「模式选择与世界观调整」之后、「自定义开局」之前）
+window.refreshConditionalStoryTabs = function() {
+    var header = document.querySelector('.tabs-header');
+    if (!header) return;
+    header.querySelectorAll('.tab-btn.dynamic-story').forEach(function(btn) { btn.remove(); });
+    var anchor = header.querySelector('.tab-btn[data-target="tab5"]');
+    if (!anchor) return;
+    var matched = STORY_MANIFEST.filter(function(s) {
+        return s.mode && s.worldview && s.mode === __currentMode && s.worldview === __currentWorldviewId;
+    });
+    matched.forEach(function(s) {
+        var btn = document.createElement('button');
+        btn.className = 'tab-btn dynamic-story';
+        btn.setAttribute('data-target', s.id);
+        btn.textContent = s.name;
+        header.insertBefore(btn, anchor);
+    });
+};
 
 var originalDataCache = {};
 var tabsDataMap = {};
@@ -53,6 +73,8 @@ async function initDynamicTabs() {
 
     renderControlPanelDynamicArea();
     renderModeAndWorldviewPanel();
+    renderTocModeWorldview();
+    refreshConditionalStoryTabs();
 
     // 加载所有故事数据
     await loadAllStories();
@@ -60,7 +82,7 @@ async function initDynamicTabs() {
     // 从目录卡片中同步封面图
     document.querySelectorAll('.toc-img-card').forEach(function(card) {
         var btnOnClick = card.getAttribute('onclick');
-        var tabIdMatch = btnOnClick.match(/'(tab\d+)'/);
+        var tabIdMatch = btnOnClick.match(/selectFromToc\('([^']+)'\)/);
         if(tabIdMatch) {
             var imgNode = card.querySelector('img');
             var src = imgNode ? imgNode.getAttribute('src') : "";
@@ -69,7 +91,7 @@ async function initDynamicTabs() {
         }
     });
 
-    var refNodeTab13 = document.getElementById('tab13');
+    var refNodeTab7 = document.getElementById('tab7');
 
     Object.keys(tabsDataMap).forEach(function(tabId) {
         var cfg = tabsDataMap[tabId];
@@ -82,7 +104,7 @@ async function initDynamicTabs() {
         var headerHTML = '<div class="sub-tabs-header">';
         cfg.headers.forEach(function(h, i) { headerHTML += '<button class="sub-tab-btn ' + (i === 0 ? 'active' : '') + '" onclick="switchSubTab(this, \'' + tabId + '-sub' + (i+1) + '\')">' + h + '</button>'; });
 
-        if (tabId !== 'tab11' && tabId !== 'tab12') {
+        if (tabId !== 'tab5' && tabId !== 'tab6') {
             headerHTML += '<div class="edit-switch-container"><span>修改模式</span><label class="switch-ui"><input type="checkbox" onchange="toggleEditMode(this, \'' + tabId + '\')"><span class="slider"></span></label></div>';
         }
         headerHTML += '</div>';
@@ -122,7 +144,7 @@ async function initDynamicTabs() {
 
                 var presetBtnHTML = '<button class="add-preset-btn custom-alert-btn" onclick="openPresetModal(\'' + tabId + '\')" style="margin-top:10px; width:100%; border-style:dashed; padding:8px; background:rgba(138, 43, 226, 0.08); color:var(--color-primary-dark); font-size:1.05rem;">\u2727 预设内容加载 \u2727</button>';
 
-                var importBtnHTML = (tabId === 'tab11' || tabId === 'tab12') ? '<button class="custom-alert-btn" onclick="openImportModal(\'' + tabId + '\')" style="margin-top:10px; width:100%; border-style:dashed; padding:8px; background:rgba(184, 134, 11, 0.08); color:var(--color-primary-dark); font-size:1.05rem;">\u2727 导入预设开局 \u2727</button>' : "";
+                var importBtnHTML = (tabId === 'tab5' || tabId === 'tab6') ? '<button class="custom-alert-btn" onclick="openImportModal(\'' + tabId + '\')" style="margin-top:10px; width:100%; border-style:dashed; padding:8px; background:rgba(184, 134, 11, 0.08); color:var(--color-primary-dark); font-size:1.05rem;">\u2727 导入预设开局 \u2727</button>' : "";
 
                 contentStr = infoIntroHTML + '<div class="data-block" style="border-bottom:none;"><div class="data-field-title">\uD83D\uDDFA\uFE0F 地域与风土物志</div><div data-region-container id="regions-' + tabId + '">' + regionsHTML + '</div><button class="add-region-btn custom-alert-btn" onclick="addNewRegion(\'' + tabId + '\')" style="margin-top:10px; width:100%; border-style:dashed; padding:8px;">+ 新 建 地 域 </button>' + presetBtnHTML + importBtnHTML + '</div>';
             }
@@ -160,9 +182,9 @@ async function initDynamicTabs() {
 
         panelsHTML += '</div>';
         tabNode.innerHTML = headerHTML + panelsHTML;
-        container.insertBefore(tabNode, refNodeTab13);
+        container.insertBefore(tabNode, refNodeTab7);
 
-        if (tabId === 'tab11' || tabId === 'tab12') {
+        if (tabId === 'tab5' || tabId === 'tab6') {
             tabNode.classList.add('is-edit-mode');
             tabNode.querySelectorAll('.editable-field').forEach(function(el) { el.setAttribute('contenteditable', 'true'); });
         }
@@ -357,7 +379,7 @@ window.switchCharProfile = function(btn, tabId) {
 window.addEventListener('DOMContentLoaded', function() {
     initDynamicTabs().then(function() {
         // 对 tab1 ~ tab3 的静态节点做 Markdown 渲染
-        ['tab1', 'tab2', 'tab3'].forEach(function(tid) {
+        ['tab1', 'tab2'].forEach(function(tid) {
             var panelElem = document.getElementById(tid);
             if (panelElem) window.safeRenderMdOnNodes(panelElem);
         });

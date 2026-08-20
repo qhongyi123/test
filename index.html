@@ -30,16 +30,11 @@
             <div class="tabs-header">
                 <button class="tab-btn active" data-target="tab1">前言</button>
                 <button class="tab-btn" data-target="tab2">鸣谢</button>
-                <button class="tab-btn" data-target="tab3">模式选择与世界观调整</button>
-                <button class="tab-btn" data-target="tab5">备用2</button>
-                <button class="tab-btn" data-target="tab7">备用4</button>
-                <button class="tab-btn" data-target="tab8">备用5</button>
-                <button class="tab-btn" data-target="tab10">备用7</button>
-                <button class="tab-btn" data-target="tab4">备用1</button>
-                <button class="tab-btn" data-target="tab11">自定义开局</button>
-                <button class="tab-btn" data-target="tab12">自定义剧本</button>
-                <button class="tab-btn" data-target="tab13">角色管理</button>
-                <button class="tab-btn" data-target="tab14">初始设置</button>
+                <button class="tab-btn" data-target="tab3">初始设置</button>
+                <button class="tab-btn" data-target="tab4">模式选择与世界观调整</button>
+                <button class="tab-btn" data-target="tab5">自定义开局</button>
+                <button class="tab-btn" data-target="tab6">自定义剧本</button>
+                <button class="tab-btn" data-target="tab7">角色管理</button>
             </div>
 
             <div class="tabs-content-area" id="dynamic-tabs-area">
@@ -165,15 +160,22 @@
                     </div>
                 </div>
 
-                <!-- Tab 3 : 模式选择与世界观调整 -->
+                <!-- Tab 3 : 初始设置 -->
                 <div id="tab3" class="tab-panel">
                     <div class="sub-panels-wrapper">
                         <div id="tab3-sub1" class="sub-panel active"></div>
                     </div>
                 </div>
 
-                <!-- Tab 13 : 角色管理 -->
-                <div id="tab13" class="tab-panel">
+                <!-- Tab 4 : 模式选择与世界观调整 -->
+                <div id="tab4" class="tab-panel">
+                    <div class="sub-panels-wrapper">
+                        <div id="tab4-sub1" class="sub-panel active"></div>
+                    </div>
+                </div>
+
+                <!-- Tab 7 : 角色管理 -->
+                <div id="tab7" class="tab-panel">
                     <div style="padding:15px; flex:1; display:flex; flex-direction:column; overflow:hidden;">
                         <h2 style="color:var(--color-primary-dark); text-align:center; border-bottom:2px dashed rgba(212,175,55,0.3); padding-bottom:10px; margin-top:0;">&#10023; 角色管理 &#10023;</h2>
                         <i style="color:var(--color-text-dark); opacity:0.8; text-align:center; font-size:0.9em; margin-bottom:15px; display:block;">你可以在该界面察看、管理各个角色</i>
@@ -183,34 +185,28 @@
                         <button class="start-game-btn" style="font-size:1rem; margin-top:10px; padding:8px; font-family:'Noto Serif SC';" onclick="ifConfirmThenPopulate()">&#8635; 刷新</button>
                     </div>
                 </div>
-
-                <!-- Tab 14 : 初始设置 -->
-                <div id="tab14" class="tab-panel">
-                    <div class="sub-panels-wrapper">
-                        <div id="tab14-sub1" class="sub-panel active"></div>
-                    </div>
-                </div>
             </div>
 
             <!-- 总目录弹窗 -->
             <div class="toc-modal" id="tocMenu">
                 <div class="toc-title">章节录</div>
+                <div class="toc-mode-worldview" id="toc-mode-worldview"></div>
                 <div class="toc-list">
                     <div class="toc-corners">
-                        <div class="toc-corner-btn" onclick="selectFromToc('tab1', 0)">前言</div>
-                        <div class="toc-corner-btn" onclick="selectFromToc('tab2', 1)">鸣谢</div>
-                        <div class="toc-corner-btn" onclick="selectFromToc('tab3', 2)">模式选择与世界观调整</div>
-                        <div class="toc-corner-btn" onclick="selectFromToc('tab11', 8)">自定义开局</div>
-                        <div class="toc-corner-btn" onclick="selectFromToc('tab12', 9)">自定义开局(剧本)</div>
-                        <div class="toc-corner-btn" onclick="selectFromToc('tab13', 10)" style="border-color:#b8860b;">角色管理</div>
-                        <div class="toc-corner-btn" onclick="selectFromToc('tab14', 11)">初始设置</div>
+                        <div class="toc-corner-btn" onclick="selectFromToc('tab1')">前言</div>
+                        <div class="toc-corner-btn" onclick="selectFromToc('tab2')">鸣谢</div>
+                        <div class="toc-corner-btn" onclick="selectFromToc('tab3')">初始设置</div>
+                        <div class="toc-corner-btn" onclick="selectFromToc('tab4')">模式选择与世界观调整</div>
+                        <div class="toc-corner-btn" onclick="selectFromToc('tab5')">自定义开局</div>
+                        <div class="toc-corner-btn" onclick="selectFromToc('tab6')">自定义开局(剧本)</div>
+                        <div class="toc-corner-btn" onclick="selectFromToc('tab7')" style="border-color:#b8860b;">角色管理</div>
                     </div>
                     <div class="toc-gallery">
-                        <div class="toc-img-card" onclick="selectFromToc('tab5', 3)"><div class="toc-img-frame"><span class="img-placeholder">努力更新<br>中...</span><img src="https://qianyedoufu.dpdns.org/辛德瑞拉（小时候）.jpg" onload="this.style.opacity=1" onerror="this.style.opacity=0" alt=""></div><div class="toc-img-title">灰姑娘</div></div>
-                        <div class="toc-img-card" onclick="selectFromToc('tab7', 4)"><div class="toc-img-frame"><span class="img-placeholder">努力更新<br>中...</span><img src="https://qianyedoufu.dpdns.org/绛娅.jpg"" onload="this.style.opacity=1" onerror="this.style.opacity=0" alt=""></div><div class="toc-img-title">小红帽</div></div>
-                        <div class="toc-img-card" onclick="selectFromToc('tab8', 5)"><div class="toc-img-frame"><span class="img-placeholder">努力更新<br>中...</span><img src="https://qianyedoufu.dpdns.org/莉茨.png" onload="this.style.opacity=1" onerror="this.style.opacity=0" alt=""></div><div class="toc-img-title">卖火柴的小女孩</div></div>
-                        <div class="toc-img-card" onclick="selectFromToc('tab10', 6)"><div class="toc-img-frame"><span class="img-placeholder">努力更新<br>中...</span><img src="https://qianyedoufu.dpdns.org/龙娘姐妹.png" onload="this.style.opacity=1" onerror="this.style.opacity=0" alt=""></div><div class="toc-img-title">小裁缝<br>一次干七个！</div></div>
-                        <div class="toc-img-card" onclick="selectFromToc('tab4', 7)"><div class="toc-img-frame"><span class="img-placeholder">努力更新<br>中...</span><img src="https://qianyedoufu.dpdns.org/白雪公主.jpg" onload="this.style.opacity=1" onerror="this.style.opacity=0" alt=""></div><div class="toc-img-title">白雪公主（制作中）</div></div>
+                        <div class="toc-img-card" onclick="selectFromToc('SM1')"><div class="toc-img-frame"><span class="img-placeholder">努力更新<br>中...</span><img src="https://qianyedoufu.dpdns.org/辛德瑞拉（小时候）.jpg" onload="this.style.opacity=1" onerror="this.style.opacity=0" alt=""></div><div class="toc-img-title">灰姑娘</div></div>
+                        <div class="toc-img-card" onclick="selectFromToc('SM2')"><div class="toc-img-frame"><span class="img-placeholder">努力更新<br>中...</span><img src="https://qianyedoufu.dpdns.org/绛娅.jpg"" onload="this.style.opacity=1" onerror="this.style.opacity=0" alt=""></div><div class="toc-img-title">小红帽</div></div>
+                        <div class="toc-img-card" onclick="selectFromToc('SM3')"><div class="toc-img-frame"><span class="img-placeholder">努力更新<br>中...</span><img src="https://qianyedoufu.dpdns.org/莉茨.png" onload="this.style.opacity=1" onerror="this.style.opacity=0" alt=""></div><div class="toc-img-title">卖火柴的小女孩</div></div>
+                        <div class="toc-img-card" onclick="selectFromToc('SM4')"><div class="toc-img-frame"><span class="img-placeholder">努力更新<br>中...</span><img src="https://qianyedoufu.dpdns.org/龙娘姐妹.png" onload="this.style.opacity=1" onerror="this.style.opacity=0" alt=""></div><div class="toc-img-title">小裁缝<br>一次干七个！</div></div>
+                        <div class="toc-img-card" onclick="selectFromToc('SM5')"><div class="toc-img-frame"><span class="img-placeholder">努力更新<br>中...</span><img src="https://qianyedoufu.dpdns.org/白雪公主.jpg" onload="this.style.opacity=1" onerror="this.style.opacity=0" alt=""></div><div class="toc-img-title">白雪公主（制作中）</div></div>
                     </div>
                 </div>
                 <div class="toc-close-btn" onclick="toggleToc()">关 闭 落 落 长 册</div>

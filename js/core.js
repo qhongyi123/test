@@ -2,6 +2,7 @@ var LOREBOOK_NAME = "千叶童话";
 
 var __currentWorldviewId = "medieval";
 var __currentMode = "script";
+var __selectionConfirmed = false;
 
 var WORLDVIEW_IDS = ["medieval", "colony", "western", "xianxia", "magic"];
 var WORLDVIEW_NAMES = ["中世纪童话", "开拓新大陆与殖民贸易", "西部拓荒", "东方修仙", "西方魔法"];
@@ -44,7 +45,7 @@ var CH_NUMS = ["", "一","二","三","四","五","六","七","八","九","十",
     "二十一","二十二","二十三","二十四","二十五","二十六","二十七","二十八","二十九","三十"];
 
 var CONTROL_PANEL_CONFIG = {
-    "tab14-sub1": {
+    "tab3-sub1": {
         title: "初始设置",
         defaultSingle: true,
         items: [

@@ -37,7 +37,7 @@ function renderControlPanelDynamicArea() {
 var COMING_SOON_WORLDVIEWS = ["western", "xianxia", "magic"];
 
 function renderModeAndWorldviewPanel() {
-    var panelEl = document.getElementById('tab3-sub1');
+    var panelEl = document.getElementById('tab4-sub1');
     if (!panelEl) return;
 
     var modeItemsHtml = "";
@@ -77,20 +77,46 @@ function renderModeAndWorldviewPanel() {
         '<div class="worldview-list">' + wvItemsHtml + '</div>';
 }
 
+function renderTocModeWorldview() {
+    var el = document.getElementById('toc-mode-worldview');
+    if (!el) return;
+    var modeHtml = "";
+    [["script", "剧情模式"], ["free", "自由模式"]].forEach(function(m) {
+        var isActive = (__currentMode === m[0]);
+        modeHtml += '<span class="toc-mw-item' + (isActive ? ' active' : '') + '" data-mode-id="' + m[0] + '" onclick="selectMode(\'' + m[0] + '\')">' + m[1] + '</span>';
+    });
+    var wvHtml = "";
+    WORLDVIEWS.forEach(function(wv) {
+        var isComingSoon = (COMING_SOON_WORLDVIEWS.indexOf(wv.id) !== -1);
+        var isActive = (wv.id === __currentWorldviewId) && !isComingSoon;
+        var nameText = mtH(wv.name) + (isComingSoon ? '（敬请期待）' : '');
+        var clickAttr = isComingSoon ? '' : ' onclick="selectWorldview(\'' + wv.id + '\')"';
+        var itemCls = 'toc-mw-item' + (isActive ? ' active' : '') + (isComingSoon ? ' disabled' : '');
+        wvHtml += '<span class="' + itemCls + '" data-wv-id="' + wv.id + '"' + clickAttr + '>' + nameText + '</span>';
+    });
+    el.innerHTML =
+        '<div class="toc-mw-label">\u2756 模式</div>' +
+        '<div class="toc-mw-row">' + modeHtml + '</div>' +
+        '<div class="toc-mw-label">\u2756 世界观</div>' +
+        '<div class="toc-mw-row">' + wvHtml + '</div>';
+}
+
 window.selectWorldview = function(worldviewId) {
     if (COMING_SOON_WORLDVIEWS.indexOf(worldviewId) !== -1) return;
     __currentWorldviewId = worldviewId;
-    document.querySelectorAll('#tab3-sub1 .worldview-item[data-wv-id]').forEach(function(el) {
-        el.classList.toggle('active', el.getAttribute('data-wv-id') === worldviewId);
-    });
+    __selectionConfirmed = true;
+    renderModeAndWorldviewPanel();
+    renderTocModeWorldview();
+    if (typeof refreshConditionalStoryTabs === 'function') refreshConditionalStoryTabs();
     applyWorldviewLorebook(worldviewId, __currentMode);
 };
 
 window.selectMode = function(mode) {
     __currentMode = mode;
-    document.querySelectorAll('#tab3-sub1 .worldview-item[data-mode-id]').forEach(function(el) {
-        el.classList.toggle('active', el.getAttribute('data-mode-id') === mode);
-    });
+    __selectionConfirmed = true;
+    renderModeAndWorldviewPanel();
+    renderTocModeWorldview();
+    if (typeof refreshConditionalStoryTabs === 'function') refreshConditionalStoryTabs();
     applyWorldviewLorebook(__currentWorldviewId, mode);
 };
 
@@ -188,20 +214,30 @@ function nextPage() {
     var currentIndex = btns.findIndex(function(btn) { return btn.classList.contains('active'); });
     if (currentIndex !== -1) {
         var nextIndex = (currentIndex + 1) % btns.length;
+        var gateIndex = btns.findIndex(function(btn) { return btn.getAttribute('data-target') === 'tab4'; });
+        if (!__selectionConfirmed && gateIndex !== -1 && nextIndex > gateIndex) {
+            nextIndex = gateIndex;
+            showCustomAlert("请先在「模式选择与世界观调整」中完成选择");
+        }
         switchTab(btns[nextIndex].getAttribute('data-target'), btns[nextIndex]);
     }
 }
 
 function toggleToc() { document.getElementById('tocMenu').classList.toggle('active'); }
 
-function selectFromToc(tabId, index) {
-    switchTab(tabId, document.querySelectorAll('.tab-btn')[index]);
+function selectFromToc(tabId) {
+    var btn = document.querySelector('.tab-btn[data-target="' + tabId + '"]');
+    if (btn) {
+        switchTab(tabId, btn);
+    } else {
+        showCustomAlert("该内容需先选择对应的模式与世界观");
+    }
     toggleToc();
 }
 
 function goToRoleTab() {
-    var targetBtn = document.querySelector('.tab-btn[data-target="tab13"]');
-    if(targetBtn) { switchTab('tab13', targetBtn); }
+    var targetBtn = document.querySelector('.tab-btn[data-target="tab7"]');
+    if(targetBtn) { switchTab('tab7', targetBtn); }
 }
 
 // ===== 导入功能 =====
