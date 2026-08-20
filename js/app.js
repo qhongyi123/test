@@ -772,7 +772,12 @@ window.fc1CollectVariable = function() {
     v.setting.mode = __currentMode || "free";
     v.setting.worldview = __currentWorldviewId || "colony";
 
-    return v;
+    // 自由模式输出：剔除剧情模式专属字段（write 三格传送带 / 剧情线），保留地区信息与描写指导
+    var out = {};
+    Object.keys(v).forEach(function(k) { out[k] = v[k]; });
+    delete out.write;
+    delete out["剧情线"];
+    return out;
 };
 
 window.fc1SaveVariables = function() {
