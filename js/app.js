@@ -27,19 +27,14 @@ function renderControlPanelDynamicArea() {
                     '\u2756 ' + conf.title + ' \u2756 <br>' +
                     '<span style="font-weight:normal; font-size:0.8em; opacity:0.9; color:var(--color-text-dark);">部分界面只能单选，请注意</span>' +
                 '</div>' +
-                '<div class="cp-mode-box" style="display:flex; align-items:center; gap:8px; background:rgba(253,246,227,0.8); padding:4px 8px; border-radius:8px; box-shadow:0 1px 3px rgba(0,0,0,0.1);">' +
-                    '<span style="font-size:0.85rem; font-weight:bold; color:var(--color-primary-dark);">单选模式</span>' +
-                    '<label class="switch-ui">' +
-                        '<input type="checkbox" id="single-mode-' + panelId + '" onchange="handleControlPanelModeChange(\'' + panelId + '\')" ' + (conf.defaultSingle ? "checked" : "") + '>' +
-                        '<span class="slider"></span>' +
-                    '</label>' +
-                '</div>' +
             '</div>' +
             '<div style="flex:1; overflow-y:auto; padding-right:5px; margin-bottom:10px;" class="sub-panels-wrapper">' +
                 itemsHtml +
             '</div>';
     });
 }
+
+var COMING_SOON_WORLDVIEWS = ["western", "xianxia", "magic"];
 
 function renderModeAndWorldviewPanel() {
     var panelEl = document.getElementById('tab3-sub1');
@@ -57,11 +52,15 @@ function renderModeAndWorldviewPanel() {
 
     var wvItemsHtml = "";
     WORLDVIEWS.forEach(function(wv) {
-        var isCurrent = (wv.id === __currentWorldviewId);
+        var isComingSoon = (COMING_SOON_WORLDVIEWS.indexOf(wv.id) !== -1);
+        var isCurrent = (wv.id === __currentWorldviewId) && !isComingSoon;
+        var nameText = mtH(wv.name) + (isComingSoon ? '（敬请期待）' : '');
+        var clickAttr = isComingSoon ? '' : ' onclick="selectWorldview(\'' + wv.id + '\')"';
+        var itemCls = 'worldview-item' + (isCurrent ? ' active' : '') + (isComingSoon ? ' disabled' : '');
         wvItemsHtml +=
-            '<div class="worldview-item' + (isCurrent ? ' active' : '') + '" data-wv-id="' + wv.id + '" onclick="selectWorldview(\'' + wv.id + '\')">' +
+            '<div class="' + itemCls + '" data-wv-id="' + wv.id + '"' + clickAttr + '>' +
                 '<span class="worldview-radio"></span>' +
-                '<span class="worldview-name">' + mtH(wv.name) + '</span>' +
+                '<span class="worldview-name">' + nameText + '</span>' +
             '</div>';
     });
 
@@ -79,6 +78,7 @@ function renderModeAndWorldviewPanel() {
 }
 
 window.selectWorldview = function(worldviewId) {
+    if (COMING_SOON_WORLDVIEWS.indexOf(worldviewId) !== -1) return;
     __currentWorldviewId = worldviewId;
     document.querySelectorAll('#tab3-sub1 .worldview-item[data-wv-id]').forEach(function(el) {
         el.classList.toggle('active', el.getAttribute('data-wv-id') === worldviewId);
@@ -95,8 +95,8 @@ window.selectMode = function(mode) {
 };
 
 window.handleControlPanelItemChange = async function(panelId, currentItemId) {
-    var isSingleMode = document.getElementById('single-mode-' + panelId).checked;
     var panelConf = CONTROL_PANEL_CONFIG[panelId];
+    var isSingleMode = !!(panelConf && panelConf.defaultSingle);
     var cbNode = document.getElementById(currentItemId);
     if (isSingleMode && cbNode && cbNode.checked) {
         panelConf.items.forEach(function(it) {
@@ -124,28 +124,6 @@ window.handleControlPanelItemChange = async function(panelId, currentItemId) {
         var updatePayload = Object.values(updatesMap);
         if(updatePayload.length > 0) {
             try { await setLorebookEntries(LOREBOOK_NAME, updatePayload); } catch(e) { showCustomAlert("试图写入世界书属性时遭拒。"); }
-        }
-    }
-};
-
-window.handleControlPanelModeChange = function(panelId) {
-    var isSingleMode = document.getElementById('single-mode-' + panelId).checked;
-    if (isSingleMode) {
-        var panelConf = CONTROL_PANEL_CONFIG[panelId];
-        var firstFound = false;
-        var changed = false;
-        var targetUpdateItem = null;
-        panelConf.items.forEach(function(it) {
-            var checkEl = document.getElementById(it.id);
-            if (checkEl && checkEl.checked) {
-                if (!firstFound) { firstFound = true; targetUpdateItem = it.id; }
-                else { checkEl.checked = false; changed = true; }
-            }
-        });
-        if (changed && targetUpdateItem) {
-            handleControlPanelItemChange(panelId, targetUpdateItem);
-        } else if (changed) {
-            handleControlPanelItemChange(panelId, panelConf.items[0].id);
         }
     }
 };

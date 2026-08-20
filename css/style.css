@@ -242,6 +242,8 @@ body {
 .worldview-radio { width:16px; height:16px; border-radius:50%; border:2px solid var(--color-primary-dark); background:rgba(20,10,40,0.15); flex-shrink:0; transition:all 0.2s; }
 .worldview-item.active .worldview-radio { background:var(--color-primary-dark); box-shadow:0 0 6px rgba(212,175,55,0.6); }
 .worldview-name { font-weight:bold; color:var(--color-primary-dark); font-size:1.05rem; }
+.worldview-item.disabled { opacity:0.5; cursor:not-allowed; }
+.worldview-item.disabled:hover { background:rgba(212,175,55,0.05); border-color:rgba(212,175,55,0.15); box-shadow:1px 1px 3px rgba(0,0,0,0.05); }
 
 /* 赋予编辑效果边界暗示与反馈 */
 .editable-field { min-height: 1.1em; display: inline-block; border: 1px solid transparent; border-radius: 3px; transition: border-color 0.2s, background 0.2s; max-width:100%; vertical-align: top;}
