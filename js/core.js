@@ -4,6 +4,9 @@ var __currentWorldviewId = "medieval";
 var __currentMode = "script";
 var __selectionConfirmed = false;
 
+// FC1 自由模式-贩奴贸易 背景音乐链接（待填）
+var FC1_MUSIC_URL = "";
+
 var WORLDVIEW_IDS = ["medieval", "colony", "western", "xianxia", "magic"];
 var WORLDVIEW_NAMES = ["中世纪童话", "开拓新大陆与殖民贸易", "西部拓荒", "东方修仙", "西方魔法"];
 

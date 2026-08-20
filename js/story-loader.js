@@ -5,7 +5,7 @@ var STORY_MANIFEST = [
     { id: "SM3", name: "卖火柴的小女孩",    file: "data/stories/卖火柴的小女孩.json", mode: "script", worldview: "medieval", headers: ["背景信息", "剧情线", "参数调整", "开始剧情"] },
     { id: "SM4", name: "小裁缝一次干七个！", file: "data/stories/小裁缝一次干七个！.json", mode: "script", worldview: "medieval", headers: ["背景信息", "剧情线", "参数调整", "开始剧情"] },
     { id: "SM5", name: "白雪公主（制作中）", file: "data/stories/白雪公主.json", mode: "script", worldview: "medieval", headers: ["背景信息", "剧情线", "参数调整", "开始剧情"] },
-    { id: "FC1", name: "自由模式-贩奴贸易",  file: null, mode: "free", worldview: "colony", headers: ["背景信息", "剧情线", "参数调整", "开始剧情"] },
+    { id: "FC1", name: "自由模式-贩奴贸易",  file: null, mode: "free", worldview: "colony", headers: ["世界观概览", "区域选择"] },
     { id: "tab5", name: "自定义开局",        file: null, headers: ["背景信息", "人物信息", "参数调整", "开始剧情"] },
     { id: "tab6", name: "自定义剧本",        file: null, headers: ["背景信息", "剧情线", "人物信息", "参数调整", "开始剧情"] }
 ];
@@ -102,9 +102,9 @@ async function initDynamicTabs() {
         tabNode.className = 'tab-panel';
 
         var headerHTML = '<div class="sub-tabs-header">';
-        cfg.headers.forEach(function(h, i) { headerHTML += '<button class="sub-tab-btn ' + (i === 0 ? 'active' : '') + '" onclick="switchSubTab(this, \'' + tabId + '-sub' + (i+1) + '\')">' + h + '</button>'; });
+        cfg.headers.forEach(function(h, i) { headerHTML += '<button class="sub-tab-btn ' + (i === 0 ? 'active' : '') + '" data-sub="' + tabId + '-sub' + (i+1) + '" onclick="switchSubTab(this, \'' + tabId + '-sub' + (i+1) + '\')">' + h + '</button>'; });
 
-        if (tabId !== 'tab5' && tabId !== 'tab6') {
+        if (tabId !== 'tab5' && tabId !== 'tab6' && tabId !== 'FC1') {
             headerHTML += '<div class="edit-switch-container"><span>修改模式</span><label class="switch-ui"><input type="checkbox" onchange="toggleEditMode(this, \'' + tabId + '\')"><span class="slider"></span></label></div>';
         }
         headerHTML += '</div>';
@@ -175,6 +175,45 @@ async function initDynamicTabs() {
             }
             else if (h === "开始剧情") {
                 contentStr = '<div class="data-block" style="border-bottom:none;"><div class="data-field-title">\u2728 幕启词刻</div><button class="start-game-btn" data-tid="' + tabId + '" style="margin-top:10px; margin-bottom:10px;">开启童话物语</button><div class="editable-field editable-textarea data-story-text" data-path="story.startContent" style="min-height:100px;">' + mtH(sd.startContent) + '</div></div>';
+            }
+            else if (h === "世界观概览") {
+                contentStr = '<div class="fc1-overview">' +
+                    '<div class="fc1-overview-title">\u2727 开拓新大陆与殖民贸易 \u2727</div>' +
+                    '<div class="fc1-overview-text">' +
+                        '<p>十七世纪末至十八世纪初，大西洋上的三角贸易如日中天：欧洲母国的制成品、军火与朗姆酒运往西非，换取深色奴横渡大西洋运往美洲，再以糖、烟草、棉花满载而归。</p>' +
+                        '<p>这是一片由风帆、火器、银元与胆识主宰的海域。你将以自由之身，或逐利海上、或经营种植园、或穿行于奴隶市场，凭一己之力在这殖民时代立足。</p>' +
+                    '</div>' +
+                    '<div class="fc1-music-row">' +
+                        '<button class="fc1-music-btn" id="fc1-music-btn" onclick="toggleMusic()">\u266A 播放音乐</button>' +
+                    '</div>' +
+                    '<button class="fc1-continue-btn" onclick="goToSubTab(\'' + tabId + '\', \'' + tabId + '-sub2\')">\u25B6 继 续</button>' +
+                '</div>';
+            }
+            else if (h === "区域选择") {
+                var seaArt = '<svg viewBox="0 0 100 100" class="fc1-sea-svg" preserveAspectRatio="xMidYMid meet">' +
+                    '<path class="fc1-wave w1" d="M0,22 Q10,15 20,22 T40,22 T60,22 T80,22 T100,22" />' +
+                    '<path class="fc1-wave w2" d="M0,36 Q10,29 20,36 T40,36 T60,36 T80,36 T100,36" />' +
+                    '<path class="fc1-wave w3" d="M0,50 Q10,43 20,50 T40,50 T60,50 T80,50 T100,50" />' +
+                    '<g class="fc1-vortex">' +
+                        '<path class="fc1-vortex-ring r1" d="M50,76 m-15,0 a15,15 0 1,1 30,0 a15,15 0 1,1 -30,0" />' +
+                        '<path class="fc1-vortex-ring r2" d="M50,76 m-10,0 a10,10 0 1,0 20,0 a10,10 0 1,0 -20,0" />' +
+                        '<path class="fc1-vortex-ring r3" d="M50,76 m-5,0 a5,5 0 1,0 10,0 a5,5 0 1,0 -10,0" />' +
+                    '</g>' +
+                '</svg>';
+                contentStr = '<div class="fc1-region-wrap">' +
+                    '<div class="fc1-region-title">\u2756 选择你的起始之地 \u2756</div>' +
+                    '<div class="fc1-region-grid">' +
+                        '<div class="fc1-cell fc1-empty"></div>' +
+                        '<div class="fc1-cell fc1-empty"></div>' +
+                        '<div class="fc1-cell fc1-region" data-region="europe" onclick="selectRegion(\'europe\')"><img src="https://qianyedoufu.dpdns.org/欧洲.png" alt="欧洲"><span class="fc1-region-name">欧洲</span></div>' +
+                        '<div class="fc1-cell fc1-region" data-region="west_africa" onclick="selectRegion(\'west_africa\')"><img src="https://qianyedoufu.dpdns.org/西非.png" alt="西非"><span class="fc1-region-name">西非</span></div>' +
+                        '<div class="fc1-cell fc1-sea" data-region="sea" onclick="selectRegion(\'sea\')">' + seaArt + '<span class="fc1-region-name">海洋</span></div>' +
+                        '<div class="fc1-cell fc1-empty"></div>' +
+                        '<div class="fc1-cell fc1-empty"></div>' +
+                        '<div class="fc1-cell fc1-empty"></div>' +
+                        '<div class="fc1-cell fc1-region" data-region="south_america" onclick="selectRegion(\'south_america\')"><img src="https://qianyedoufu.dpdns.org/南美.png" alt="南美"><span class="fc1-region-name">南美</span></div>' +
+                    '</div>' +
+                '</div>';
             }
 
             panelsHTML += '<div id="' + thisSubId + '" class="sub-panel ' + isSubActive + '">' + contentStr + '</div>';

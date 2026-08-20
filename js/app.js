@@ -198,6 +198,7 @@ function switchTab(tabId, btnElement) {
     if(btnElement) btnElement.classList.add('active');
     document.querySelectorAll('.tab-panel').forEach(function(panel) { panel.classList.remove('active'); });
     document.getElementById(tabId).classList.add('active');
+    if (tabId === 'FC1') tryAutoPlayMusic();
 }
 
 function switchSubTab(btnElement, subTabId) {
@@ -208,6 +209,54 @@ function switchSubTab(btnElement, subTabId) {
     mainPanelContainer.querySelectorAll('.sub-panel').forEach(function(panel) { panel.classList.remove('active'); });
     mainPanelContainer.querySelector('#' + subTabId).classList.add('active');
 }
+
+window.goToSubTab = function(tabId, subTabId) {
+    var panel = document.getElementById(tabId);
+    if (!panel) return;
+    var btn = panel.querySelector('.sub-tab-btn[data-sub="' + subTabId + '"]');
+    if (btn) switchSubTab(btn, subTabId);
+};
+
+// ===== FC1 音乐与区域选择 =====
+var __fc1Audio = null;
+var __fc1Region = null;
+
+window.toggleMusic = function() {
+    if (!FC1_MUSIC_URL) { showCustomAlert("背景音乐暂未配置"); return; }
+    if (!__fc1Audio) {
+        __fc1Audio = new Audio(FC1_MUSIC_URL);
+        __fc1Audio.loop = true;
+    }
+    var btn = document.getElementById('fc1-music-btn');
+    if (__fc1Audio.paused) {
+        __fc1Audio.play().catch(function() {});
+        if (btn) btn.innerHTML = '\u23F8 暂停音乐';
+    } else {
+        __fc1Audio.pause();
+        if (btn) btn.innerHTML = '\u266A 播放音乐';
+    }
+};
+
+window.tryAutoPlayMusic = function() {
+    if (!FC1_MUSIC_URL) return;
+    if (!__fc1Audio) {
+        __fc1Audio = new Audio(FC1_MUSIC_URL);
+        __fc1Audio.loop = true;
+    }
+    if (__fc1Audio.paused) {
+        __fc1Audio.play().then(function() {
+            var btn = document.getElementById('fc1-music-btn');
+            if (btn) btn.innerHTML = '\u23F8 暂停音乐';
+        }).catch(function() {});
+    }
+};
+
+window.selectRegion = function(region) {
+    __fc1Region = region;
+    document.querySelectorAll('.fc1-cell[data-region]').forEach(function(el) {
+        el.classList.toggle('selected', el.getAttribute('data-region') === region);
+    });
+};
 
 function nextPage() {
     var btns = Array.from(document.querySelectorAll('.tab-btn')).filter(function(btn) { return btn.style.display !== 'none'; });
