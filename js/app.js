@@ -660,7 +660,7 @@ window.fc1BuildVariablePreset = function(identityId, regionId) {
             break;
         case "noble_scion":
             base.wealth = "银币 3000 枚";
-            addEstate("大型庄园", "农事", pos, { quality: "优", product: "甘蔗" });
+            addEstate("大型庄园", "居所", pos);
             addHand("管家", "管家", "男性", "忠心", "40 银元/月");
             addRep("international", "英格兰", "友好");
             break;
