@@ -923,7 +923,7 @@ body {
 .fc1-char-top {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    grid-template-rows: 200px;
+    grid-template-rows: 220px;
     gap: 14px;
 }
 .fc1-area {
@@ -992,7 +992,7 @@ body {
     flex: 1;
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: 8px;
+    gap: 10px;
     overflow-y: auto;
     min-height: 0;
     padding: 2px;
@@ -1005,7 +1005,7 @@ body {
     background: rgba(253,246,227,0.5); color: var(--color-text-dark); cursor: pointer;
     font-family: 'Noto Serif SC', serif; font-size: 0.9rem; padding: 4px;
     display: flex; align-items: center; justify-content: center; text-align: center;
-    line-height: 1.2; transition: all 0.18s; overflow: hidden;
+    line-height: 1.2; transition: all 0.18s; overflow: hidden; box-sizing: border-box;
 }
 .fc1-setting-btn:hover { background: rgba(212,175,55,0.22); border-color: var(--color-primary); }
 .fc1-setting-btn.on {
@@ -1047,6 +1047,33 @@ body {
 
 /* 身份组设定 */
 .fc1-area-4 .fc1-identity-list { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; width: 100%; max-width: none; }
+
+/* 变量设定 */
+.fc1-var-wrap { display: flex; flex-direction: column; gap: 12px; }
+.fc1-var-editor { display: flex; flex-direction: column; gap: 14px; }
+.fc1-var-empty { text-align: center; padding: 40px; color: var(--color-text-dark); opacity: 0.65; font-size: 1rem; }
+.fc1-var-summary {
+    padding: 10px 14px; border: 1px dashed rgba(184,134,11,0.4); border-radius: 8px;
+    background: rgba(212,175,55,0.08); color: var(--color-primary-dark); font-weight: bold; font-size: 0.95rem;
+}
+.fc1-var-section {
+    border: 1px solid rgba(212,175,55,0.25); border-radius: 8px; padding: 12px 14px; background: rgba(255,255,255,0.25);
+}
+.fc1-var-title { font-weight: bold; color: var(--color-primary-dark); font-size: 1rem; margin-bottom: 8px; border-bottom: 1px dashed rgba(184,134,11,0.3); padding-bottom: 5px; }
+.fc1-var-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.fc1-var-row:last-child { margin-bottom: 0; }
+.fc1-var-label { font-weight: bold; color: #5d4037; flex-shrink: 0; font-size: 0.9rem; }
+.fc1-var-row input {
+    flex: 1; padding: 7px 10px; border: 1px solid rgba(184,134,11,0.4); border-radius: 6px;
+    background: rgba(253,246,227,0.5); color: var(--color-text-dark); font-family: inherit; font-size: 0.9rem; outline: none; box-sizing: border-box;
+}
+.fc1-var-row input:focus { border-color: var(--color-primary); background: #fff; }
+.fc1-var-json {
+    width: 100%; min-height: 140px; resize: vertical; padding: 10px; box-sizing: border-box;
+    border: 1px solid rgba(184,134,11,0.4); border-radius: 6px; background: rgba(253,246,227,0.5);
+    color: var(--color-text-dark); font-family: 'Consolas', 'Courier New', monospace; font-size: 0.82rem; line-height: 1.5;
+}
+.fc1-var-actions { display: flex; justify-content: flex-end; gap: 12px; margin-bottom: 6px; }
 
 /* 移动端：堆叠为单列 */
 @media (max-width: 768px) {

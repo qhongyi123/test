@@ -5,7 +5,7 @@ var STORY_MANIFEST = [
     { id: "SM3", name: "卖火柴的小女孩",    file: "data/stories/卖火柴的小女孩.json", mode: "script", worldview: "medieval", headers: ["背景信息", "剧情线", "参数调整", "开始剧情"] },
     { id: "SM4", name: "小裁缝一次干七个！", file: "data/stories/小裁缝一次干七个！.json", mode: "script", worldview: "medieval", headers: ["背景信息", "剧情线", "参数调整", "开始剧情"] },
     { id: "SM5", name: "白雪公主（制作中）", file: "data/stories/白雪公主.json", mode: "script", worldview: "medieval", headers: ["背景信息", "剧情线", "参数调整", "开始剧情"] },
-    { id: "FC1", name: "自由模式-贩奴贸易",  file: null, mode: "free", worldview: "colony", headers: ["世界观概览", "区域选择", "角色背景"] },
+    { id: "FC1", name: "自由模式-贩奴贸易",  file: null, mode: "free", worldview: "colony", headers: ["世界观概览", "区域选择", "角色背景", "变量设定"] },
     { id: "tab5", name: "自定义开局",        file: null, headers: ["背景信息", "人物信息", "参数调整", "开始剧情"] },
     { id: "tab6", name: "自定义剧本",        file: null, headers: ["背景信息", "剧情线", "人物信息", "参数调整", "开始剧情"] }
 ];
@@ -208,12 +208,14 @@ async function initDynamicTabs() {
                 contentStr = '<div class="fc1-char-wrap">' +
                     '<div class="fc1-char-top">' +
                         '<div class="fc1-area fc1-area-1">' +
+                            '<div class="fc1-area-title">\u2756 基础设定 \u2756</div>' +
                             '<div class="fc1-area1-inner">' +
                                 '<div class="fc1-field-block"><div class="fc1-field-label-center">性别</div><select id="fc1-gender-select" class="fc1-gender-select" onchange="fc1SelectGender(this.value)"><option value="">请选择</option><option value="男性">男性</option><option value="伊芙">伊芙</option><option value="伊菈">伊菈</option></select></div>' +
                                 '<div class="fc1-field-block"><div class="fc1-field-label-center">身份</div><input type="text" id="fc1-identity-input" class="fc1-identity-input" placeholder="选择下方身份组或自行填写" oninput="fc1OnIdentityInput(this.value)"></div>' +
                             '</div>' +
                         '</div>' +
                         '<div class="fc1-area fc1-area-2">' +
+                            '<div class="fc1-area-title">\u2756 自定义设定（写入世界书） \u2756</div>' +
                             '<label class="fc1-checkbox-row"><input type="checkbox" id="fc1-show-setting-chk" onchange="fc1OnShowSettingToggle(this)"><span>点击后显示相关设定</span></label>' +
                             '<div class="fc1-toggle-hint">点击按钮可以切换条目状态，绿色按钮表示条目已经开启</div>' +
                             '<div class="fc1-setting-grid" id="fc1-setting-grid"></div>' +
@@ -224,9 +226,15 @@ async function initDynamicTabs() {
                         '<div class="fc1-setting-popup-body" id="fc1-setting-popup-body"></div>' +
                     '</div>' +
                     '<div class="fc1-area fc1-area-4">' +
-                        '<div class="fc1-area-title">\u2756 身份组设定（点击选中） \u2756</div>' +
+                        '<div class="fc1-area-title">\u2756 身份组设定 \u2756</div>' +
                         '<div class="fc1-identity-list" id="fc1-identity-list"></div>' +
                     '</div>' +
+                '</div>';
+            }
+            else if (h === "变量设定") {
+                contentStr = '<div class="fc1-var-wrap">' +
+                    '<div class="fc1-region-title">\u2756 变量设定 \u2756</div>' +
+                    '<div class="fc1-var-editor" id="fc1-variable-editor"></div>' +
                 '</div>';
             }
 
