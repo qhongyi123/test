@@ -1,11 +1,19 @@
 var LOREBOOK_NAME = "千叶童话";
 
-var __currentWorldviewId = "medieval";
-var __currentMode = "script";
+var __currentWorldviewId = "";
+var __currentMode = "";
 var __selectionConfirmed = false;
 
 // FC1 自由模式-贩奴贸易 背景音乐链接（待填）
 var FC1_MUSIC_URL = "";
+
+// 已有内容的「模式+世界观」组合；其余组合在对应模式下列为「敬请期待」
+var AVAILABLE_COMBOS = [["script", "medieval"], ["free", "colony"]];
+
+function isWorldviewComingSoon(mode, worldview) {
+    if (!mode || !worldview) return true;
+    return !AVAILABLE_COMBOS.some(function(c) { return c[0] === mode && c[1] === worldview; });
+}
 
 var WORLDVIEW_IDS = ["medieval", "colony", "western", "xianxia", "magic"];
 var WORLDVIEW_NAMES = ["中世纪童话", "开拓新大陆与殖民贸易", "西部拓荒", "东方修仙", "西方魔法"];

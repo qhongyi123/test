@@ -885,22 +885,34 @@ body {
 
 .fc1-region-wrap { display:flex; flex-direction:column; align-items:center; min-height:60vh; padding:20px; box-sizing:border-box; }
 .fc1-region-title { font-family:'Ma Shan Zheng', cursive; font-size:1.4rem; color:var(--color-primary-dark); margin-bottom:15px; }
-.fc1-region-grid { display:grid; grid-template-columns:repeat(3, 1fr); grid-template-rows:repeat(3, 1fr); gap:10px; width:min(460px, 90%); aspect-ratio:1; }
-.fc1-cell { border-radius:10px; overflow:hidden; position:relative; display:flex; align-items:center; justify-content:center; border:1px solid rgba(212,175,55,0.25); background:rgba(212,175,55,0.05); }
-.fc1-cell.fc1-empty { background:transparent; border:none; }
-.fc1-cell.fc1-region { cursor:pointer; transition:all 0.2s; }
-.fc1-cell.fc1-region img { width:100%; height:100%; object-fit:cover; position:absolute; inset:0; }
-.fc1-cell .fc1-region-name { position:absolute; bottom:6px; left:50%; transform:translateX(-50%); color:#fff; font-weight:bold; font-size:0.95rem; text-shadow:0 1px 3px rgba(0,0,0,0.8); z-index:2; white-space:nowrap; }
-.fc1-cell.fc1-region:hover { box-shadow:0 0 0 2px var(--color-primary), 0 4px 12px rgba(0,0,0,0.3); transform:scale(1.03); z-index:3; }
-.fc1-cell.selected { box-shadow:0 0 0 3px var(--color-primary-dark), 0 0 18px rgba(212,175,55,0.7); }
-.fc1-cell.fc1-sea { background:linear-gradient(180deg, #1a5b8a 0%, #0e3a5c 60%, #0a2c47 100%); cursor:pointer; transition:all 0.2s; }
-.fc1-cell.fc1-sea:hover { box-shadow:0 0 0 2px var(--color-primary), 0 4px 12px rgba(0,0,0,0.3); transform:scale(1.03); z-index:3; }
-.fc1-cell.fc1-sea .fc1-region-name { color:#cfe8ff; }
+.fc1-region-stage { position:relative; width:100%; max-width:560px; height:400px; }
+.fc1-region-item { position:absolute; cursor:pointer; transition:transform 0.2s; }
+.fc1-region-item img { width:100%; height:auto; display:block; border-radius:8px; box-shadow:0 3px 10px rgba(0,0,0,0.35); }
+.fc1-region-item:hover { transform:scale(1.05); z-index:6; }
+.fc1-region-item.selected img { outline:3px solid var(--color-primary-dark); box-shadow:0 0 18px rgba(212,175,55,0.7); }
+.fc1-region-europe { top:0; right:0; width:200px; }
+.fc1-region-westafrica { left:0; top:50%; width:190px; transform:translateY(-50%); }
+.fc1-region-westafrica:hover { transform:translateY(-50%) scale(1.05); }
+.fc1-region-southamerica { bottom:0; right:0; width:200px; }
+
+.fc1-bubble { position:absolute; display:block; opacity:0; pointer-events:none; background:var(--bg-content); border:2px solid var(--color-primary-dark); border-radius:8px; box-shadow:0 6px 20px rgba(0,0,0,0.5); padding:8px 10px; width:180px; color:var(--color-text-dark); z-index:20; transform:translateY(8px); transition:opacity 0.25s ease, transform 0.25s ease; }
+.fc1-region-item:hover .fc1-bubble { opacity:1; transform:translateY(0); }
+.fc1-bubble-header { font-family:'Ma Shan Zheng', cursive; font-size:0.95rem; color:var(--color-primary-dark); border-bottom:1px dashed rgba(184,134,11,0.4); padding-bottom:4px; margin-bottom:5px; }
+.fc1-bubble-body { font-size:0.78rem; line-height:1.5; }
+.fc1-region-europe .fc1-bubble { top:0; right:104%; }
+.fc1-region-westafrica .fc1-bubble { top:0; left:104%; }
+.fc1-region-southamerica .fc1-bubble { bottom:0; right:104%; }
+
+.fc1-sea-btn { position:absolute; left:50%; top:50%; transform:translate(-50%, -50%); width:84px; height:84px; border-radius:50%; background:radial-gradient(circle at 35% 30%, #2a7ab5, #0e3a5c 72%); box-shadow:0 4px 14px rgba(0,0,0,0.4), inset 0 0 14px rgba(159,212,255,0.45); cursor:pointer; display:flex; align-items:center; justify-content:center; flex-direction:column; transition:all 0.2s; border:2px solid rgba(159,212,255,0.6); }
+.fc1-sea-btn:hover { transform:translate(-50%, -50%) scale(1.1); }
+.fc1-sea-btn.selected { border-color:var(--color-primary-dark); box-shadow:0 0 18px rgba(212,175,55,0.7); }
+.fc1-sea-btn .fc1-sea-svg { width:100%; height:100%; position:absolute; inset:0; }
+.fc1-sea-btn-label { position:absolute; bottom:9px; left:50%; transform:translateX(-50%); color:#cfe8ff; font-weight:bold; font-size:0.78rem; text-shadow:0 1px 2px rgba(0,0,0,0.8); }
 .fc1-sea-svg { width:100%; height:100%; position:absolute; inset:0; }
 .fc1-wave { fill:none; stroke:#9fd4ff; stroke-width:2.5; stroke-linecap:round; opacity:0.85; animation:fc1-bob 3s ease-in-out infinite; }
 .fc1-wave.w2 { opacity:0.6; stroke-width:2; animation-delay:0.5s; }
 .fc1-wave.w3 { opacity:0.4; stroke-width:1.5; animation-delay:1s; }
-.fc1-vortex { transform-origin:50% 76%; animation:fc1-spin 6s linear infinite; }
+.fc1-vortex { transform-origin:50% 72%; animation:fc1-spin 6s linear infinite; }
 .fc1-vortex-ring { fill:none; stroke:#dff1ff; stroke-width:2; stroke-linecap:round; }
 .fc1-vortex-ring.r1 { opacity:0.9; }
 .fc1-vortex-ring.r2 { opacity:0.6; }

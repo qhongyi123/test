@@ -34,8 +34,6 @@ function renderControlPanelDynamicArea() {
     });
 }
 
-var COMING_SOON_WORLDVIEWS = ["western", "xianxia", "magic"];
-
 function renderModeAndWorldviewPanel() {
     var panelEl = document.getElementById('tab4-sub1');
     if (!panelEl) return;
@@ -52,7 +50,7 @@ function renderModeAndWorldviewPanel() {
 
     var wvItemsHtml = "";
     WORLDVIEWS.forEach(function(wv) {
-        var isComingSoon = (COMING_SOON_WORLDVIEWS.indexOf(wv.id) !== -1);
+        var isComingSoon = isWorldviewComingSoon(__currentMode, wv.id);
         var isCurrent = (wv.id === __currentWorldviewId) && !isComingSoon;
         var nameText = mtH(wv.name) + (isComingSoon ? '（敬请期待）' : '');
         var clickAttr = isComingSoon ? '' : ' onclick="selectWorldview(\'' + wv.id + '\')"';
@@ -87,7 +85,7 @@ function renderTocModeWorldview() {
     });
     var wvHtml = "";
     WORLDVIEWS.forEach(function(wv) {
-        var isComingSoon = (COMING_SOON_WORLDVIEWS.indexOf(wv.id) !== -1);
+        var isComingSoon = isWorldviewComingSoon(__currentMode, wv.id);
         var isActive = (wv.id === __currentWorldviewId) && !isComingSoon;
         var nameText = mtH(wv.name) + (isComingSoon ? '（敬请期待）' : '');
         var clickAttr = isComingSoon ? '' : ' onclick="selectWorldview(\'' + wv.id + '\')"';
@@ -102,22 +100,35 @@ function renderTocModeWorldview() {
 }
 
 window.selectWorldview = function(worldviewId) {
-    if (COMING_SOON_WORLDVIEWS.indexOf(worldviewId) !== -1) return;
+    if (isWorldviewComingSoon(__currentMode, worldviewId)) return;
     __currentWorldviewId = worldviewId;
-    __selectionConfirmed = true;
+    __updateSelectionConfirmed();
     renderModeAndWorldviewPanel();
     renderTocModeWorldview();
+    refreshTocGallery();
     if (typeof refreshConditionalStoryTabs === 'function') refreshConditionalStoryTabs();
     applyWorldviewLorebook(worldviewId, __currentMode);
 };
 
 window.selectMode = function(mode) {
     __currentMode = mode;
-    __selectionConfirmed = true;
+    __updateSelectionConfirmed();
     renderModeAndWorldviewPanel();
     renderTocModeWorldview();
+    refreshTocGallery();
     if (typeof refreshConditionalStoryTabs === 'function') refreshConditionalStoryTabs();
     applyWorldviewLorebook(__currentWorldviewId, mode);
+};
+
+window.__updateSelectionConfirmed = function() {
+    __selectionConfirmed = (__currentMode !== "" && __currentWorldviewId !== "");
+};
+
+window.refreshTocGallery = function() {
+    var gallery = document.querySelector('.toc-gallery');
+    if (!gallery) return;
+    var show = (__currentMode === 'script' && __currentWorldviewId === 'medieval');
+    gallery.style.display = show ? '' : 'none';
 };
 
 window.handleControlPanelItemChange = async function(panelId, currentItemId) {
@@ -253,7 +264,7 @@ window.tryAutoPlayMusic = function() {
 
 window.selectRegion = function(region) {
     __fc1Region = region;
-    document.querySelectorAll('.fc1-cell[data-region]').forEach(function(el) {
+    document.querySelectorAll('.fc1-region-item[data-region], .fc1-sea-btn[data-region]').forEach(function(el) {
         el.classList.toggle('selected', el.getAttribute('data-region') === region);
     });
 };

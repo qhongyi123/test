@@ -74,6 +74,7 @@ async function initDynamicTabs() {
     renderControlPanelDynamicArea();
     renderModeAndWorldviewPanel();
     renderTocModeWorldview();
+    refreshTocGallery();
     refreshConditionalStoryTabs();
 
     // 加载所有故事数据
@@ -190,28 +191,32 @@ async function initDynamicTabs() {
                 '</div>';
             }
             else if (h === "区域选择") {
-                var seaArt = '<svg viewBox="0 0 100 100" class="fc1-sea-svg" preserveAspectRatio="xMidYMid meet">' +
-                    '<path class="fc1-wave w1" d="M0,22 Q10,15 20,22 T40,22 T60,22 T80,22 T100,22" />' +
-                    '<path class="fc1-wave w2" d="M0,36 Q10,29 20,36 T40,36 T60,36 T80,36 T100,36" />' +
-                    '<path class="fc1-wave w3" d="M0,50 Q10,43 20,50 T40,50 T60,50 T80,50 T100,50" />' +
+                var seaBtn = '<svg viewBox="0 0 100 100" class="fc1-sea-svg" preserveAspectRatio="xMidYMid meet">' +
+                    '<path class="fc1-wave w1" d="M12,30 Q26,22 40,30 T68,30 T88,30" />' +
+                    '<path class="fc1-wave w2" d="M12,44 Q26,36 40,44 T68,44 T88,44" />' +
+                    '<path class="fc1-wave w3" d="M12,58 Q26,50 40,58 T68,58 T88,58" />' +
                     '<g class="fc1-vortex">' +
-                        '<path class="fc1-vortex-ring r1" d="M50,76 m-15,0 a15,15 0 1,1 30,0 a15,15 0 1,1 -30,0" />' +
-                        '<path class="fc1-vortex-ring r2" d="M50,76 m-10,0 a10,10 0 1,0 20,0 a10,10 0 1,0 -20,0" />' +
-                        '<path class="fc1-vortex-ring r3" d="M50,76 m-5,0 a5,5 0 1,0 10,0 a5,5 0 1,0 -10,0" />' +
+                        '<path class="fc1-vortex-ring r1" d="M50,72 m-13,0 a13,13 0 1,1 26,0 a13,13 0 1,1 -26,0" />' +
+                        '<path class="fc1-vortex-ring r2" d="M50,72 m-8,0 a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0" />' +
+                        '<path class="fc1-vortex-ring r3" d="M50,72 m-3,0 a3,3 0 1,0 6,0 a3,3 0 1,0 -6,0" />' +
                     '</g>' +
                 '</svg>';
                 contentStr = '<div class="fc1-region-wrap">' +
                     '<div class="fc1-region-title">\u2756 选择你的起始之地 \u2756</div>' +
-                    '<div class="fc1-region-grid">' +
-                        '<div class="fc1-cell fc1-empty"></div>' +
-                        '<div class="fc1-cell fc1-empty"></div>' +
-                        '<div class="fc1-cell fc1-region" data-region="europe" onclick="selectRegion(\'europe\')"><img src="https://qianyedoufu.dpdns.org/欧洲.png" alt="欧洲"><span class="fc1-region-name">欧洲</span></div>' +
-                        '<div class="fc1-cell fc1-region" data-region="west_africa" onclick="selectRegion(\'west_africa\')"><img src="https://qianyedoufu.dpdns.org/西非.png" alt="西非"><span class="fc1-region-name">西非</span></div>' +
-                        '<div class="fc1-cell fc1-sea" data-region="sea" onclick="selectRegion(\'sea\')">' + seaArt + '<span class="fc1-region-name">海洋</span></div>' +
-                        '<div class="fc1-cell fc1-empty"></div>' +
-                        '<div class="fc1-cell fc1-empty"></div>' +
-                        '<div class="fc1-cell fc1-empty"></div>' +
-                        '<div class="fc1-cell fc1-region" data-region="south_america" onclick="selectRegion(\'south_america\')"><img src="https://qianyedoufu.dpdns.org/南美.png" alt="南美"><span class="fc1-region-name">南美</span></div>' +
+                    '<div class="fc1-region-stage">' +
+                        '<div class="fc1-region-item fc1-region-europe" data-region="europe" onclick="selectRegion(\'europe\')">' +
+                            '<img src="https://qianyedoufu.dpdns.org/欧洲.png" alt="欧洲">' +
+                            '<div class="fc1-bubble"><div class="fc1-bubble-header">欧洲</div><div class="fc1-bubble-body">三角贸易的起点与终点：输出制成品、军火与朗姆酒，回收糖、烟草与棉花。</div></div>' +
+                        '</div>' +
+                        '<div class="fc1-region-item fc1-region-westafrica" data-region="west_africa" onclick="selectRegion(\'west_africa\')">' +
+                            '<img src="https://qianyedoufu.dpdns.org/西非.png" alt="西非">' +
+                            '<div class="fc1-bubble"><div class="fc1-bubble-header">西非</div><div class="fc1-bubble-body">深色奴的供应地：用制成品换取人力，是横渡大西洋的中段航程起点。</div></div>' +
+                        '</div>' +
+                        '<div class="fc1-region-item fc1-region-southamerica" data-region="south_america" onclick="selectRegion(\'south_america\')">' +
+                            '<img src="https://qianyedoufu.dpdns.org/南美.png" alt="南美">' +
+                            '<div class="fc1-bubble"><div class="fc1-bubble-header">南美</div><div class="fc1-bubble-body">种植园腹地：吸收奴隶、产出糖与烟草，是回程货源的起点。</div></div>' +
+                        '</div>' +
+                        '<div class="fc1-sea-btn" data-region="sea" onclick="selectRegion(\'sea\')">' + seaBtn + '<span class="fc1-sea-btn-label">海洋</span></div>' +
                     '</div>' +
                 '</div>';
             }
