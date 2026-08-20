@@ -127,8 +127,16 @@ window.__updateSelectionConfirmed = function() {
 window.refreshTocGallery = function() {
     var gallery = document.querySelector('.toc-gallery');
     if (!gallery) return;
-    var show = (__currentMode === 'script' && __currentWorldviewId === 'medieval');
+    var show = (__currentMode !== "" && __currentWorldviewId !== "");
     gallery.style.display = show ? '' : 'none';
+    if (show) {
+        document.querySelectorAll('.toc-img-card').forEach(function(card) {
+            var m = card.getAttribute('data-mode');
+            var w = card.getAttribute('data-worldview');
+            var match = (m === __currentMode && w === __currentWorldviewId);
+            card.style.display = match ? '' : 'none';
+        });
+    }
 };
 
 window.handleControlPanelItemChange = async function(panelId, currentItemId) {
@@ -262,11 +270,41 @@ window.tryAutoPlayMusic = function() {
     }
 };
 
+var FC1_REGIONS = [
+    { id: "europe", name: "欧洲", img: "https://qianyedoufu.dpdns.org/欧洲.png", desc: "三角贸易的起点与终点：输出制成品、军火与朗姆酒，回收糖、烟草与棉花。" },
+    { id: "west_africa", name: "西非", img: "https://qianyedoufu.dpdns.org/西非.png", desc: "深色奴的供应地：用制成品换取人力，是横渡大西洋的中段航程起点。" },
+    { id: "sea", name: "海洋", img: "https://qianyedoufu.dpdns.org/海洋.png", desc: "横贯大西洋的漫漫航程，风浪、疫病与反抗都潜伏在这一程。" },
+    { id: "south_america", name: "南美", img: "https://qianyedoufu.dpdns.org/南美.png", desc: "种植园腹地：吸收奴隶、产出糖与烟草，是回程货源的起点。" }
+];
+var __fc1RegionIndex = 0;
+
+window.fc1RenderRegion = function() {
+    var view = document.getElementById('fc1-carousel-view');
+    if (!view) return;
+    var html = '';
+    FC1_REGIONS.forEach(function(r, i) {
+        var sel = (__fc1Region === r.id) ? ' selected' : '';
+        html += '<div class="fc1-slide' + (i === __fc1RegionIndex ? ' active' : '') + '" data-region="' + r.id + '">' +
+            '<div class="fc1-slide-img' + sel + '" onclick="selectRegion(\'' + r.id + '\')"><img src="' + r.img + '" alt="' + r.name + '"></div>' +
+            '<div class="fc1-bubble"><div class="fc1-bubble-header">' + r.name + '</div><div class="fc1-bubble-body">' + r.desc + '</div></div>' +
+        '</div>';
+    });
+    view.innerHTML = html;
+};
+
+window.fc1PrevRegion = function() {
+    __fc1RegionIndex = (__fc1RegionIndex - 1 + FC1_REGIONS.length) % FC1_REGIONS.length;
+    fc1RenderRegion();
+};
+
+window.fc1NextRegion = function() {
+    __fc1RegionIndex = (__fc1RegionIndex + 1) % FC1_REGIONS.length;
+    fc1RenderRegion();
+};
+
 window.selectRegion = function(region) {
     __fc1Region = region;
-    document.querySelectorAll('.fc1-region-item[data-region], .fc1-sea-btn[data-region]').forEach(function(el) {
-        el.classList.toggle('selected', el.getAttribute('data-region') === region);
-    });
+    fc1RenderRegion();
 };
 
 function nextPage() {

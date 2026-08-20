@@ -885,37 +885,20 @@ body {
 
 .fc1-region-wrap { display:flex; flex-direction:column; align-items:center; min-height:60vh; padding:20px; box-sizing:border-box; }
 .fc1-region-title { font-family:'Ma Shan Zheng', cursive; font-size:1.4rem; color:var(--color-primary-dark); margin-bottom:15px; }
-.fc1-region-stage { position:relative; width:100%; max-width:560px; height:400px; }
-.fc1-region-item { position:absolute; cursor:pointer; transition:transform 0.2s; }
-.fc1-region-item img { width:100%; height:auto; display:block; border-radius:8px; box-shadow:0 3px 10px rgba(0,0,0,0.35); }
-.fc1-region-item:hover { transform:scale(1.05); z-index:6; }
-.fc1-region-item.selected img { outline:3px solid var(--color-primary-dark); box-shadow:0 0 18px rgba(212,175,55,0.7); }
-.fc1-region-europe { top:0; right:0; width:200px; }
-.fc1-region-westafrica { left:0; top:50%; width:190px; transform:translateY(-50%); }
-.fc1-region-westafrica:hover { transform:translateY(-50%) scale(1.05); }
-.fc1-region-southamerica { bottom:0; right:0; width:200px; }
-
-.fc1-bubble { position:absolute; display:block; opacity:0; pointer-events:none; background:var(--bg-content); border:2px solid var(--color-primary-dark); border-radius:8px; box-shadow:0 6px 20px rgba(0,0,0,0.5); padding:8px 10px; width:180px; color:var(--color-text-dark); z-index:20; transform:translateY(8px); transition:opacity 0.25s ease, transform 0.25s ease; }
-.fc1-region-item:hover .fc1-bubble { opacity:1; transform:translateY(0); }
-.fc1-bubble-header { font-family:'Ma Shan Zheng', cursive; font-size:0.95rem; color:var(--color-primary-dark); border-bottom:1px dashed rgba(184,134,11,0.4); padding-bottom:4px; margin-bottom:5px; }
-.fc1-bubble-body { font-size:0.78rem; line-height:1.5; }
-.fc1-region-europe .fc1-bubble { top:0; right:104%; }
-.fc1-region-westafrica .fc1-bubble { top:0; left:104%; }
-.fc1-region-southamerica .fc1-bubble { bottom:0; right:104%; }
-
-.fc1-sea-btn { position:absolute; left:50%; top:50%; transform:translate(-50%, -50%); width:84px; height:84px; border-radius:50%; background:radial-gradient(circle at 35% 30%, #2a7ab5, #0e3a5c 72%); box-shadow:0 4px 14px rgba(0,0,0,0.4), inset 0 0 14px rgba(159,212,255,0.45); cursor:pointer; display:flex; align-items:center; justify-content:center; flex-direction:column; transition:all 0.2s; border:2px solid rgba(159,212,255,0.6); }
-.fc1-sea-btn:hover { transform:translate(-50%, -50%) scale(1.1); }
-.fc1-sea-btn.selected { border-color:var(--color-primary-dark); box-shadow:0 0 18px rgba(212,175,55,0.7); }
-.fc1-sea-btn .fc1-sea-svg { width:100%; height:100%; position:absolute; inset:0; }
-.fc1-sea-btn-label { position:absolute; bottom:9px; left:50%; transform:translateX(-50%); color:#cfe8ff; font-weight:bold; font-size:0.78rem; text-shadow:0 1px 2px rgba(0,0,0,0.8); }
-.fc1-sea-svg { width:100%; height:100%; position:absolute; inset:0; }
-.fc1-wave { fill:none; stroke:#9fd4ff; stroke-width:2.5; stroke-linecap:round; opacity:0.85; animation:fc1-bob 3s ease-in-out infinite; }
-.fc1-wave.w2 { opacity:0.6; stroke-width:2; animation-delay:0.5s; }
-.fc1-wave.w3 { opacity:0.4; stroke-width:1.5; animation-delay:1s; }
-.fc1-vortex { transform-origin:50% 72%; animation:fc1-spin 6s linear infinite; }
-.fc1-vortex-ring { fill:none; stroke:#dff1ff; stroke-width:2; stroke-linecap:round; }
-.fc1-vortex-ring.r1 { opacity:0.9; }
-.fc1-vortex-ring.r2 { opacity:0.6; }
-.fc1-vortex-ring.r3 { opacity:0.4; }
-@keyframes fc1-spin { from { transform:rotate(0deg); } to { transform:rotate(360deg); } }
-@keyframes fc1-bob { 0%,100% { transform:translateY(0); } 50% { transform:translateY(3px); } }
+.fc1-carousel { display:flex; align-items:center; justify-content:center; gap:18px; width:100%; max-width:600px; }
+.fc1-arrow { flex-shrink:0; width:54px; height:54px; border-radius:50%; border:2px solid var(--color-primary-dark); background:linear-gradient(145deg, #fffdf4, rgba(212,175,55,0.28)); color:var(--color-primary-dark); cursor:pointer; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 12px rgba(0,0,0,0.28), inset 0 1px 2px rgba(255,255,255,0.7), inset 0 -2px 4px rgba(184,134,11,0.25); transition:all 0.22s; }
+.fc1-arrow:hover { transform:scale(1.1); box-shadow:0 6px 18px rgba(212,175,55,0.55), inset 0 1px 2px rgba(255,255,255,0.8); background:linear-gradient(145deg, #fffdf4, rgba(212,175,55,0.45)); }
+.fc1-arrow:active { transform:scale(0.94); box-shadow:0 2px 6px rgba(0,0,0,0.3); }
+.fc1-arrow svg { display:block; filter:drop-shadow(0 1px 1px rgba(0,0,0,0.25)); }
+.fc1-carousel-view { flex:1; min-height:380px; display:flex; align-items:center; justify-content:center; }
+.fc1-slide { display:none; flex-direction:column; align-items:center; gap:16px; width:100%; }
+.fc1-slide.active { display:flex; animation:fc1-slide-in 0.3s ease; }
+.fc1-slide-img { cursor:pointer; border-radius:10px; overflow:hidden; box-shadow:0 4px 16px rgba(0,0,0,0.35); transition:all 0.2s; max-width:300px; }
+.fc1-slide-img img { width:100%; height:auto; display:block; max-height:250px; object-fit:contain; }
+.fc1-slide-img:hover { transform:scale(1.03); box-shadow:0 6px 22px rgba(212,175,55,0.4); }
+.fc1-slide-img.selected { outline:3px solid var(--color-primary-dark); box-shadow:0 0 20px rgba(212,175,55,0.7); }
+.fc1-bubble { position:relative; background:var(--bg-content); border:2px solid var(--color-primary-dark); border-radius:8px; box-shadow:0 6px 20px rgba(0,0,0,0.4); padding:10px 12px; width:min(300px, 90%); color:var(--color-text-dark); text-align:left; }
+.fc1-bubble::before { content:''; position:absolute; top:-8px; left:50%; transform:translateX(-50%); border-left:8px solid transparent; border-right:8px solid transparent; border-bottom:8px solid var(--color-primary-dark); }
+.fc1-bubble-header { font-family:'Ma Shan Zheng', cursive; font-size:1rem; color:var(--color-primary-dark); border-bottom:1px dashed rgba(184,134,11,0.4); padding-bottom:4px; margin-bottom:6px; }
+.fc1-bubble-body { font-size:0.8rem; line-height:1.55; }
+@keyframes fc1-slide-in { from { opacity:0; transform:translateX(12px); } to { opacity:1; transform:translateX(0); } }
