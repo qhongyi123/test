@@ -893,7 +893,7 @@ body {
 .fc1-carousel-view { flex:1; min-height:380px; display:flex; align-items:center; justify-content:center; }
 .fc1-slide { display:none; flex-direction:column; align-items:center; gap:16px; width:100%; }
 .fc1-slide.active { display:flex; animation:fc1-slide-in 0.3s ease; }
-.fc1-slide-img { cursor:pointer; border-radius:10px; overflow:hidden; box-shadow:0 4px 16px rgba(0,0,0,0.35); transition:all 0.2s; width:390px; max-width:90vw; }
+.fc1-slide-img { cursor:pointer; border-radius:10px; overflow:hidden; box-shadow:0 4px 16px rgba(0,0,0,0.35); transition:all 0.2s; width:360px; max-width:90vw; }
 .fc1-slide-img img { width:100%; height:auto; display:block; object-fit:contain; }
 .fc1-slide-img:hover { transform:scale(1.03); box-shadow:0 6px 22px rgba(212,175,55,0.4); }
 .fc1-slide-img.selected { outline:3px solid var(--color-primary-dark); box-shadow:0 0 20px rgba(212,175,55,0.7); }
@@ -902,3 +902,13 @@ body {
 .fc1-bubble-header { font-family:'Ma Shan Zheng', cursive; font-size:1rem; color:var(--color-primary-dark); border-bottom:1px dashed rgba(184,134,11,0.4); padding-bottom:4px; margin-bottom:6px; }
 .fc1-bubble-body { font-size:0.8rem; line-height:1.55; }
 @keyframes fc1-slide-in { from { opacity:0; transform:translateX(12px); } to { opacity:1; transform:translateX(0); } }
+
+.fc1-identity-wrap { display:flex; flex-direction:column; align-items:center; min-height:60vh; padding:20px; box-sizing:border-box; }
+.fc1-identity-list { display:grid; grid-template-columns:repeat(2, 1fr); gap:14px; width:100%; max-width:760px; }
+.fc1-identity-card { background:rgba(212,175,55,0.06); border:1px solid rgba(212,175,55,0.25); border-radius:10px; padding:14px 16px; cursor:pointer; transition:all 0.2s; display:flex; flex-direction:column; gap:8px; }
+.fc1-identity-card:hover { background:rgba(212,175,55,0.15); border-color:var(--color-primary); box-shadow:0 4px 14px rgba(212,175,55,0.3); transform:translateY(-2px); }
+.fc1-identity-card.selected { background:linear-gradient(135deg, rgba(212,175,55,0.3), rgba(253,246,227,0.6)); border-color:var(--color-primary-dark); box-shadow:0 0 14px rgba(212,175,55,0.5); }
+.fc1-identity-name { font-family:'Ma Shan Zheng', cursive; font-size:1.15rem; color:var(--color-primary-dark); border-bottom:1px dashed rgba(184,134,11,0.35); padding-bottom:4px; }
+.fc1-identity-desc { font-size:0.82rem; line-height:1.55; color:var(--color-text-dark); }
+.fc1-identity-res { font-size:0.78rem; color:#8b5a2b; font-weight:bold; }
+.fc1-identity-empty { padding:40px; color:var(--color-text-dark); opacity:0.7; font-size:1rem; }

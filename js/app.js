@@ -305,6 +305,57 @@ window.fc1NextRegion = function() {
 window.selectRegion = function(region) {
     __fc1Region = region;
     fc1RenderRegion();
+    fc1RenderIdentity();
+};
+
+var FC1_IDENTITIES = [
+    { id: "privateer", name: "私掠船长", region: "base", desc: "出身水手或退伍军官，持有一纸母国签发的私掠许可证，战时合法劫掠敌国商船，战利品与母国分成，与海盗只隔着一张许可证。", res: "1 艘武装船 + 船员 + 少量银元" },
+    { id: "merchant_captain", name: "商船船长", region: "base", desc: "家学渊源或从水手做起，拥有一艘跑三角贸易的商船，往返于欧洲、西非与美洲之间倒买倒卖，逐利海上。", res: "1 艘商船 + 货物本金" },
+    { id: "indentured", name: "契约劳工", region: "base", desc: "为偿还横渡大西洋的船费，以数年劳作抵债，期满后有望获得自由与一块土地，眼下却一无所有。", res: "无资产 + 债务" },
+    { id: "maroon", name: "逃奴·玛戎", region: "base", desc: "从奴隶制下逃亡，躲进深山密林或自由港，无合法身份却拥有自由，靠胆识在夹缝中求生。", res: "无资产 + 无合法身份 + 自由" },
+
+    { id: "company_agent", name: "特许公司代理人", region: "europe", desc: "受母国特许公司委派，在殖民地与航线间经营垄断贸易，靠官商关系与佣金立足。", res: "本金 + 母国特许关系" },
+    { id: "noble_second_son", name: "没落贵族次子", region: "europe", desc: "出身贵族却无继承权，携家中余钱漂洋过海，指望在新大陆挣出一份属于自己的家业与名号。", res: "家产余钱 + 母国声望" },
+    { id: "shipwright", name: "造船商·船坞主", region: "europe", desc: "祖辈经营船坞，熟谙船价、木料与改装门道，守着港口船坞，为往来船只造新补旧。", res: "船坞 + 银元" },
+
+    { id: "slave_fort_agent", name: "奴隶要塞代理", region: "west_africa", desc: "受雇于欧洲奴隶商人，驻守西非海岸的奴隶要塞与商站，用制成品从部落酋长处换取深色奴。", res: "商站 + 西非声望 + 奴隶货源" },
+    { id: "tribal_middleman", name: "部落中间商", region: "west_africa", desc: "西非本地酋长或掮客，组织掳掠与贩奴，把同族人卖给欧洲人换取火器、布匹与铜器。", res: "西非人脉 + 掳奴渠道" },
+    { id: "arms_dealer", name: "军火贩子", region: "west_africa", desc: "往来西非海岸，向部落兜售火器与弹药，以此换取奴隶与黄金，游走在血腥的贸易链上。", res: "军火货物 + 本金" },
+
+    { id: "overseer", name: "种植园监工", region: "south_america", desc: "受雇于种植园主，手执皮鞭驱使深色奴劳作，负责催收供精、维持秩序，向上头交差。", res: "职位（无产，领薪水）" },
+    { id: "free_colored", name: "自由有色人种", region: "south_america", desc: "早已赎身或生而自由的有色人种，凭一门手艺或小本买卖在殖民地立足，身份却仍低人一等。", res: "小本钱 + 手艺" },
+    { id: "sugar_mill_owner", name: "制糖坊主", region: "south_america", desc: "经营榨糖与蒸馏作坊，收购甘蔗榨汁熬糖、酿朗姆酒，是种植园下游的实业者。", res: "制糖坊 + 原料" },
+    { id: "noble_scion", name: "贵族子嗣", region: "south_america", desc: "出身欧洲显赫贵族，奉家族之命漂洋过海来历练，随身带着一名管家，并在殖民地置下一栋大型庄园。", res: "管家（下属）+ 巨额资金 + 大型庄园" },
+
+    { id: "pirate", name: "海盗", region: "sea", desc: "无国界的海上亡命徒，选举船长、按份分赃，悬骷髅旗劫掠商船，被各国海军悬赏通缉。", res: "1 艘船 + 船员 + 被悬赏通缉" },
+    { id: "navigator", name: "领航员·舵手", region: "sea", desc: "自幼在海上长大，熟记加勒比群岛的水道、洋流与暗礁，凭一手过硬的领航手艺被船长争相雇佣。", res: "航海技术（被雇佣）" },
+    { id: "ship_doctor", name: "船医·外科医生", region: "sea", desc: "略通医术，会截肢、放血、缝合伤口，也会治坏血病与船热，是长航程中船员们不敢得罪的救命人。", res: "医术 + 药品" }
+];
+var __fc1Identity = null;
+
+window.fc1RenderIdentity = function() {
+    var list = document.getElementById('fc1-identity-list');
+    if (!list) return;
+    if (!__fc1Region) {
+        list.innerHTML = '<div class="fc1-identity-empty">请先在上一页选择起始之地</div>';
+        return;
+    }
+    var html = '';
+    FC1_IDENTITIES.forEach(function(it) {
+        if (it.region !== 'base' && it.region !== __fc1Region) return;
+        var sel = (__fc1Identity === it.id) ? ' selected' : '';
+        html += '<div class="fc1-identity-card' + sel + '" data-identity="' + it.id + '" onclick="selectIdentity(\'' + it.id + '\')">' +
+            '<div class="fc1-identity-name">' + it.name + '</div>' +
+            '<div class="fc1-identity-desc">' + it.desc + '</div>' +
+            '<div class="fc1-identity-res">起始：' + it.res + '</div>' +
+        '</div>';
+    });
+    list.innerHTML = html;
+};
+
+window.selectIdentity = function(id) {
+    __fc1Identity = id;
+    fc1RenderIdentity();
 };
 
 function nextPage() {

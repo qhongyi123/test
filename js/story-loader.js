@@ -5,7 +5,7 @@ var STORY_MANIFEST = [
     { id: "SM3", name: "卖火柴的小女孩",    file: "data/stories/卖火柴的小女孩.json", mode: "script", worldview: "medieval", headers: ["背景信息", "剧情线", "参数调整", "开始剧情"] },
     { id: "SM4", name: "小裁缝一次干七个！", file: "data/stories/小裁缝一次干七个！.json", mode: "script", worldview: "medieval", headers: ["背景信息", "剧情线", "参数调整", "开始剧情"] },
     { id: "SM5", name: "白雪公主（制作中）", file: "data/stories/白雪公主.json", mode: "script", worldview: "medieval", headers: ["背景信息", "剧情线", "参数调整", "开始剧情"] },
-    { id: "FC1", name: "自由模式-贩奴贸易",  file: null, mode: "free", worldview: "colony", headers: ["世界观概览", "区域选择"] },
+    { id: "FC1", name: "自由模式-贩奴贸易",  file: null, mode: "free", worldview: "colony", headers: ["世界观概览", "区域选择", "角色背景"] },
     { id: "tab5", name: "自定义开局",        file: null, headers: ["背景信息", "人物信息", "参数调整", "开始剧情"] },
     { id: "tab6", name: "自定义剧本",        file: null, headers: ["背景信息", "剧情线", "人物信息", "参数调整", "开始剧情"] }
 ];
@@ -204,6 +204,12 @@ async function initDynamicTabs() {
                     '</div>' +
                 '</div>';
             }
+            else if (h === "角色背景") {
+                contentStr = '<div class="fc1-identity-wrap">' +
+                    '<div class="fc1-region-title">\u2756 设定你的角色背景 \u2756</div>' +
+                    '<div class="fc1-identity-list" id="fc1-identity-list"></div>' +
+                '</div>';
+            }
 
             panelsHTML += '<div id="' + thisSubId + '" class="sub-panel ' + isSubActive + '">' + contentStr + '</div>';
         });
@@ -212,7 +218,7 @@ async function initDynamicTabs() {
         tabNode.innerHTML = headerHTML + panelsHTML;
         container.insertBefore(tabNode, refNodeTab7);
 
-        if (tabId === 'FC1') fc1RenderRegion();
+        if (tabId === 'FC1') { fc1RenderRegion(); fc1RenderIdentity(); }
 
         if (tabId === 'tab5' || tabId === 'tab6') {
             tabNode.classList.add('is-edit-mode');
