@@ -44,8 +44,8 @@ var CH_NUMS = ["", "一","二","三","四","五","六","七","八","九","十",
     "二十一","二十二","二十三","二十四","二十五","二十六","二十七","二十八","二十九","三十"];
 
 var CONTROL_PANEL_CONFIG = {
-    "tab3-sub2": {
-        title: "输出格式",
+    "tab14-sub1": {
+        title: "初始设置",
         defaultSingle: true,
         items: [
             { id: "cps1-1", name: "正文美化", desc: "启用正文的美化排版与装饰效果。", enableUids: [ 47 ], disableUids: [], defaultChecked: true },
