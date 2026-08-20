@@ -205,9 +205,26 @@ async function initDynamicTabs() {
                 '</div>';
             }
             else if (h === "角色背景") {
-                contentStr = '<div class="fc1-identity-wrap">' +
-                    '<div class="fc1-region-title">\u2756 设定你的角色背景 \u2756</div>' +
-                    '<div class="fc1-identity-list" id="fc1-identity-list"></div>' +
+                contentStr = '<div class="fc1-char-wrap">' +
+                    '<div class="fc1-area fc1-area-1">' +
+                        '<div class="fc1-area-title">\u2756 区域一 · 性别与身份 \u2756</div>' +
+                        '<div class="fc1-field-row"><span class="fc1-field-label">性别</span><div class="fc1-gender-options" id="fc1-gender-options"></div></div>' +
+                        '<div class="fc1-field-row"><span class="fc1-field-label">身份</span><input type="text" id="fc1-identity-input" class="fc1-identity-input" placeholder="自行填写，或点击下方身份组自动填写" oninput="fc1OnIdentityInput(this.value)"></div>' +
+                    '</div>' +
+                    '<div class="fc1-area fc1-area-2">' +
+                        '<div class="fc1-area-title">\u2756 区域二 · 角色设定 \u2756</div>' +
+                        '<label class="fc1-checkbox-row"><input type="checkbox" id="fc1-show-setting-chk" checked onchange="fc1OnShowSettingToggle(this)"><span>点击后显示相关设定</span></label>' +
+                        '<button class="fc1-master-toggle on" id="fc1-master-toggle" onclick="fc1ToggleMaster()"></button>' +
+                        '<div class="fc1-setting-grid" id="fc1-setting-grid"></div>' +
+                    '</div>' +
+                    '<div class="fc1-area fc1-area-3">' +
+                        '<div class="fc1-area3-header"><span class="fc1-area-title" id="fc1-area3-title">区域三 · 身份组设定</span><button class="fc1-area3-close" id="fc1-area3-close" onclick="fc1CloseArea3()" style="display:none;">\u2715 关闭</button></div>' +
+                        '<div class="fc1-area3-body" id="fc1-area3-body"></div>' +
+                    '</div>' +
+                    '<div class="fc1-area fc1-area-4">' +
+                        '<div class="fc1-area-title">\u2756 区域四 · 身份组设定 \u2756</div>' +
+                        '<div class="fc1-identity-list" id="fc1-identity-list"></div>' +
+                    '</div>' +
                 '</div>';
             }
 
@@ -218,7 +235,7 @@ async function initDynamicTabs() {
         tabNode.innerHTML = headerHTML + panelsHTML;
         container.insertBefore(tabNode, refNodeTab7);
 
-        if (tabId === 'FC1') { fc1RenderRegion(); fc1RenderIdentity(); }
+        if (tabId === 'FC1') { fc1InitCharacterBackground(); }
 
         if (tabId === 'tab5' || tabId === 'tab6') {
             tabNode.classList.add('is-edit-mode');

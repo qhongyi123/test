@@ -304,8 +304,14 @@ window.fc1NextRegion = function() {
 
 window.selectRegion = function(region) {
     __fc1Region = region;
+    __fc1Identity = null;
+    var input = document.getElementById('fc1-identity-input');
+    if (input) input.value = "";
+    fc1SyncUserVariable();
     fc1RenderRegion();
     fc1RenderIdentity();
+    fc1RenderArea3();
+    goToSubTab('FC1', 'FC1-sub3');
 };
 
 var FC1_IDENTITIES = [
@@ -355,8 +361,201 @@ window.fc1RenderIdentity = function() {
 
 window.selectIdentity = function(id) {
     __fc1Identity = id;
+    var it = FC1_IDENTITIES.find(function(x) { return x.id === id; });
+    if (it) {
+        var input = document.getElementById('fc1-identity-input');
+        if (input) input.value = it.name;
+    }
     fc1RenderIdentity();
+    fc1SyncUserVariable();
+    if (__fc1Area3Mode === 'setting') { fc1CloseArea3(); }
+    fc1RenderArea3();
 };
+
+// ===== FC1 角色背景（区域一 ~ 区域四） =====
+var FC1_GENDERS = ["男性", "伊芙", "伊菈"];
+var __fc1Gender = "";
+var __fc1MasterOn = true;
+var __fc1SettingEntries = [];
+var __fc1ActiveSettingUid = null;
+var __fc1Area3Mode = "identity";
+
+function fc1EscapeHtml(s) {
+    return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+function fc1EscapeAttr(s) {
+    return fc1EscapeHtml(s).replace(/"/g, "&quot;");
+}
+
+window.fc1InitCharacterBackground = function() {
+    fc1RenderRegion();
+    fc1RenderGender();
+    fc1RenderMasterToggle();
+    fc1RenderSettingGrid();
+    fc1RenderIdentity();
+    fc1RenderArea3();
+};
+
+window.fc1RenderGender = function() {
+    var box = document.getElementById('fc1-gender-options');
+    if (!box) return;
+    var html = '';
+    FC1_GENDERS.forEach(function(g) {
+        var sel = (__fc1Gender === g) ? ' selected' : '';
+        html += '<button class="fc1-gender-btn' + sel + '" onclick="fc1SelectGender(\'' + g + '\')">' + g + '</button>';
+    });
+    box.innerHTML = html;
+};
+
+window.fc1SelectGender = function(g) {
+    __fc1Gender = g;
+    fc1RenderGender();
+    fc1SyncUserVariable();
+};
+
+window.fc1OnIdentityInput = function(val) {
+    fc1SyncUserVariable();
+};
+
+window.fc1SyncUserVariable = function() {
+    var dm = tabsDataMap['FC1'];
+    if (!dm) return;
+    dm.data.variable.user = dm.data.variable.user || {};
+    dm.data.variable.user.gender = __fc1Gender;
+    var input = document.getElementById('fc1-identity-input');
+    if (input) dm.data.variable.user.identity = input.value.trim();
+};
+
+window.fc1RenderMasterToggle = function() {
+    var btn = document.getElementById('fc1-master-toggle');
+    if (!btn) return;
+    if (__fc1MasterOn) {
+        btn.innerHTML = '\u25CF 角色设定：已开启';
+        btn.className = 'fc1-master-toggle on';
+    } else {
+        btn.innerHTML = '\u25CB 角色设定：已关闭';
+        btn.className = 'fc1-master-toggle off';
+    }
+};
+
+window.fc1ToggleMaster = function() {
+    __fc1MasterOn = !__fc1MasterOn;
+    fc1RenderMasterToggle();
+    fc1RenderSettingGrid();
+};
+
+window.fc1OnShowSettingToggle = function(chk) {
+    // 勾选态由 fc1OpenSetting 读取；此处仅保留事件位
+};
+
+window.fetchFc1SettingEntries = async function() {
+    try {
+        if (typeof getLorebookEntries === 'function') {
+            var entries = await getLorebookEntries(LOREBOOK_NAME, {fields:['uid','comment','content','enabled','order']});
+            return entries.filter(function(e) { return e.order >= 101 && e.order <= 123; });
+        }
+    } catch(e) { console.warn("读取角色设定条目失败：", e); }
+    return [];
+};
+
+window.fc1RenderSettingGrid = async function() {
+    var grid = document.getElementById('fc1-setting-grid');
+    if (!grid) return;
+    if (__fc1SettingEntries.length === 0) {
+        __fc1SettingEntries = await fetchFc1SettingEntries();
+    }
+    var entries = __fc1SettingEntries;
+    var html = '';
+    if (entries.length === 0) {
+        html = '<div class="fc1-setting-empty">未找到世界书角色设定条目</div>';
+    } else {
+        entries.forEach(function(e) {
+            var label = (e.comment && e.comment.trim()) ? e.comment.trim() : ('#' + e.uid);
+            var active = (__fc1Area3Mode === 'setting' && __fc1ActiveSettingUid === e.uid) ? ' active' : '';
+            var disabled = __fc1MasterOn ? '' : ' disabled';
+            html += '<button class="fc1-setting-btn' + active + disabled + '" data-uid="' + e.uid + '" onclick="fc1OpenSetting(' + e.uid + ')">' + mtH(label) + '</button>';
+        });
+    }
+    grid.innerHTML = html;
+};
+
+window.fc1OpenSetting = function(uid) {
+    if (!__fc1MasterOn) return;
+    var chk = document.getElementById('fc1-show-setting-chk');
+    if (chk && !chk.checked) return;
+    var entry = __fc1SettingEntries.find(function(e) { return e.uid === uid; });
+    if (!entry) return;
+    __fc1ActiveSettingUid = uid;
+    __fc1Area3Mode = 'setting';
+    fc1RenderSettingGrid();
+    fc1RenderArea3();
+};
+
+window.fc1RenderArea3 = function() {
+    var titleEl = document.getElementById('fc1-area3-title');
+    var bodyEl = document.getElementById('fc1-area3-body');
+    var closeBtn = document.getElementById('fc1-area3-close');
+    if (!bodyEl) return;
+
+    if (__fc1Area3Mode === 'setting' && __fc1ActiveSettingUid !== null) {
+        var entry = __fc1SettingEntries.find(function(e) { return e.uid === __fc1ActiveSettingUid; });
+        if (!entry) { fc1CloseArea3(); return; }
+        var nameText = (entry.comment && entry.comment.trim()) ? entry.comment.trim() : ('#' + entry.uid);
+        if (titleEl) titleEl.textContent = '区域三 · 角色设定：' + nameText;
+        if (closeBtn) closeBtn.style.display = '';
+        bodyEl.innerHTML =
+            '<div class="fc1-setting-editor">' +
+                '<div class="fc1-setting-name-row"><span class="fc1-field-label">名称</span><input type="text" id="fc1-setting-name" value="' + fc1EscapeAttr(entry.comment || '') + '"></div>' +
+                '<textarea id="fc1-setting-content" class="fc1-setting-content">' + fc1EscapeHtml(entry.content || '') + '</textarea>' +
+                '<div class="fc1-setting-actions">' +
+                    '<button class="fc1-setting-save" onclick="fc1SaveSetting()">保存</button>' +
+                    '<button class="fc1-setting-cancel" onclick="fc1CloseArea3()">关闭</button>' +
+                '</div>' +
+            '</div>';
+    } else {
+        if (titleEl) titleEl.textContent = '区域三 · 身份组设定';
+        if (closeBtn) closeBtn.style.display = 'none';
+        var it = __fc1Identity ? FC1_IDENTITIES.find(function(x) { return x.id === __fc1Identity; }) : null;
+        if (it) {
+            bodyEl.innerHTML =
+                '<div class="fc1-identity-detail">' +
+                    '<div class="fc1-identity-detail-name">' + mtH(it.name) + '</div>' +
+                    '<div class="fc1-identity-detail-desc">' + mtH(it.desc) + '</div>' +
+                    '<div class="fc1-identity-detail-res">起始：' + mtH(it.res) + '</div>' +
+                '</div>';
+        } else {
+            bodyEl.innerHTML = '<div class="fc1-area3-hint">请在下方的区域四中选择一个身份组</div>';
+        }
+    }
+};
+
+window.fc1SaveSetting = async function() {
+    if (typeof setLorebookEntries !== 'function') { showCustomAlert("提示：请确认正处于兼容脚本运行的次元环境节点！"); return; }
+    var uid = __fc1ActiveSettingUid;
+    if (uid === null) return;
+    var nameInput = document.getElementById('fc1-setting-name');
+    var contentInput = document.getElementById('fc1-setting-content');
+    var nameVal = nameInput ? nameInput.value.trim() : "";
+    var contentVal = contentInput ? contentInput.value : "";
+    var isGranted = await showCustomConfirm("确认保存该角色设定吗");
+    if (!isGranted) return;
+    try {
+        await setLorebookEntries(LOREBOOK_NAME, [{ uid: uid, comment: nameVal, content: contentVal }]);
+        showCustomAlert("\u2728 已保存设定");
+        __fc1SettingEntries = [];
+        await fc1RenderSettingGrid();
+        fc1RenderArea3();
+    } catch(e) { showCustomAlert("保存失败，请刷新或重新连接世界书"); }
+};
+
+window.fc1CloseArea3 = function() {
+    __fc1Area3Mode = 'identity';
+    __fc1ActiveSettingUid = null;
+    fc1RenderSettingGrid();
+    fc1RenderArea3();
+};
+
+
 
 function nextPage() {
     var btns = Array.from(document.querySelectorAll('.tab-btn')).filter(function(btn) { return btn.style.display !== 'none'; });
