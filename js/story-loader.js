@@ -197,7 +197,7 @@ async function initDynamicTabs() {
             }
             else if (h === "世界观概览") {
                 contentStr = '<div class="fc1-overview">' +
-                    '<div class="fc1-overview-title">\u2727 自定义模式 \u2727</div>' +
+                    '<div class="fc1-overview-title">\u2727 开拓新大陆与殖民贸易 \u2727</div>' +
                     '<div class="fc1-overview-text">' +
                         '<p>十七世纪末至十八世纪初，大西洋上的三角贸易如日中天：欧洲母国的制成品、军火与朗姆酒运往西非，换取深色奴横渡大西洋运往美洲，再以糖、烟草、棉花满载而归。</p>' +
                         '<p>这是一片由风帆、火器、银元与胆识主宰的海域。你将以自由之身，或逐利海上、或经营种植园、或穿行于奴隶市场，凭一己之力在这殖民时代立足。</p>' +
@@ -234,9 +234,7 @@ async function initDynamicTabs() {
                         '</div>' +
                         '<div class="fc1-area fc1-area-2">' +
                             '<div class="fc1-area-title fc1-area-title-setting">\u2756 自定义设定（写入世界书） \u2756</div>' +
-                            '<label class="fc1-checkbox-row"><input type="checkbox" id="fc1-show-setting-chk" onchange="fc1OnShowSettingToggle(this)"><span>点击后显示相关设定</span></label>' +
-                            '<div class="fc1-toggle-hint">点击按钮可以切换条目状态，绿色按钮表示条目已经开启</div>' +
-                            '<div class="fc1-setting-grid" id="fc1-setting-grid"></div>' +
+                            '<button class="fc1-goto-char-btn" onclick="gotoCharFromFC1()">\u2756 前往角色界面 \u2756</button>' +
                         '</div>' +
                     '</div>' +
                     '<div class="fc1-setting-popup" id="fc1-setting-popup" style="display:none;">' +

@@ -308,7 +308,11 @@ body {
 .zoom-btn:active { transform: scale(0.9); }
 
 /* ---- 书签及目录等基础控件 ---- */
-.bookmark-menu, .bookmark-back, .bookmark-next, .bookmark-role { position: absolute; width: 72px; height: 40px; border: 2px solid var(--color-primary); border-right: none; border-radius: 5px 0 0 5px; display: flex; justify-content: flex-start; align-items: center; padding-left: 12px; color: var(--color-primary); font-weight: bold; cursor: pointer; z-index: 10; transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); transform-origin: right center; white-space: nowrap; }
+.bookmark-menu, .bookmark-back, .bookmark-next, .bookmark-role, .bookmark-return { position: absolute; width: 72px; height: 40px; border: 2px solid var(--color-primary); border-right: none; border-radius: 5px 0 0 5px; display: flex; justify-content: flex-start; align-items: center; padding-left: 12px; color: var(--color-primary); font-weight: bold; cursor: pointer; z-index: 10; transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); transform-origin: right center; white-space: nowrap; }
+
+.bookmark-return { right: -15px; bottom: 250px; background: linear-gradient(135deg, #6a1b9a 0%, #3a0d55 100%); box-shadow: -3px 3px 6px rgba(0,0,0,0.4); }
+.bookmark-return::after { content: '\21A9'; font-size: 1.3rem; margin-left: 5px; text-shadow: 1px 1px 2px rgba(0,0,0,0.5); }
+.bookmark-return:hover { width: 82px; right: -10px; background: linear-gradient(135deg, #8e24aa 0%, #4a148c 100%); }
 
 .bookmark-menu { right: -15px; bottom: 195px; background: linear-gradient(135deg, #b8860b 0%, #684a00 100%); box-shadow: -3px 3px 6px rgba(0,0,0,0.4); }
 .bookmark-menu::after { content: '\2756'; font-size: 1.2rem; margin-left: 5px; text-shadow: 1px 1px 2px rgba(0,0,0,0.5); }
@@ -343,8 +347,8 @@ body {
 .toc-corner-btn { padding: 4px 10px; font-size: 0.85rem; background: rgba(44, 27, 77, 0.8); border: 1px solid var(--color-primary-dark); color: var(--color-text-light); border-radius: 4px; cursor: pointer; text-align: center; box-shadow: 2px 2px 5px rgba(0,0,0,0.4); transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.2s, border-color 0.2s; }
 .toc-corner-btn:hover { background: rgba(212, 175, 55, 0.3); border-color: var(--color-primary); color: white; transform: scale(1.05); }
 
-.toc-gallery { display: grid; grid-template-columns: repeat(3, 1fr); gap: 30px; padding: 0 20px; margin-top: 20px; max-width: 520px; margin-left: auto; margin-right: auto; }
-.toc-img-card { display: flex; flex-direction: column; align-items: center; width: 100%; cursor: pointer; transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); justify-self: center; }
+.toc-gallery { display: flex; flex-wrap: wrap; justify-content: center; gap: 30px; padding: 0 20px; margin-top: 20px; max-width: 520px; margin-left: auto; margin-right: auto; }
+.toc-img-card { display: flex; flex-direction: column; align-items: center; width: 140px; cursor: pointer; transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); }
 .toc-img-card:nth-child(even) { transform: translateY(8px); }
 .toc-img-card:nth-child(3n) { transform: translateY(-4px); }
 .toc-img-card:nth-child(3n+2) { transform: translateY(8px); }
@@ -444,16 +448,17 @@ body {
     .book-inner-container::before { width: 5px; border-radius: 4px 0 0 4px; }
     .tabs-wrapper { margin-left: 0; }
     .tabs-content-area { padding: 6px 4px; border-radius: 6px; border-width: 1px; }
-    .bookmark-menu, .bookmark-back, .bookmark-next, .bookmark-role {
+    .bookmark-menu, .bookmark-back, .bookmark-next, .bookmark-role, .bookmark-return {
         right: -2px; width: 42px; height: 28px; font-size: 0.75rem;
         padding-left: 4px; border-width: 1px; border-radius: 3px 0 0 3px;
     }
+    .bookmark-return { bottom: 170px; }
     .bookmark-menu { bottom: 135px; }
     .bookmark-back { bottom: 100px; }
     .bookmark-next { bottom: 65px; }
     .bookmark-role { bottom: 30px; }
-    .bookmark-menu:hover, .bookmark-back:hover, .bookmark-next:hover, .bookmark-role:hover { width: 50px; right: 0px; }
-    .bookmark-menu::after, .bookmark-back::after, .bookmark-next::after, .bookmark-role::after { font-size: 0.85rem; margin-left: 2px; }
+    .bookmark-menu:hover, .bookmark-back:hover, .bookmark-next:hover, .bookmark-role:hover, .bookmark-return:hover { width: 50px; right: 0px; }
+    .bookmark-menu::after, .bookmark-back::after, .bookmark-next::after, .bookmark-role::after, .bookmark-return::after { font-size: 0.85rem; margin-left: 2px; }
     .data-story-text { padding: 6px 8px; border-left-width: 2px; }
     .area-box { padding: 6px; margin-bottom: 8px; border-width: 1px; background: transparent;}
     .param-group { padding: 6px; }
@@ -487,7 +492,7 @@ body {
         transform-origin: right center !important;
     }
     .toc-corners { position: relative; bottom: unset; right: unset; flex-direction: row; justify-content: space-around; padding: 5px; margin-bottom: 20px; flex-wrap: wrap;}
-    .toc-gallery { padding: 0 5px 15px; gap: 20px; grid-template-columns: repeat(3, 1fr); }
+    .toc-gallery { padding: 0 5px 15px; gap: 20px; justify-content: center; }
     .toc-img-card { width: 85px; }
     #global-img-preview { width: 130px; }
     .alert-btn-group { gap: 10px; }
@@ -951,6 +956,22 @@ body {
     margin-bottom: 10px;
 }
 .fc1-area-title-setting { font-size: 0.85rem; }
+.fc1-goto-char-btn {
+    align-self: center;
+    margin: auto 0;
+    padding: 10px 26px;
+    border-radius: 8px;
+    border: 1px solid var(--color-primary-dark);
+    background: linear-gradient(135deg, rgba(212,175,55,0.2), rgba(253,246,227,0.6));
+    color: var(--color-primary-dark);
+    font-family: 'Noto Serif SC', serif;
+    font-size: 0.95rem;
+    cursor: pointer;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+.fc1-goto-char-btn:hover { transform: scale(1.04); box-shadow: 0 3px 10px rgba(212,175,55,0.4); }
 
 /* 区域一：性别与身份（居中） */
 .fc1-area1-inner {

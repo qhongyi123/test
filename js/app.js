@@ -217,6 +217,10 @@ function switchTab(tabId, btnElement) {
     if(btnElement) btnElement.classList.add('active');
     document.querySelectorAll('.tab-panel').forEach(function(panel) { panel.classList.remove('active'); });
     document.getElementById(tabId).classList.add('active');
+    if (tabId !== 'tab7') {
+        var returnBtn = document.getElementById('bookmark-return');
+        if (returnBtn) returnBtn.style.display = 'none';
+    }
     if (tabId === 'FC1') tryAutoPlayMusic();
 }
 
@@ -858,6 +862,24 @@ function goToRoleTab() {
     var targetBtn = document.querySelector('.tab-btn[data-target="tab7"]');
     if(targetBtn) { switchTab('tab7', targetBtn); }
 }
+
+var __roleReturnTab = null;
+
+window.gotoCharFromFC1 = function() {
+    __roleReturnTab = 'FC1';
+    var returnBtn = document.getElementById('bookmark-return');
+    if (returnBtn) returnBtn.style.display = '';
+    goToRoleTab();
+};
+
+window.returnFromChar = function() {
+    var returnBtn = document.getElementById('bookmark-return');
+    if (returnBtn) returnBtn.style.display = 'none';
+    var target = __roleReturnTab || 'FC1';
+    __roleReturnTab = null;
+    var targetBtn = document.querySelector('.tab-btn[data-target="' + target + '"]');
+    if (targetBtn) { switchTab(target, targetBtn); }
+};
 
 // ===== 导入功能 =====
 var __currentImportTabId = "";
