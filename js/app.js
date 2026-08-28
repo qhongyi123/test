@@ -231,7 +231,7 @@ function switchSubTab(btnElement, subTabId) {
     var mainPanelContainer = headerContainer.parentElement;
     mainPanelContainer.querySelectorAll('.sub-panel').forEach(function(panel) { panel.classList.remove('active'); });
     mainPanelContainer.querySelector('#' + subTabId).classList.add('active');
-    if (subTabId === 'FC1-sub4' && typeof fc1InitRender === 'function') { fc1InitRender(); }
+    if (subTabId === 'FC1-sub3' && typeof fc1InitRender === 'function') { fc1InitRender(); }
 }
 
 window.goToSubTab = function(tabId, subTabId) {
@@ -422,7 +422,7 @@ window.fc1SyncUserVariable = function() {
     var dm = tabsDataMap['FC1'];
     if (!dm) return;
     dm.data.variable.user = dm.data.variable.user || {};
-    dm.data.variable.user.gender = __fc1Gender;
+    if (__fc1Gender) dm.data.variable.user.gender = __fc1Gender;
     var input = document.getElementById('fc1-identity-input');
     if (input) dm.data.variable.user.identity = input.value.trim();
 };
@@ -675,7 +675,7 @@ window.fc1RenderVariables = function() {
     var box = document.getElementById('fc1-variable-editor');
     if (!box) return;
     if (!__fc1Identity) {
-        box.innerHTML = '<div class="fc1-var-empty">请先在「角色背景」中选择一个身份组，再回来配置变量</div>';
+        box.innerHTML = '<div class="fc1-var-empty">请先在「初始设定」中选择一个身份组，再回来配置变量</div>';
         return;
     }
     var preset = fc1BuildVariablePreset(__fc1Identity, __fc1Region);
@@ -789,7 +789,7 @@ window.fc1RenderStartPreview = function() {
     var el = document.getElementById('fc1-start-preview');
     if (!el) return;
     var prompt = fc1BuildAutoPrompt();
-    el.textContent = prompt !== null ? prompt : '请先在「角色背景」中选择身份组';
+    el.textContent = prompt !== null ? prompt : '请先在「初始设定」中选择身份组';
 };
 
 window.fc1SelectStartMode = function(mode) {
@@ -806,7 +806,7 @@ window.fc1SelectStartMode = function(mode) {
 };
 
 window.fc1StartGame = async function() {
-    if (!__fc1Identity) { showCustomAlert("请先在「角色背景」中选择身份组"); return; }
+    if (!__fc1Identity) { showCustomAlert("请先在「初始设定」中选择身份组"); return; }
     var v;
     try {
         v = (typeof fc1CollectInitialVars === 'function') ? fc1CollectInitialVars() : fc1CollectVariable();
@@ -823,7 +823,7 @@ window.fc1StartGame = async function() {
         if (!prompt) { showCustomAlert("请先填写你的自定义开局"); return; }
     } else {
         prompt = fc1BuildAutoPrompt();
-        if (prompt === null) { showCustomAlert("请先在「角色背景」中选择身份组"); return; }
+        if (prompt === null) { showCustomAlert("请先在「初始设定」中选择身份组"); return; }
     }
 
     var agree = await showCustomConfirm("确认开始自由模式并发送开局信息吗");
@@ -1407,9 +1407,9 @@ window.refreshCharManager = async function() {
                     '</div>' +
                 '</div>' +
                 '<div id="char-detail-body-' + c.uid + '" style="display:none; padding:10px; background:rgba(253,246,227,0.8);">' +
-                    '<span class="param-label" style="display:block; margin-bottom:4px;">化身名号:</span>' +
+                    '<span class="param-label" style="display:block; margin-bottom:4px;">条目名:</span>' +
                     '<input type="text" id="charmgr-name-' + c.uid + '" class="charmgr-name-input" value="' + fc1EscapeAttr(c.comment || '') + '">' +
-                    '<span class="param-label" style="display:block; margin:8px 0 4px;">命途轨痕 (人物条目内容):</span>' +
+                    '<span class="param-label" style="display:block; margin:8px 0 4px;">条目内容:</span>' +
                     '<textarea id="charmgr-content-' + c.uid + '" class="charmgr-content-input">' + fc1EscapeHtml(c.content || '') + '</textarea>' +
                     '<div style="display:flex; justify-content:flex-end; gap:10px; margin-top:10px;">' +
                         '<button class="charmgr-save-btn" onclick="saveCharManagerEntry(' + c.uid + ')">\u2727 保存 \u2727</button>' +

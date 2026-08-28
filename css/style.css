@@ -1271,9 +1271,47 @@ body {
 }
 .fc1-drawer .fc1is-label { color: var(--color-primary); }
 
+/* 世界信息（代入感句式 + 随机按钮） */
+.fc1is-world { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.fc1is-world-text { color: var(--color-text-dark); font-size: 0.95rem; }
+.fc1is-date-input { width: 62px; padding: 4px 6px; text-align: center; border: none; border-bottom: 1px solid rgba(184,134,11,0.5); background: transparent; color: var(--color-primary-dark); font-family: inherit; font-size: 0.95rem; outline: none; font-weight: bold; }
+.fc1is-date-input:focus { border-bottom-color: var(--color-primary); background: rgba(253,246,227,0.4); }
+.fc1is-random-btn { padding: 4px 14px; border-radius: 12px; border: 1px dashed var(--color-primary-dark); background: rgba(212,175,55,0.08); color: var(--color-primary-dark); cursor: pointer; font-family: inherit; font-size: 0.85rem; transition: all 0.2s; }
+.fc1is-random-btn:hover { background: rgba(212,175,55,0.22); }
+
+/* 地区信息头部（自定义地区按钮） */
+.fc1is-region-head { display: flex; justify-content: flex-end; margin-bottom: 6px; }
+.fc1is-region-custom { position: static; padding: 4px 12px; font-size: 0.78rem; border: 1px dashed var(--color-primary-dark); border-radius: 12px; background: rgba(212,175,55,0.1); color: var(--color-primary-dark); cursor: pointer; }
+.fc1is-region-custom:hover { background: rgba(212,175,55,0.25); }
+
+/* 预设身份组按钮 */
+.fc1is-idp-btn { padding: 4px 14px; border-radius: 6px; border: 1px dashed var(--color-primary-dark); background: rgba(212,175,55,0.08); color: var(--color-primary-dark); cursor: pointer; font-family: inherit; font-size: 0.85rem; transition: all 0.2s; }
+.fc1is-idp-btn:hover { background: rgba(212,175,55,0.22); }
+
+/* 预设身份组弹窗 */
+.fc1-modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 91000; display: flex; justify-content: center; align-items: center; opacity: 0; pointer-events: none; transition: opacity 0.25s ease; }
+.fc1-modal.open { opacity: 1; pointer-events: auto; }
+.fc1-modal-backdrop { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(26,15,46,0.7); }
+.fc1-modal-box { position: relative; width: 90vw; max-width: 640px; max-height: 80vh; background: var(--bg-content); border: 3px solid var(--color-primary-dark); border-radius: 10px; box-shadow: 0 16px 48px rgba(0,0,0,0.8); display: flex; flex-direction: column; transform: scale(0.9); transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1); }
+.fc1-modal.open .fc1-modal-box { transform: scale(1); }
+.fc1-modal-head { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-bottom: 2px dashed rgba(184,134,11,0.4); flex-shrink: 0; }
+.fc1-modal-title { font-family: 'Ma Shan Zheng', cursive; font-size: 1.2rem; color: var(--color-primary-dark); }
+.fc1-modal-close { background: none; border: none; color: var(--color-accent); font-size: 1.3rem; line-height: 1; cursor: pointer; }
+.fc1-modal-close:hover { color: #cc0000; }
+.fc1-modal-tabs { display: flex; gap: 6px; flex-wrap: wrap; padding: 8px 12px; border-bottom: 1px solid rgba(184,134,11,0.25); flex-shrink: 0; }
+.fc1-modal-tab { padding: 4px 14px; border-radius: 14px; border: 1px solid rgba(212,175,55,0.45); background: transparent; color: var(--color-text-dark); cursor: pointer; font-family: inherit; font-size: 0.85rem; }
+.fc1-modal-tab.active { background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%); color: #1a0f2e; font-weight: bold; }
+.fc1-modal-body { flex: 1; overflow-y: auto; padding: 12px 16px; display: flex; flex-direction: column; gap: 8px; }
+.fc1-idp-card { background: rgba(212,175,55,0.06); border: 1px solid rgba(212,175,55,0.25); border-radius: 8px; padding: 10px 12px; cursor: pointer; transition: all 0.18s; }
+.fc1-idp-card:hover { background: rgba(212,175,55,0.15); border-color: var(--color-primary); }
+.fc1-idp-name { font-weight: bold; color: var(--color-primary-dark); border-bottom: 1px dashed rgba(184,134,11,0.3); padding-bottom: 4px; margin-bottom: 6px; }
+.fc1-idp-desc { font-size: 0.85rem; line-height: 1.55; color: var(--color-text-dark); }
+.fc1-idp-res { font-size: 0.78rem; color: #8b5a2b; font-weight: bold; margin-top: 4px; }
+
 /* 移动端抽屉占满 */
 @media (max-width: 768px) {
     .fc1-drawer-backdrop { width: 12%; }
     .fc1-drawer-card { width: 88%; max-width: none; }
     .fc1-board-grid { grid-auto-rows: 40px; }
+    .fc1-modal-box { width: 94vw; max-height: 86vh; }
 }

@@ -86,24 +86,34 @@ function fc1isRenderWorld(v) {
     var d = v.world.date || '';
     var m = d.match(/(\d{1,4})年(\d{1,2})月(\d{1,2})日/);
     var y = m ? m[1] : '', mo = m ? m[2] : '', dd = m ? m[3] : '';
-    var yOpts = '<option value="">年份</option>';
-    for (var i = 1600; i <= 1800; i++) yOpts += '<option value="' + i + '"' + (String(i) === y ? ' selected' : '') + '>' + i + '</option>';
-    var mOpts = '<option value="">月份</option>';
-    for (var j = 1; j <= 12; j++) mOpts += '<option value="' + j + '"' + (String(j) === mo ? ' selected' : '') + '>' + j + '</option>';
-    var dOpts = '<option value="">日期</option>';
-    for (var k = 1; k <= 31; k++) dOpts += '<option value="' + k + '"' + (String(k) === dd ? ' selected' : '') + '>' + k + '</option>';
     return fc1isSection('世界信息', '<div class="fc1is-world">' +
-        '<select id="fc1is-year" onchange="fc1isOnWorldDate()">' + yOpts + '</select>' +
-        '<select id="fc1is-month" onchange="fc1isOnWorldDate()">' + mOpts + '</select>' +
-        '<select id="fc1is-day" onchange="fc1isOnWorldDate()">' + dOpts + '</select>' +
+        '<span class="fc1is-world-text">如今是</span>' +
+        '<input class="fc1is-date-input" id="fc1is-year" value="' + y + '" placeholder="1689" oninput="fc1isOnWorldDate()">' +
+        '<span class="fc1is-world-text">年，</span>' +
+        '<input class="fc1is-date-input" id="fc1is-month" value="' + mo + '" placeholder="5" oninput="fc1isOnWorldDate()">' +
+        '<span class="fc1is-world-text">月，约莫是</span>' +
+        '<input class="fc1is-date-input" id="fc1is-day" value="' + dd + '" placeholder="12" oninput="fc1isOnWorldDate()">' +
+        '<span class="fc1is-world-text">日</span>' +
+        '<button class="fc1is-random-btn" onclick="fc1isRandomDate()">随机</button>' +
     '</div>');
 }
 window.fc1isOnWorldDate = function() {
     var v = fc1isEnsureVar(); if (!v) return;
-    var y = document.getElementById('fc1is-year').value;
-    var mo = document.getElementById('fc1is-month').value;
-    var dd = document.getElementById('fc1is-day').value;
+    var y = document.getElementById('fc1is-year').value.trim();
+    var mo = document.getElementById('fc1is-month').value.trim();
+    var dd = document.getElementById('fc1is-day').value.trim();
     v.world.date = (y && mo && dd) ? (y + '年' + mo + '月' + dd + '日') : '';
+};
+window.fc1isRandomDate = function() {
+    var v = fc1isEnsureVar(); if (!v) return;
+    var y = 1600 + Math.floor(Math.random() * 101);
+    var mo = 1 + Math.floor(Math.random() * 12);
+    var days = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][mo - 1];
+    var dd = 1 + Math.floor(Math.random() * days);
+    document.getElementById('fc1is-year').value = y;
+    document.getElementById('fc1is-month').value = mo;
+    document.getElementById('fc1is-day').value = dd;
+    v.world.date = y + '年' + mo + '月' + dd + '日';
 };
 
 // ==================== ② 角色信息 ====================
@@ -123,8 +133,9 @@ function fc1isRenderChar(v) {
         return '<option value="' + g + '"' + ((u.gender || '') === g ? ' selected' : '') + '>' + (g || '请选择') + '</option>';
     }).join('');
     return fc1isSection('角色信息',
-        '<div class="fc1is-row"><span class="fc1is-label">用户身份</span><input id="fc1is-identity" value="' + fc1isAttrJs(u.identity) + '" oninput="fc1isOnUser(\'identity\')"></div>' +
         '<div class="fc1is-row"><span class="fc1is-label">性别</span><select id="fc1is-gender" onchange="fc1isOnUser(\'gender\')">' + genderOpts + '</select></div>' +
+        '<div class="fc1is-row"><span class="fc1is-label">用户身份</span><input id="fc1is-identity" value="' + fc1isAttrJs(u.identity) + '" oninput="fc1isOnUser(\'identity\')"></div>' +
+        '<div class="fc1is-row"><span class="fc1is-label"></span><button class="fc1is-idp-btn" onclick="fc1isOpenIdentityPicker()">\u2756 预设身份组 \u2756</button></div>' +
         '<div class="fc1is-row"><span class="fc1is-label">身体状态</span><input id="fc1is-body" value="' + fc1isAttrJs(u.body_state) + '" oninput="fc1isOnUser(\'body_state\')"></div>' +
         '<div class="fc1is-row"><span class="fc1is-label">财富</span><input id="fc1is-wealth" value="' + fc1isAttrJs(u.wealth) + '" oninput="fc1isOnUser(\'wealth\')"></div>' +
         '<div class="fc1is-sub"><div class="fc1is-label">物品栏</div><div class="fc1is-inv" id="fc1is-inv">' + rows + '</div></div>');
@@ -164,6 +175,7 @@ window.fc1isCollectInventory = function() {
 
 // ==================== ③ 地区信息（重点） ====================
 var __fc1isRegion = null;
+var __fc1isRegionCustom = false;
 
 function fc1isRegionList() {
     if (FC1_PRESETS.regions.length) return FC1_PRESETS.regions;
@@ -179,29 +191,29 @@ function fc1isRegionObj(name) {
     }
     return regions[name];
 }
+function fc1isResolveRegion() {
+    if (__fc1isRegionCustom) return __fc1isRegion || '';
+    if (!__fc1Region) return '';
+    var r = (FC1_REGIONS || []).find(function(x) { return x.id === __fc1Region; });
+    return r ? r.name : '';
+}
 function fc1isRenderRegion(v) {
-    var cards = '';
-    fc1isRegionList().forEach(function(r) {
-        cards += '<div class="fc1is-region-item" data-name="' + fc1isAttrJs(r.name) + '" onclick="fc1isSelectRegion(' + fc1isAttrJs(r.name) + ')">' +
-            (r.img ? '<img src="' + fc1isAttrJs(r.img) + '" alt="">' : '') +
-            '<span>' + mtH(r.name) + '</span>' +
-        '</div>';
-    });
-    var bar = '<div class="fc1is-region-bar-wrap">' +
-        '<div class="fc1is-region-bar" id="fc1is-region-bar">' + cards + '</div>' +
-        '<button class="fc1is-region-custom" onclick="fc1isCustomRegion()">+ 自定义</button>' +
-    '</div>';
-    return fc1isSection('地区信息', bar + '<div class="fc1is-region-display" id="fc1is-region-display"></div>');
+    return fc1isSection('地区信息',
+        '<div class="fc1is-region-head"><button class="fc1is-region-custom" onclick="fc1isCustomRegion()">+ 自定义地区</button></div>' +
+        '<div class="fc1is-region-display" id="fc1is-region-display"></div>');
 }
 function fc1isRenderRegionDisplay() {
     var box = document.getElementById('fc1is-region-display');
     if (!box) return;
-    if (!__fc1isRegion) {
-        box.innerHTML = '<div class="fc1is-region-empty">请选择地区，或点击右上角「自定义」</div>';
+    var name = fc1isResolveRegion();
+    if (!name) {
+        box.innerHTML = '<div class="fc1is-region-empty">请先前往「区域选择」选择你的起始之地，再回来编辑该地区。</div>';
         return;
     }
-    var v = fc1isEnsureVar(); if (!v) return;
-    var rd = v['背景信息']['地区'][__fc1isRegion] || { 描述: '', 民俗风情: {} };
+    __fc1isRegion = name;
+    fc1isRegionObj(name);
+    var v = fc1isEnsureVar();
+    var rd = v['背景信息']['地区'][name] || { 描述: '', 民俗风情: {} };
     var customs = rd.民俗风情 || {};
     var rows = '';
     Object.keys(customs).forEach(function(k) {
@@ -213,25 +225,16 @@ function fc1isRenderRegionDisplay() {
     });
     rows += '<div class="fc1is-add" onclick="fc1isAddCustom()">+ 添加风情词条</div>';
     box.innerHTML = '<div class="fc1is-region-editor">' +
-        '<div class="fc1is-row"><span class="fc1is-label">地区名</span><input id="fc1is-region-name" value="' + fc1isAttrJs(__fc1isRegion) + '" onchange="fc1isRenameRegion(' + fc1isAttrJs(__fc1isRegion) + ', this.value)"></div>' +
+        (__fc1isRegionCustom ? '<div class="fc1is-row"><span class="fc1is-label">地区名</span><input id="fc1is-region-name" value="' + fc1isAttrJs(name) + '" onchange="fc1isRenameRegion(' + fc1isAttrJs(name) + ', this.value)"></div>' : '') +
         '<div class="fc1is-row-col"><span class="fc1is-label">描述</span><textarea id="fc1is-region-desc" oninput="fc1isSetRegionDesc(this.value)">' + fc1isEsc(rd.描述 || '') + '</textarea></div>' +
         '<div class="fc1is-sub"><div class="fc1is-label">民俗风情</div><div class="fc1is-customs" id="fc1is-customs">' + rows + '</div></div>' +
     '</div>';
-    fc1isHighlightRegion();
 }
-function fc1isHighlightRegion() {
-    document.querySelectorAll('.fc1is-region-item').forEach(function(el) {
-        el.classList.toggle('active', el.getAttribute('data-name') === __fc1isRegion);
-    });
-}
-window.fc1isSelectRegion = function(name) {
-    __fc1isRegion = name;
-    fc1isRegionObj(name);
-    fc1isRenderRegionDisplay();
-};
 window.fc1isCustomRegion = function() {
+    __fc1isRegionCustom = true;
     __fc1isRegion = '新地区';
-    fc1isEnsureVar()['背景信息']['地区']['新地区'] = fc1isEnsureVar()['背景信息']['地区']['新地区'] || { 描述: '', 民俗风情: {} };
+    var v = fc1isEnsureVar();
+    if (!v['背景信息']['地区']['新地区']) v['背景信息']['地区']['新地区'] = { 描述: '', 民俗风情: {} };
     fc1isRenderRegionDisplay();
 };
 window.fc1isRenameRegion = function(oldName, newName) {
@@ -289,30 +292,6 @@ function fc1isRenderCustoms() {
     });
     rows += '<div class="fc1is-add" onclick="fc1isAddCustom()">+ 添加风情词条</div>';
     box.innerHTML = rows;
-}
-// 地区横条：自动慢速轮播 + 跟随玩家 + 每 5 秒检测
-var __fc1isRegionAuto = { timer: null, interacted: false };
-function fc1isStartRegionAuto() {
-    if (__fc1isRegionAuto.timer) clearInterval(__fc1isRegionAuto.timer);
-    var bar = document.getElementById('fc1is-region-bar');
-    if (!bar) return;
-    __fc1isRegionAuto.interacted = false;
-    ['wheel', 'touchstart', 'mousedown'].forEach(function(ev) {
-        bar.addEventListener(ev, function() { __fc1isRegionAuto.interacted = true; }, { passive: true });
-    });
-    __fc1isRegionAuto.timer = setInterval(function() {
-        var b = document.getElementById('fc1is-region-bar');
-        if (!b) return;
-        if (__fc1isRegionAuto.interacted) {
-            __fc1isRegionAuto.interacted = false;
-            return;
-        }
-        var step = Math.max(b.clientWidth * 0.5, 120);
-        var maxLeft = b.scrollWidth - b.clientWidth;
-        var next = b.scrollLeft + step;
-        if (next >= maxLeft - 2) next = 0;
-        b.scrollTo({ left: next, behavior: 'smooth' });
-    }, 5000);
 }
 
 // ==================== ④ 关系（重点） ====================
@@ -744,6 +723,17 @@ window.fc1isDelWare = function(item) {
             '<div class="fc1-drawer-body" id="fc1-drawer-body"></div>' +
         '</div>';
     document.body.appendChild(d);
+
+    var m = document.createElement('div');
+    m.className = 'fc1-modal';
+    m.id = 'fc1-identity-picker';
+    m.innerHTML = '<div class="fc1-modal-backdrop" onclick="fc1isCloseIdentityPicker()"></div>' +
+        '<div class="fc1-modal-box">' +
+            '<div class="fc1-modal-head"><span class="fc1-modal-title">\u2756 预设身份组 \u2756</span><button class="fc1-modal-close" onclick="fc1isCloseIdentityPicker()">\u2715</button></div>' +
+            '<div class="fc1-modal-tabs" id="fc1is-idp-tabs"></div>' +
+            '<div class="fc1-modal-body" id="fc1is-idp-body"></div>' +
+        '</div>';
+    document.body.appendChild(m);
 })();
 window.fc1isOpenDrawer = function(title, html) {
     var d = document.getElementById('fc1-drawer');
@@ -760,6 +750,62 @@ window.fc1isCloseDrawer = function() {
     d.classList.remove('open');
     var b = document.getElementById('fc1-drawer-body');
     if (b) b.innerHTML = '';
+};
+
+// ==================== 预设身份组弹窗 ====================
+var FC1IS_IDENTITY_TABS = [
+    { key: 'base', label: '通用' },
+    { key: 'europe', label: '欧洲' },
+    { key: 'west_africa', label: '西非' },
+    { key: 'south_america', label: '南美' },
+    { key: 'sea', label: '海洋' }
+];
+var __fc1isIdpTab = 'base';
+window.fc1isOpenIdentityPicker = function() {
+    var m = document.getElementById('fc1-identity-picker');
+    if (!m) return;
+    m.classList.add('open');
+    fc1isRenderIdpTabs();
+    fc1isRenderIdpBody();
+};
+window.fc1isCloseIdentityPicker = function() {
+    var m = document.getElementById('fc1-identity-picker');
+    if (m) m.classList.remove('open');
+};
+function fc1isRenderIdpTabs() {
+    var box = document.getElementById('fc1is-idp-tabs');
+    if (!box) return;
+    box.innerHTML = FC1IS_IDENTITY_TABS.map(function(t) {
+        return '<button class="fc1-modal-tab' + (__fc1isIdpTab === t.key ? ' active' : '') + '" onclick="fc1isSetIdpTab(\'' + t.key + '\')">' + t.label + '</button>';
+    }).join('');
+}
+window.fc1isSetIdpTab = function(key) {
+    __fc1isIdpTab = key;
+    fc1isRenderIdpTabs();
+    fc1isRenderIdpBody();
+};
+function fc1isRenderIdpBody() {
+    var box = document.getElementById('fc1is-idp-body');
+    if (!box) return;
+    var list = (FC1_IDENTITIES || []).filter(function(it) { return it.region === __fc1isIdpTab; });
+    var cards = list.map(function(it) {
+        return '<div class="fc1-idp-card" onclick="fc1isPickIdentity(\'' + it.id + '\')">' +
+            '<div class="fc1-idp-name">' + mtH(it.name) + '</div>' +
+            '<div class="fc1-idp-desc">' + mtH(it.desc) + '</div>' +
+            '<div class="fc1-idp-res">起始：' + mtH(it.res) + '</div>' +
+        '</div>';
+    }).join('');
+    box.innerHTML = cards || '<div class="fc1is-empty">该类别暂无身份组</div>';
+}
+window.fc1isPickIdentity = function(id) {
+    __fc1Identity = id;
+    var it = (FC1_IDENTITIES || []).find(function(x) { return x.id === id; });
+    var v = fc1isEnsureVar();
+    if (v && it) v.user.identity = it.name;
+    var input = document.getElementById('fc1-identity-input');
+    if (input) input.value = it ? it.name : '';
+    fc1isCloseIdentityPicker();
+    fc1InitRender();
 };
 
 // ==================== 总渲染 ====================
@@ -779,7 +825,6 @@ window.fc1InitRender = function() {
         fc1isRenderShip(v) +
         fc1isRenderWarehouse(v);
     fc1isRenderRegionDisplay();
-    fc1isStartRegionAuto();
 };
 
 // ==================== 收集变量（替代 fc1CollectVariable） ====================
