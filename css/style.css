@@ -235,8 +235,8 @@ body {
 .control-item-row:hover { background:rgba(212,175,55,0.15); border-color:var(--color-primary); box-shadow:1px 2px 5px rgba(212,175,55,0.2); }
 
 /* 世界观选择列表 */
-.worldview-list { display:flex; flex-direction:column; gap:10px; }
-.worldview-item { background:rgba(212,175,55,0.05); border:1px solid rgba(212,175,55,0.15); border-radius:6px; padding:12px 14px; display:flex; align-items:center; gap:10px; cursor:pointer; transition:all 0.2s; box-shadow:1px 1px 3px rgba(0,0,0,0.05); }
+.worldview-list { display:flex; flex-direction:column; gap:10px; align-items:center; }
+.worldview-item { width:100%; max-width:360px; background:rgba(212,175,55,0.05); border:1px solid rgba(212,175,55,0.15); border-radius:6px; padding:12px 14px; display:flex; align-items:center; gap:10px; cursor:pointer; transition:all 0.2s; box-shadow:1px 1px 3px rgba(0,0,0,0.05); box-sizing:border-box; }
 .worldview-item:hover { background:rgba(212,175,55,0.15); border-color:var(--color-primary); box-shadow:1px 2px 5px rgba(212,175,55,0.2); }
 .worldview-item.active { background:linear-gradient(135deg, rgba(212,175,55,0.3), rgba(253,246,227,0.6)); border-color:var(--color-primary-dark); }
 .worldview-radio { width:16px; height:16px; border-radius:50%; border:2px solid var(--color-primary-dark); background:rgba(20,10,40,0.15); flex-shrink:0; transition:all 0.2s; }
@@ -873,13 +873,16 @@ body {
 .tabs-content-area ul[data-dict], .tabs-content-area ul[data-complex-dict], #dynamic-tabs-area ul { padding-left: 12px !important; margin: 4px 0 !important; list-style-type: none; }
 
 /* ===== FC1 自由模式-贩奴贸易 ===== */
-.fc1-overview { display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:60vh; padding:30px 20px; gap:18px; text-align:center; box-sizing:border-box; }
+.fc1-overview { position:relative; display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:60vh; padding:30px 20px; gap:18px; text-align:center; box-sizing:border-box; }
 .fc1-overview-title { font-family:'Ma Shan Zheng', cursive; font-size:1.6rem; color:var(--color-primary-dark); border-bottom:2px dashed rgba(212,175,55,0.4); padding-bottom:10px; }
 .fc1-overview-text { line-height:1.9; color:var(--color-text-dark); max-width:540px; font-size:0.95rem; text-align:justify; }
 .fc1-overview-text p { margin:10px 0; text-indent:2em; }
 .fc1-music-row { margin:4px 0; }
-.fc1-music-btn { padding:10px 28px; border-radius:24px; border:1px solid var(--color-primary-dark); background:linear-gradient(135deg, rgba(212,175,55,0.2), rgba(253,246,227,0.6)); color:var(--color-primary-dark); font-family:'Noto Serif SC'; font-size:1rem; cursor:pointer; box-shadow:0 2px 6px rgba(0,0,0,0.15); transition:all 0.2s; }
-.fc1-music-btn:hover { transform:scale(1.05); box-shadow:0 3px 10px rgba(212,175,55,0.4); }
+.fc1-music-btn { position:absolute; left:10px; bottom:10px; width:56px; height:56px; border-radius:50%; border:1px solid var(--color-primary-dark); background:linear-gradient(135deg, rgba(212,175,55,0.2), rgba(253,246,227,0.6)); color:var(--color-primary-dark); font-family:'Noto Serif SC'; font-size:1.5rem; line-height:1; cursor:pointer; box-shadow:0 2px 6px rgba(0,0,0,0.15); transition:all 0.2s; display:flex; align-items:center; justify-content:center; }
+.fc1-music-btn:hover { transform:scale(1.08); box-shadow:0 3px 10px rgba(212,175,55,0.4); }
+.fc1-music-btn.playing { animation:fc1-music-spin 4s linear infinite; }
+.fc1-music-btn.playing:hover { animation-play-state:paused; }
+@keyframes fc1-music-spin { from { transform:rotate(0deg); } to { transform:rotate(360deg); } }
 .fc1-continue-btn { padding:12px 42px; border-radius:8px; border:none; background:linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%); color:#1a0f2e; font-family:'Ma Shan Zheng', cursive; font-size:1.3rem; cursor:pointer; box-shadow:0 4px 15px rgba(212,175,55,0.4); transition:all 0.3s; }
 .fc1-continue-btn:hover { transform:scale(1.06); box-shadow:0 6px 20px rgba(212,175,55,0.6); }
 
@@ -947,6 +950,7 @@ body {
     padding-bottom: 6px;
     margin-bottom: 10px;
 }
+.fc1-area-title-setting { font-size: 0.85rem; }
 
 /* 区域一：性别与身份（居中） */
 .fc1-area1-inner {
@@ -991,17 +995,23 @@ body {
 .fc1-setting-grid {
     flex: 1;
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-auto-rows: auto;
     gap: 10px;
     overflow-y: auto;
     min-height: 0;
+    align-content: start;
     padding: 2px;
     padding-right: 4px;
 }
 .fc1-setting-grid::-webkit-scrollbar { width: 6px; }
 .fc1-setting-grid::-webkit-scrollbar-thumb { background: var(--color-primary-dark); border-radius: 4px; }
 .fc1-setting-btn {
-    aspect-ratio: 1 / 1; border-radius: 12px; border: 1px solid rgba(184,134,11,0.5);
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    min-width: 0;
+    min-height: 0;
+    border-radius: 12px; border: 1px solid rgba(184,134,11,0.5);
     background: rgba(253,246,227,0.5); color: var(--color-text-dark); cursor: pointer;
     font-family: 'Noto Serif SC', serif; font-size: 0.9rem; padding: 4px;
     display: flex; align-items: center; justify-content: center; text-align: center;

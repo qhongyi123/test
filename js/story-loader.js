@@ -151,7 +151,7 @@ async function initDynamicTabs() {
             }
             else if (h === "剧情线") {
                 contentStr = '<div class="data-block" style="border-bottom:1px dashed rgba(184, 134, 11, 0.3);"><div class="data-field-title" style="display:flex; justify-content:space-between; align-items:center;"><span>\uD83D\uDCDC 剧情阶段一览</span><span style="font-size:0.75rem; font-weight:normal; display:flex; gap:4px;"><button class="view-mode-btn active" onclick="switchStoryView(\'' + tabId + '\',\'doc\',this)" style="padding:2px 6px; border:1px solid var(--color-primary-dark); border-radius:3px; background:var(--bg-content); color:var(--color-primary-dark); cursor:pointer; font-size:0.7rem;">\uD83D\uDCC4 文档流</button><button class="view-mode-btn" onclick="switchStoryView(\'' + tabId + '\',\'timeline\',this)" style="padding:2px 6px; border:1px solid var(--color-primary-dark); border-radius:3px; background:var(--bg-content); color:var(--color-primary-dark); cursor:pointer; font-size:0.7rem;">\uD83D\uDD17 脉络式</button></span></div><ul style="padding-left:15px; color:var(--color-text-dark); margin-top:10px;" data-complex-dict="variable.剧情线" data-tab-id="' + tabId + '">' + generateComplexStorylines(vd["剧情线"] || {}) + '</ul><div class="add-custom-btn" onclick="addNewStoryline(this, \'stage\')">+ 添加剧情阶段</div></div>' +
-                             '<div class="data-block" style="border:none; margin-top:15px;"><div class="data-field-title">\u270D\uFE0F 笔触描写指导</div><ul style="padding-left:15px; color:var(--color-text-dark); margin-top:10px;" data-dict="variable.描写指导">' + generateStorylines(vd["描写指导"] || {}) + '</ul><div class="add-custom-btn" onclick="addNewStoryline(this, \'guide\')">+ 添加描写指导</div></div>';
+                             '<div class="data-block" style="border:none; margin-top:15px;"><div class="data-field-title">\u270D\uFE0F 笔触用户偏好</div><ul style="padding-left:15px; color:var(--color-text-dark); margin-top:10px;" data-dict="variable.用户偏好">' + generateStorylines(vd["用户偏好"] || {}) + '</ul><div class="add-custom-btn" onclick="addNewStoryline(this, \'guide\')">+ 添加用户偏好</div></div>';
             }
             else if (h === "人物信息") {
                 contentStr = '<div class="data-block" style="border:none; height:100%; display:flex; flex-direction:column;"><div class="data-field-title">\uD83C\uDFAD 世界书读取</div><div style="background:rgba(212,175,55,0.06); border:1px solid rgba(212,175,55,0.15); padding:12px; border-radius:6px; margin-top:10px; flex:1; display:flex; flex-direction:column;"><select id="char-select-' + tabId + '" onchange="loadCharEntry(this, \'' + tabId + '\')" style="width:100%; padding:8px; margin-bottom:12px; border-radius:4px; background:var(--bg-content); color:var(--color-text-dark); border:1px solid var(--color-primary-dark); outline:none; font-family:inherit; box-shadow:inset 1px 1px 3px rgba(0,0,0,0.05);"><option value="">载入世间灵魄中，请稍候...</option></select><span class="param-label" style="display:block; margin-bottom:4px;">化身名号 (即神魂封卷语):</span><input type="text" id="char-name-' + tabId + '" placeholder="填写条目名称(例如角色名、称号等)..." style="width:100%; margin-bottom:12px; padding:6px; box-sizing:border-box; background:rgba(253,246,227,0.5); border:1px solid rgba(184,134,11,0.4); outline:none;"><span class="param-label" style="display:block; margin-bottom:4px; flex-shrink:0;">命途轨痕 (世界书人物条目内容):</span><textarea id="char-content-' + tabId + '" placeholder="描摹深层性格法则、种族特质、隐秘喜好等..." style="flex:1; width:100%; resize:none; padding:6px; box-sizing:border-box; background:rgba(253,246,227,0.5); border:1px solid rgba(184,134,11,0.4); outline:none;"></textarea><div style="display:flex; justify-content:flex-end; gap:10px; margin-top:10px; flex-shrink:0;"><button onclick="saveCharEntry(\'' + tabId + '\')" style="background:linear-gradient(135deg, #ffffff 0%, #fdf6e3 100%); border:1px solid var(--color-primary-dark); color:var(--color-text-dark); padding:6px 16px; border-radius:4px; cursor:pointer; font-weight:bold; box-shadow:0 2px 4px rgba(0,0,0,0.15);">\u2727 写入 \u2727</button><button onclick="populateCharSelectors()" style="background:transparent; border:1px dashed var(--color-accent); color:var(--color-text-dark); padding:6px 12px; border-radius:4px; cursor:pointer;">\u21BB 刷新列表</button></div></div></div>';
@@ -170,9 +170,9 @@ async function initDynamicTabs() {
                 }
                 contentStr += '<div class="param-group" style="background:rgba(212,175,55,0.06); padding:10px; border-radius:6px; border:1px solid rgba(212,175,55,0.15);"><div class="data-field-title" style="margin-bottom:8px;">\uD83C\uDF10 世界信息</div><div style="display:flex; flex-wrap:wrap; gap:10px; line-height:1.8;"><div style="flex:1; min-width:120px;"><span class="param-label">\uD83D\uDCC5 日期:</span> <span class="editable-field" data-path="variable.world.date">' + mtH(vd.world && vd.world.date || '') + '</span></div><div style="flex:1; min-width:120px;"><span class="param-label">\u23F1\uFE0F 时间:</span> <span class="editable-field" data-path="variable.world.time">' + mtH(vd.world && vd.world.time || '') + '</span></div><div style="width:100%;"><span class="param-label">\uD83D\uDCCD 地点:</span> <span class="editable-field" style="width:calc(100% - 50px);" data-path="variable.world.position">' + mtH(vd.world && vd.world.position || '') + '</span></div></div></div>' +
                     '<div class="param-group" style="padding:10px; border:1px solid rgba(212,175,55,0.1); border-radius:6px;"><div class="data-field-title" style="margin-bottom:8px;">\uD83C\uDFAD 角色信息</div><div style="display:flex; flex-wrap:wrap; gap:10px; line-height:1.8;"><div style="width:100%;"><span class="param-label">\uD83D\uDC64 身份:</span> <span class="editable-field" style="width:calc(100% - 50px);" data-path="variable.user.identity">' + mtH(vd.user && vd.user.identity || '') + '</span></div><div style="flex:1; min-width:120px;"><span class="param-label">\u26A7\uFE0F 性别:</span> <span class="editable-field" data-path="variable.user.gender">' + mtH(vd.user && vd.user.gender || '') + '</span></div><div style="width:100%;"><span class="param-label">\uD83E\uDEC0 身体状态:</span> <div class="editable-field editable-textarea" data-path="variable.user.body_state" style="display:inline-block; vertical-align:top; width:70%;">' + mtH(vd.user && vd.user.body_state || '') + '</div></div></div>' +
-                    '<div style="margin-top:12px;"><span class="param-label" style="display:block;">\uD83E\uDEBA 行囊:</span><ul data-dict="variable.user.Inventory" style="padding-left:15px; margin:5px 0;">' + generateInventoryList(vd.user && vd.user.Inventory || {}) + '</ul><div class="add-custom-btn" onclick="addNewInventoryItem(this)">+ 添加物品</div></div>' +
+                    '<div style="margin-top:12px;"><span class="param-label" style="display:block;">\uD83E\uDEBA 行囊:</span><ul data-dict="variable.user.inventory" style="padding-left:15px; margin:5px 0;">' + generateInventoryList(vd.user && vd.user.inventory || {}) + '</ul><div class="add-custom-btn" onclick="addNewInventoryItem(this)">+ 添加物品</div></div>' +
                     '<div style="margin-top:12px;"><span class="param-label" style="display:block;">\uD83C\uDF03 周围环境:</span> <div class="editable-field editable-textarea" data-path="variable.user.surroundings">' + mtH(vd.user && vd.user.surroundings || '') + '</div></div>' +
-                    '<div style="margin-top:12px;"><span class="param-label" style="display:block;">\uD83E\uDDE0 心理描写:</span> <div class="editable-field editable-textarea" data-path="variable.user.Psychological_description">' + mtH(vd.user && vd.user.Psychological_description || '') + '</div></div></div>';
+                    '<div style="margin-top:12px;"><span class="param-label" style="display:block;">\uD83E\uDDE0 心理描写:</span> <div class="editable-field editable-textarea" data-path="variable.user.psychological_description">' + mtH(vd.user && vd.user.psychological_description || '') + '</div></div></div>';
             }
             else if (h === "开始剧情" && tabId !== 'FC1') {
                 contentStr = '<div class="data-block" style="border-bottom:none;"><div class="data-field-title">\u2728 幕启词刻</div><button class="start-game-btn" data-tid="' + tabId + '" style="margin-top:10px; margin-bottom:10px;">开启童话物语</button><div class="editable-field editable-textarea data-story-text" data-path="story.startContent" style="min-height:100px;">' + mtH(sd.startContent) + '</div></div>';
@@ -197,13 +197,13 @@ async function initDynamicTabs() {
             }
             else if (h === "世界观概览") {
                 contentStr = '<div class="fc1-overview">' +
-                    '<div class="fc1-overview-title">\u2727 开拓新大陆与殖民贸易 \u2727</div>' +
+                    '<div class="fc1-overview-title">\u2727 自定义模式 \u2727</div>' +
                     '<div class="fc1-overview-text">' +
                         '<p>十七世纪末至十八世纪初，大西洋上的三角贸易如日中天：欧洲母国的制成品、军火与朗姆酒运往西非，换取深色奴横渡大西洋运往美洲，再以糖、烟草、棉花满载而归。</p>' +
                         '<p>这是一片由风帆、火器、银元与胆识主宰的海域。你将以自由之身，或逐利海上、或经营种植园、或穿行于奴隶市场，凭一己之力在这殖民时代立足。</p>' +
                     '</div>' +
                     '<div class="fc1-music-row">' +
-                        '<button class="fc1-music-btn" id="fc1-music-btn" onclick="toggleMusic()">\u266A 播放音乐</button>' +
+                        '<button class="fc1-music-btn" id="fc1-music-btn" onclick="toggleMusic()" title="播放 / 暂停背景音乐">\u266A</button>' +
                     '</div>' +
                     '<button class="fc1-continue-btn" onclick="goToSubTab(\'' + tabId + '\', \'' + tabId + '-sub2\')">\u25B6 继 续</button>' +
                 '</div>';
@@ -233,7 +233,7 @@ async function initDynamicTabs() {
                             '</div>' +
                         '</div>' +
                         '<div class="fc1-area fc1-area-2">' +
-                            '<div class="fc1-area-title">\u2756 自定义设定（写入世界书） \u2756</div>' +
+                            '<div class="fc1-area-title fc1-area-title-setting">\u2756 自定义设定（写入世界书） \u2756</div>' +
                             '<label class="fc1-checkbox-row"><input type="checkbox" id="fc1-show-setting-chk" onchange="fc1OnShowSettingToggle(this)"><span>点击后显示相关设定</span></label>' +
                             '<div class="fc1-toggle-hint">点击按钮可以切换条目状态，绿色按钮表示条目已经开启</div>' +
                             '<div class="fc1-setting-grid" id="fc1-setting-grid"></div>' +
@@ -402,8 +402,8 @@ window.switchCharProfile = function(btn, tabId) {
     vd.user.gender = prof.user.gender;
     vd.user.body_state = prof.user.body_state;
     vd.user.surroundings = prof.user.surroundings;
-    vd.user.Psychological_description = prof.user.Psychological_description;
-    vd.user.Inventory = JSON.parse(JSON.stringify(prof.user.Inventory || {}));
+    vd.user.psychological_description = prof.user.psychological_description;
+    vd.user.inventory = JSON.parse(JSON.stringify(prof.user.inventory || {}));
 
     // 同步到 originalDataCache（开始游戏时从此处读取）
     if (originalDataCache[tabId]) {
@@ -415,8 +415,8 @@ window.switchCharProfile = function(btn, tabId) {
         oc.user.gender = vd.user.gender;
         oc.user.body_state = vd.user.body_state;
         oc.user.surroundings = vd.user.surroundings;
-        oc.user.Psychological_description = vd.user.Psychological_description;
-        oc.user.Inventory = JSON.parse(JSON.stringify(vd.user.Inventory));
+        oc.user.psychological_description = vd.user.psychological_description;
+        oc.user.inventory = JSON.parse(JSON.stringify(vd.user.inventory));
     }
 
     // 更新按钮样式
@@ -440,7 +440,7 @@ window.switchCharProfile = function(btn, tabId) {
         'variable.user.gender': vd.user.gender,
         'variable.user.body_state': vd.user.body_state,
         'variable.user.surroundings': vd.user.surroundings,
-        'variable.user.Psychological_description': vd.user.Psychological_description
+        'variable.user.psychological_description': vd.user.psychological_description
     };
     panel.querySelectorAll('[data-path]').forEach(function(el) {
         var p = el.getAttribute('data-path');
@@ -450,9 +450,9 @@ window.switchCharProfile = function(btn, tabId) {
     });
 
     // 重新渲染行囊
-    var invUl = panel.querySelector('[data-dict="variable.user.Inventory"]');
+    var invUl = panel.querySelector('[data-dict="variable.user.inventory"]');
     if (invUl) {
-        invUl.innerHTML = generateInventoryList(vd.user.Inventory || {});
+        invUl.innerHTML = generateInventoryList(vd.user.inventory || {});
     }
 };
 
@@ -512,12 +512,12 @@ window.switchStoryView = function(tabId, mode, btn) {
     __timelineTabId = tabId;
     __timelineData = originalDataCache[tabId] ? (originalDataCache[tabId].variable['\u5267\u60C5\u7EBF'] || {}) : {};
 
-    // 直接用 data 选择器找到剧情阶段列表和描写指导
+    // 直接用 data 选择器找到剧情阶段列表和用户偏好
     var ul = subPanel.querySelector('ul[data-complex-dict="variable.\u5267\u60C5\u7EBF"]');
     var addBtn = ul ? ul.nextElementSibling : null;
     if (addBtn && !addBtn.classList.contains('add-custom-btn')) addBtn = null;
 
-    // 也找到描写指导区域
+    // 也找到用户偏好区域
     var guideBlock = subPanel.querySelector('.data-block:last-of-type');
     var guideUI = guideBlock ? guideBlock.querySelector('ul[data-dict]') : null;
     var guideAddBtn = guideBlock ? guideBlock.querySelector('.add-custom-btn') : null;
@@ -536,7 +536,7 @@ window.switchStoryView = function(tabId, mode, btn) {
             ul.style.display = 'none';
             if (addBtn) addBtn.style.display = 'none';
         }
-        // 隐藏描写指导区域（标题+列表+按钮）
+        // 隐藏用户偏好区域（标题+列表+按钮）
         if (guideTitle) guideTitle.style.display = 'none';
         if (guideUI) guideUI.style.display = 'none';
         if (guideAddBtn) guideAddBtn.style.display = 'none';
@@ -545,7 +545,7 @@ window.switchStoryView = function(tabId, mode, btn) {
         if (ul) ul.style.display = '';
         if (addBtn) addBtn.style.display = '';
         if (prompt) prompt.remove();
-        // 恢复描写指导
+        // 恢复用户偏好
         if (guideTitle) guideTitle.style.display = '';
         if (guideUI) guideUI.style.display = '';
         if (guideAddBtn) guideAddBtn.style.display = '';
@@ -869,17 +869,17 @@ function _buildConnectorLine(x1, y1, x2, y2) {
 }
 
 window.showGuidancePopup = function() {
-    var guideData = originalDataCache[__timelineTabId] ? (originalDataCache[__timelineTabId].variable['\u63CF\u5199\u6307\u5BFC'] || {}) : {};
+    var guideData = originalDataCache[__timelineTabId] ? (originalDataCache[__timelineTabId].variable['\u7528\u6237\u504F\u597D'] || {}) : {};
     var keys = Object.keys(guideData);
     var text = '';
     if (keys.length === 0) {
-        text = '\u6682\u65E0\u63CF\u5199\u6307\u5BFC';
+        text = '\u6682\u65E0\u7528\u6237\u504F\u597D';
     } else {
         keys.forEach(function(k) {
             text += '\u25C6 ' + k + '\n' + (guideData[k] || '') + '\n\n';
         });
     }
-    document.getElementById('zoomCardTitle').textContent = '\u63CF\u5199\u6307\u5BFC';
+    document.getElementById('zoomCardTitle').textContent = '\u7528\u6237\u504F\u597D';
     var bodyBox = document.getElementById('zoomCardBody');
     bodyBox.removeAttribute('contenteditable');
     bodyBox.className = 'zoom-card-body';

@@ -16,7 +16,7 @@ function isWorldviewComingSoon(mode, worldview) {
 }
 
 var WORLDVIEW_IDS = ["medieval", "colony", "western", "xianxia", "magic"];
-var WORLDVIEW_NAMES = ["中世纪童话", "开拓新大陆与殖民贸易", "西部拓荒", "东方修仙", "西方魔法"];
+var WORLDVIEW_NAMES = ["中世纪童话", "自定义模式", "西部拓荒", "东方修仙", "西方魔法"];
 
 // 世界观槽位公式（世界书重排后）
 // 六槽：内化协议 3+W / 世界观设定 52+W / 种族·势力 57+W / 伊菈称呼 62+W / 社会生态 67+W / 文风 72+W
@@ -72,9 +72,9 @@ var emptyTemplateInfo = {
         "world": { "date": "", "position": "", "time": "" },
         "write": { "stage": "阶段0", "next_stage": "阶段1", "next_next_stage": "阶段2" },
         "setting": { "mode": "script", "worldview": "medieval" },
-        "user": { "identity": "", "gender": "", "body_state": "", "Inventory": {}, "surroundings": "", "Psychological_description": "" },
+        "user": { "identity": "", "gender": "", "body_state": "", "inventory": {}, "surroundings": "", "psychological_description": "" },
         "剧情线": {},
-        "描写指导": {},
+        "用户偏好": {},
         "背景信息": { "地区": { "未知地图": { "描述": "尚未开拓之地...", "民俗风情": {} } } }
     }
 };

@@ -246,13 +246,21 @@ window.toggleMusic = function() {
         __fc1Audio = new Audio(FC1_MUSIC_URL);
         __fc1Audio.loop = true;
     }
-    var btn = document.getElementById('fc1-music-btn');
     if (__fc1Audio.paused) {
         __fc1Audio.play().catch(function() {});
-        if (btn) btn.innerHTML = '\u23F8 暂停音乐';
     } else {
         __fc1Audio.pause();
-        if (btn) btn.innerHTML = '\u266A 播放音乐';
+    }
+    fc1UpdateMusicBtnState();
+};
+
+window.fc1UpdateMusicBtnState = function() {
+    var btn = document.getElementById('fc1-music-btn');
+    if (!btn) return;
+    if (__fc1Audio && !__fc1Audio.paused) {
+        btn.classList.add('playing');
+    } else {
+        btn.classList.remove('playing');
     }
 };
 
@@ -264,8 +272,7 @@ window.tryAutoPlayMusic = function() {
     }
     if (__fc1Audio.paused) {
         __fc1Audio.play().then(function() {
-            var btn = document.getElementById('fc1-music-btn');
-            if (btn) btn.innerHTML = '\u23F8 暂停音乐';
+            fc1UpdateMusicBtnState();
         }).catch(function() {});
     }
 };
@@ -323,10 +330,10 @@ var FC1_IDENTITIES = [
     { id: "maroon", name: "逃奴·玛戎", region: "base", desc: "从奴隶制下逃亡，躲进深山密林或自由港，无合法身份却拥有自由，靠胆识在夹缝中求生。", res: "无资产 + 无合法身份 + 自由" },
 
     { id: "company_agent", name: "特许公司代理人", region: "europe", desc: "受母国特许公司委派，在殖民地与航线间经营垄断贸易，靠官商关系与佣金立足。", res: "本金 + 母国特许关系" },
-    { id: "noble_second_son", name: "没落贵族次子", region: "europe", desc: "出身贵族却无继承权，携家中余钱漂洋过海，指望在新大陆挣出一份属于自己的家业与名号。", res: "家产余钱 + 母国声望" },
+    { id: "noble_second_son", name: "没落贵族次子", region: "europe", desc: "出身贵族却无继承权，携家中余钱漂洋过海，指望在新大陆挣出一份属于自己的家业与名号。", res: "家产余钱" },
     { id: "shipwright", name: "造船商·船坞主", region: "europe", desc: "祖辈经营船坞，熟谙船价、木料与改装门道，守着港口船坞，为往来船只造新补旧。", res: "船坞 + 银元" },
 
-    { id: "slave_fort_agent", name: "奴隶要塞代理", region: "west_africa", desc: "受雇于欧洲奴隶商人，驻守西非海岸的奴隶要塞与商站，用制成品从部落酋长处换取深色奴。", res: "商站 + 西非声望 + 奴隶货源" },
+    { id: "slave_fort_agent", name: "奴隶要塞代理", region: "west_africa", desc: "受雇于欧洲奴隶商人，驻守西非海岸的奴隶要塞与商站，用制成品从部落酋长处换取深色奴。", res: "商站 + 奴隶货源" },
     { id: "tribal_middleman", name: "部落中间商", region: "west_africa", desc: "西非本地酋长或掮客，组织掳掠与贩奴，把同族人卖给欧洲人换取火器、布匹与铜器。", res: "西非人脉 + 掳奴渠道" },
     { id: "arms_dealer", name: "军火贩子", region: "west_africa", desc: "往来西非海岸，向部落兜售火器与弹药，以此换取奴隶与黄金，游走在血腥的贸易链上。", res: "军火货物 + 本金" },
 
@@ -545,9 +552,6 @@ function fc1MakeShip(type, cost, crewCount, condition, crewWeapons, shipGuns, mo
 function fc1EmptyRelationship() {
     return { family: {}, subordinates: { slaves: {}, hands: {} } };
 }
-function fc1EmptyReputation() {
-    return { region: {}, sea: {}, international: {} };
-}
 
 window.fc1BuildVariablePreset = function(identityId, regionId) {
     var pos = FC1_REGION_POSITIONS[regionId] || "";
@@ -557,15 +561,11 @@ window.fc1BuildVariablePreset = function(identityId, regionId) {
         body_state: "精力充沛",
         ships: {},
         estate: {},
-        relationship: fc1EmptyRelationship(),
-        reputation: fc1EmptyReputation()
+        relationship: fc1EmptyRelationship()
     };
 
     function addShip(name, type, cost, crewCount, condition, cw, sg, morale) {
         base.ships[name] = fc1MakeShip(type, cost, crewCount, condition, cw, sg, morale);
-    }
-    function addRep(layer, key, standing, bounty) {
-        base.reputation[layer][key] = { standing: standing, bounty: bounty || "" };
     }
     function addEstate(name, type, location, extra) {
         var e = { type: type, location: location || pos };
@@ -585,50 +585,39 @@ window.fc1BuildVariablePreset = function(identityId, regionId) {
             addShip("私掠船", "双桅帆船", "2000 银元", 40, 90,
                 { "弯刀": { count: "30把", category: "冷兵器" }, "燧发枪": { count: "15支", category: "轻火器" } },
                 { "前膛炮": { count: "8门", category: "标准舰炮" } });
-            addRep("sea", "私掠船长", "友好");
-            addRep("sea", "皇家海军", "中立");
             break;
         case "merchant_captain":
             base.wealth = "银币 500 枚";
             addShip("商船", "盖伦船", "4000 银元", 30, 95,
                 { "弯刀": { count: "10把", category: "冷兵器" } },
                 { "前膛炮": { count: "4门", category: "轻型舰炮" } });
-            addRep("sea", "商船航运", "中立");
             break;
         case "indentured":
             base.wealth = "银币 5 枚";
             base.body_state = "疲惫";
-            addRep("sea", "商船航运", "冷淡");
             break;
         case "maroon":
             base.wealth = "银币 3 枚";
             base.body_state = "机警";
-            addRep("international", "英格兰", "敌视", "200 银元");
             break;
         case "company_agent":
             base.wealth = "银币 800 枚";
-            addRep("international", "英格兰", "友好");
-            addRep("region", "西印度群岛", "中立");
             break;
         case "noble_second_son":
             base.wealth = "银币 1200 枚";
-            addRep("international", "英格兰", "友好");
             base.relationship.family["母亲"] = { relation: "母亲", gender: "伊芙", affection: "和睦", location: "英格兰 - 布里斯托", status: "健康", expense: "10 银元/月" };
             break;
         case "shipwright":
             base.wealth = "银币 600 枚";
-            addEstate("船坞", "手工业及简单工艺", pos, { status: "营业中", product: "造船与修船" });
-            addRep("region", "港口", "中立");
+            addEstate("船坞", "手工业", pos, { status: "营业中", product: "造船与修船" });
             break;
         case "slave_fort_agent":
             base.wealth = "银币 400 枚";
             addEstate("奴隶商站", "商业", "西非海岸 - 奴隶要塞", { status: "营业中", business: "奴隶贸易" });
-            addRep("region", "西非海岸", "友好");
             addHand("翻译掮客", "掮客", "男性", "顺从", "15 银元/月");
             break;
         case "tribal_middleman":
             base.wealth = "银币 300 枚";
-            addRep("region", "西非部落", "友好");
             addHand("部落武士", "护卫", "男性", "顺从", "8 银元/月");
             break;
         case "arms_dealer":
@@ -640,45 +629,36 @@ window.fc1BuildVariablePreset = function(identityId, regionId) {
                 "燧发枪": { count: "50支", quality: "良", category: "军火" },
                 "火药": { count: "20桶", quality: "良", category: "军火" }
             };
-            addRep("region", "西非海岸", "中立");
             break;
         case "overseer":
             base.wealth = "银币 30 枚";
-            addRep("region", "牙买加", "中立");
             break;
         case "free_colored":
             base.wealth = "银币 150 枚";
-            addEstate("小作坊", "手工业及简单工艺", pos, { status: "营业中", product: "木工与裁缝" });
-            addRep("region", "当地", "中立");
+            addEstate("小作坊", "手工业", pos, { status: "营业中", product: "木工与裁缝" });
             break;
         case "sugar_mill_owner":
             base.wealth = "银币 500 枚";
-            addEstate("制糖坊", "手工业及简单工艺", pos, { status: "营业中", product: "糖" });
+            addEstate("制糖坊", "手工业", pos, { status: "营业中", product: "糖" });
             addSlave("库姆巴", "西非", "男性", "供精母牛", "隐忍", "4 银元/月");
             addSlave("阿玛拉", "西非", "伊芙", "田间苦工", "顺从", "3 银元/月");
-            addRep("region", "牙买加", "中立");
             break;
         case "noble_scion":
             base.wealth = "银币 3000 枚";
             addEstate("大型庄园", "居所", pos);
             addHand("管家", "管家", "男性", "忠心", "40 银元/月");
-            addRep("international", "英格兰", "友好");
             break;
         case "pirate":
             base.wealth = "银币 40 枚";
             addShip("海盗船", "双桅帆船", "1500 银元", 45, 85,
                 { "弯刀": { count: "35把", category: "冷兵器" }, "燧发枪": { count: "20支", category: "轻火器" } },
                 { "前膛炮": { count: "6门", category: "标准舰炮" } });
-            addRep("sea", "海盗", "中立");
-            addRep("sea", "皇家海军", "仇敌", "3000 银元");
             break;
         case "navigator":
             base.wealth = "银币 60 枚";
-            addRep("sea", "商船航运", "友好");
             break;
         case "ship_doctor":
             base.wealth = "银币 100 枚";
-            addRep("sea", "商船航运", "友好");
             break;
         default:
             break;
@@ -715,7 +695,6 @@ window.fc1RenderVariables = function() {
     html += '<div class="fc1-var-section"><div class="fc1-var-title">ships 船只</div><textarea id="fc1-var-ships" class="fc1-var-json" spellcheck="false">' + fc1EscapeHtml(JSON.stringify(preset.ships, null, 2)) + '</textarea></div>';
     html += '<div class="fc1-var-section"><div class="fc1-var-title">estate 家产</div><textarea id="fc1-var-estate" class="fc1-var-json" spellcheck="false">' + fc1EscapeHtml(JSON.stringify(preset.estate, null, 2)) + '</textarea></div>';
     html += '<div class="fc1-var-section"><div class="fc1-var-title">relationship 关系</div><textarea id="fc1-var-relationship" class="fc1-var-json" spellcheck="false">' + fc1EscapeHtml(JSON.stringify(preset.relationship, null, 2)) + '</textarea></div>';
-    html += '<div class="fc1-var-section"><div class="fc1-var-title">reputation 声望</div><textarea id="fc1-var-reputation" class="fc1-var-json" spellcheck="false">' + fc1EscapeHtml(JSON.stringify(preset.reputation, null, 2)) + '</textarea></div>';
 
     html += '<div class="fc1-var-actions">' +
         '<button class="fc1-setting-save" onclick="fc1SaveVariables()">保存变量</button>' +
@@ -753,11 +732,9 @@ window.fc1CollectVariable = function() {
         var ships = readJSON('fc1-var-ships');
         var estate = readJSON('fc1-var-estate');
         var relationship = readJSON('fc1-var-relationship');
-        var reputation = readJSON('fc1-var-reputation');
         if (ships !== null) v.ships = ships;
         if (estate !== null) v.estate = estate;
         if (relationship !== null) v.relationship = relationship;
-        if (reputation !== null) v.reputation = reputation;
     } else if (__fc1Variables) {
         v.world.position = __fc1Variables.position || v.world.position;
         v.user.wealth = __fc1Variables.wealth || v.user.wealth;
@@ -765,14 +742,13 @@ window.fc1CollectVariable = function() {
         if (__fc1Variables.ships) v.ships = __fc1Variables.ships;
         if (__fc1Variables.estate) v.estate = __fc1Variables.estate;
         if (__fc1Variables.relationship) v.relationship = __fc1Variables.relationship;
-        if (__fc1Variables.reputation) v.reputation = __fc1Variables.reputation;
     }
 
     v.setting = v.setting || {};
     v.setting.mode = __currentMode || "free";
     v.setting.worldview = __currentWorldviewId || "colony";
 
-    // 自由模式输出：剔除剧情模式专属字段（write 三格传送带 / 剧情线），保留地区信息与描写指导
+    // 自由模式输出：剔除剧情模式专属字段（write 三格传送带 / 剧情线），保留地区信息与用户偏好
     var out = {};
     Object.keys(v).forEach(function(k) { out[k] = v[k]; });
     delete out.write;
@@ -932,10 +908,10 @@ window.commitImportData = async function() {
             _safeAssignPath("variable.user.gender", u.gender);
             _safeAssignPath("variable.user.body_state", u.body_state);
             _safeAssignPath("variable.user.surroundings", u.surroundings);
-            _safeAssignPath("variable.user.Psychological_description", u.Psychological_description);
-            if(u.Inventory && typeof u.Inventory === 'object') {
-                var invUl = container.querySelector('[data-dict="variable.user.Inventory"]');
-                if(invUl) invUl.innerHTML = generateInventoryList(u.Inventory);
+            _safeAssignPath("variable.user.psychological_description", u.psychological_description);
+            if(u.inventory && typeof u.inventory === 'object') {
+                var invUl = container.querySelector('[data-dict="variable.user.inventory"]');
+                if(invUl) invUl.innerHTML = generateInventoryList(u.inventory);
             }
         }
         if(parsed.variable["剧情线"] !== undefined) {
@@ -946,9 +922,9 @@ window.commitImportData = async function() {
             }
             if(stUl) { stUl.innerHTML = generateComplexStorylines(parsed.variable["剧情线"]); }
         }
-        if(parsed.variable["描写指导"] !== undefined) {
-            var gdUl = container.querySelector('[data-dict="variable.描写指导"]');
-            if(gdUl) gdUl.innerHTML = generateStorylines(parsed.variable["描写指导"]);
+        if(parsed.variable["用户偏好"] !== undefined) {
+            var gdUl = container.querySelector('[data-dict="variable.用户偏好"]');
+            if(gdUl) gdUl.innerHTML = generateStorylines(parsed.variable["用户偏好"]);
         }
         if(parsed.variable["背景信息"] && parsed.variable["背景信息"]["地区"]) {
             var targetRC = container.querySelector('#regions-' + __currentImportTabId);
@@ -1113,7 +1089,7 @@ window.addNewStoryline = function(btnElem, type) {
     } else {
         var items2 = list.querySelectorAll(':scope > [data-ditem]');
         var count2 = items2.length;
-        if(count2 >= 30) { showCustomAlert("描写指导至多添加三十个！"); return; }
+        if(count2 >= 30) { showCustomAlert("用户偏好至多添加三十个！"); return; }
         var idx2 = count2 + 1;
         var titleStr2 = '指导' + idx2;
         var newRow2 = document.createElement('li');
