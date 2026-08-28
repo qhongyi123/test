@@ -231,6 +231,7 @@ function switchSubTab(btnElement, subTabId) {
     var mainPanelContainer = headerContainer.parentElement;
     mainPanelContainer.querySelectorAll('.sub-panel').forEach(function(panel) { panel.classList.remove('active'); });
     mainPanelContainer.querySelector('#' + subTabId).classList.add('active');
+    if (subTabId === 'FC1-sub4' && typeof fc1InitRender === 'function') { fc1InitRender(); }
 }
 
 window.goToSubTab = function(tabId, subTabId) {
@@ -554,7 +555,7 @@ function fc1MakeShip(type, cost, crewCount, condition, crewWeapons, shipGuns, mo
 }
 
 function fc1EmptyRelationship() {
-    return { family: {}, subordinates: { slaves: {}, hands: {} } };
+    return { family: {}, friends: {}, hands: {}, slaves: {} };
 }
 
 window.fc1BuildVariablePreset = function(identityId, regionId) {
@@ -577,10 +578,10 @@ window.fc1BuildVariablePreset = function(identityId, regionId) {
         base.estate[name] = e;
     }
     function addHand(name, role, gender, loyalty, expense) {
-        base.relationship.subordinates.hands[name] = { role: role, gender: gender || "男性", loyalty: loyalty || "顺从", location: pos, status: "健康", expense: expense };
+        base.relationship.hands[name] = { role: role, gender: gender || "男性", loyalty: loyalty || "顺从", location: pos, status: "健康", expense: expense };
     }
     function addSlave(name, origin, gender, role, loyalty, expense) {
-        base.relationship.subordinates.slaves[name] = { origin: origin || "西非", gender: gender || "男性", role: role || "田间苦工", loyalty: loyalty || "顺从", location: pos, status: "健康", expense: expense };
+        base.relationship.slaves[name] = { origin: origin || "西非", gender: gender || "男性", role: role || "田间苦工", loyalty: loyalty || "顺从", location: pos, status: "健康", expense: expense };
     }
 
     switch (identityId) {
@@ -808,9 +809,9 @@ window.fc1StartGame = async function() {
     if (!__fc1Identity) { showCustomAlert("请先在「角色背景」中选择身份组"); return; }
     var v;
     try {
-        v = fc1CollectVariable();
+        v = (typeof fc1CollectInitialVars === 'function') ? fc1CollectInitialVars() : fc1CollectVariable();
     } catch(e) {
-        showCustomAlert("存在 JSON 格式有误的变量，请到「变量设定」检查后重试");
+        showCustomAlert("存在 JSON 格式有误的变量，请到「初始设定」检查后重试");
         return;
     }
     if (!v) return;
@@ -1405,10 +1406,35 @@ window.refreshCharManager = async function() {
                         '</label>' +
                     '</div>' +
                 '</div>' +
-                '<div id="char-detail-body-' + c.uid + '" style="display:none; padding:10px; font-size:0.95em; white-space:pre-wrap; color:var(--color-text-dark); background:rgba(253,246,227,0.8);">' + mtH(c.content||'<em style="color:gray;">该条目为空..</em>') + '</div>' +
+                '<div id="char-detail-body-' + c.uid + '" style="display:none; padding:10px; background:rgba(253,246,227,0.8);">' +
+                    '<span class="param-label" style="display:block; margin-bottom:4px;">化身名号:</span>' +
+                    '<input type="text" id="charmgr-name-' + c.uid + '" class="charmgr-name-input" value="' + fc1EscapeAttr(c.comment || '') + '">' +
+                    '<span class="param-label" style="display:block; margin:8px 0 4px;">命途轨痕 (人物条目内容):</span>' +
+                    '<textarea id="charmgr-content-' + c.uid + '" class="charmgr-content-input">' + fc1EscapeHtml(c.content || '') + '</textarea>' +
+                    '<div style="display:flex; justify-content:flex-end; gap:10px; margin-top:10px;">' +
+                        '<button class="charmgr-save-btn" onclick="saveCharManagerEntry(' + c.uid + ')">\u2727 保存 \u2727</button>' +
+                    '</div>' +
+                '</div>' +
             '</div>';
     });
     charListBox.innerHTML = listHTML;
+};
+
+window.saveCharManagerEntry = async function(uid) {
+    if (typeof setLorebookEntries !== 'function') { showCustomAlert("提示：请确认正处于兼容脚本运行的次元环境节点！"); return; }
+    var nameInput = document.getElementById('charmgr-name-' + uid);
+    var contentInput = document.getElementById('charmgr-content-' + uid);
+    if (!nameInput || !contentInput) return;
+    var nameVal = nameInput.value.trim();
+    var contentVal = contentInput.value;
+    var isGranted = await showCustomConfirm("确认写入该角色吗");
+    if (!isGranted) return;
+    try {
+        await setLorebookEntries(LOREBOOK_NAME, [{ uid: uid, comment: nameVal, content: contentVal }]);
+        showCustomAlert("\u2728 已写入世界书");
+        await populateCharSelectors();
+        await refreshCharManager();
+    } catch(e) { showCustomAlert("写入失败，请刷新或重新连接世界书"); }
 };
 
 window.toggleCharDetail = function(uid) {

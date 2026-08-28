@@ -1,0 +1,5 @@
+[
+  { "name": "商船", "type": "盖伦船", "crewCount": 30, "condition": 95, "cost": "4000 银元" },
+  { "name": "私掠船", "type": "双桅帆船", "crewCount": 40, "condition": 90, "cost": "2000 银元" },
+  { "name": "货船", "type": "双桅帆船", "crewCount": 20, "condition": 90, "cost": "1500 银元" }
+]

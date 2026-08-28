@@ -5,7 +5,7 @@ var STORY_MANIFEST = [
     { id: "SM3", name: "卖火柴的小女孩",    file: "data/stories/卖火柴的小女孩.json", mode: "script", worldview: "medieval", headers: ["背景信息", "剧情线", "参数调整", "开始剧情"] },
     { id: "SM4", name: "小裁缝一次干七个！", file: "data/stories/小裁缝一次干七个！.json", mode: "script", worldview: "medieval", headers: ["背景信息", "剧情线", "参数调整", "开始剧情"] },
     { id: "SM5", name: "白雪公主（制作中）", file: "data/stories/白雪公主.json", mode: "script", worldview: "medieval", headers: ["背景信息", "剧情线", "参数调整", "开始剧情"] },
-    { id: "FC1", name: "自由模式-贩奴贸易",  file: null, mode: "free", worldview: "colony", headers: ["世界观概览", "区域选择", "角色背景", "变量设定", "开始剧情"] },
+    { id: "FC1", name: "自由模式-贩奴贸易",  file: null, mode: "free", worldview: "colony", headers: ["世界观概览", "区域选择", "角色背景", "初始设定", "开始剧情"] },
     { id: "tab5", name: "自定义开局",        file: null, headers: ["背景信息", "人物信息", "参数调整", "开始剧情"] },
     { id: "tab6", name: "自定义剧本",        file: null, headers: ["背景信息", "剧情线", "人物信息", "参数调整", "开始剧情"] }
 ];
@@ -79,6 +79,9 @@ async function initDynamicTabs() {
 
     // 加载所有故事数据
     await loadAllStories();
+
+    // 加载 FC1 世界观预设（地区/物品/人物/家产/船只）
+    if (typeof loadFc1Presets === 'function') { await loadFc1Presets(); }
 
     // 从目录卡片中同步封面图
     document.querySelectorAll('.toc-img-card').forEach(function(card) {
@@ -247,11 +250,8 @@ async function initDynamicTabs() {
                     '</div>' +
                 '</div>';
             }
-            else if (h === "变量设定") {
-                contentStr = '<div class="fc1-var-wrap">' +
-                    '<div class="fc1-region-title">\u2756 变量设定 \u2756</div>' +
-                    '<div class="fc1-var-editor" id="fc1-variable-editor"></div>' +
-                '</div>';
+            else if (h === "初始设定") {
+                contentStr = '<div class="fc1-init-wrap" id="fc1-init-root"></div>';
             }
 
             panelsHTML += '<div id="' + thisSubId + '" class="sub-panel ' + isSubActive + '">' + contentStr + '</div>';
