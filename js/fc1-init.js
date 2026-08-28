@@ -3,25 +3,95 @@
 //   showCustomAlert, showCustomConfirm, setLorebookEntries, fetchCharEntries,
 //   FC1_REGIONS, FC1_IDENTITIES, fc1BuildVariablePreset, LOREBOOK_NAME, __cachedEntries
 
-var FC1_PRESETS = { regions: [], items: [], characters: [], estates: [], ships: [] };
+var FC1_PRESETS = { regions: [], items: [], characters: [], identities: [], estates: [], ships: [] };
+
+// 身份组选项卡（key 用于 region 字段，label 也是预设文件夹名）
+var FC1IS_IDENTITY_TABS = [
+    { key: 'base', label: '通用' },
+    { key: 'europe', label: '欧洲' },
+    { key: 'west_africa', label: '西非' },
+    { key: 'south_america', label: '南美' },
+    { key: 'sea', label: '海洋' }
+];
+
+// ---- 预设文件读取 ----
+async function fc1isFetchJson(rel) {
+    try {
+        var res = await fetch('data/fc1-presets/' + rel);
+        if (res.ok) return await res.json();
+    } catch (e) {}
+    return null;
+}
+// 平铺：index.json 为字符串数组（文件名），文件在分类根目录
+async function fc1isLoadFlat(category) {
+    var idx = await fc1isFetchJson(category + '/index.json');
+    var names = Array.isArray(idx) ? idx : [];
+    var out = [];
+    for (var i = 0; i < names.length; i++) {
+        var it = await fc1isFetchJson(category + '/' + names[i]);
+        if (it) out.push(it);
+    }
+    return out;
+}
+// 身份组：index.json 为 { 文件夹名: [文件名...] }，region 由文件夹对应的选项卡 key 推导
+async function fc1isLoadIdentities() {
+    var idx = await fc1isFetchJson('identities/index.json');
+    var out = [];
+    if (idx && typeof idx === 'object' && !Array.isArray(idx)) {
+        for (var i = 0; i < FC1IS_IDENTITY_TABS.length; i++) {
+            var t = FC1IS_IDENTITY_TABS[i];
+            var names = idx[t.label] || [];
+            for (var j = 0; j < names.length; j++) {
+                var it = await fc1isFetchJson('identities/' + t.label + '/' + names[j]);
+                if (it) { it.region = t.key; out.push(it); }
+            }
+        }
+    }
+    return out;
+}
+// 地区：index.json 为 { 文件夹名: { 区域:[...], 地点:[...] } }
+async function fc1isLoadRegions() {
+    var idx = await fc1isFetchJson('regions/index.json');
+    var out = [];
+    if (idx && typeof idx === 'object' && !Array.isArray(idx)) {
+        for (var i = 0; i < FC1IS_IDENTITY_TABS.length; i++) {
+            var t = FC1IS_IDENTITY_TABS[i];
+            var sub = idx[t.label] || {};
+            var kinds = ['区域', '地点'];
+            for (var k = 0; k < kinds.length; k++) {
+                var names = sub[kinds[k]] || [];
+                for (var j = 0; j < names.length; j++) {
+                    var it = await fc1isFetchJson('regions/' + t.label + '/' + kinds[k] + '/' + names[j]);
+                    if (it) { it.region = t.key; it.kind = kinds[k]; out.push(it); }
+                }
+            }
+        }
+    }
+    return out;
+}
+// 人物：index.json 为 { 类别: [文件名...] }
+async function fc1isLoadCharacters() {
+    var idx = await fc1isFetchJson('characters/index.json');
+    var out = [];
+    if (idx && typeof idx === 'object' && !Array.isArray(idx)) {
+        for (var cat in idx) {
+            var names = idx[cat] || [];
+            for (var i = 0; i < names.length; i++) {
+                var it = await fc1isFetchJson('characters/' + cat + '/' + names[i]);
+                if (it) { it.category = cat; out.push(it); }
+            }
+        }
+    }
+    return out;
+}
 
 window.loadFc1Presets = async function() {
-    var files = {
-        regions: 'regions.json',
-        items: 'items.json',
-        characters: 'characters.json',
-        estates: 'estates.json',
-        ships: 'ships.json'
-    };
-    for (var key in files) {
-        try {
-            var res = await fetch('data/fc1-presets/' + files[key]);
-            if (res.ok) {
-                var data = await res.json();
-                if (Array.isArray(data)) FC1_PRESETS[key] = data;
-            }
-        } catch (e) { /* 离线或路径缺失时保持空数组 */ }
-    }
+    FC1_PRESETS.identities = await fc1isLoadIdentities();
+    FC1_PRESETS.regions = await fc1isLoadRegions();
+    FC1_PRESETS.characters = await fc1isLoadCharacters();
+    FC1_PRESETS.estates = await fc1isLoadFlat('estates');
+    FC1_PRESETS.ships = await fc1isLoadFlat('ships');
+    FC1_PRESETS.items = await fc1isLoadFlat('items');
 };
 
 // ---- 通用工具 ----
@@ -52,6 +122,7 @@ function fc1isEnsureVar() {
     v.estate = v.estate || {};
     v.ships = v.ships || {};
     v.warehouse = v.warehouse || {};
+    v.employment = v.employment || {};
     return v;
 }
 
@@ -191,29 +262,48 @@ function fc1isRegionObj(name) {
     }
     return regions[name];
 }
-function fc1isResolveRegion() {
-    if (__fc1isRegionCustom) return __fc1isRegion || '';
-    if (!__fc1Region) return '';
+function fc1isEnsureStartRegion() {
+    if (__fc1isRegionCustom || !__fc1Region) return;
     var r = (FC1_REGIONS || []).find(function(x) { return x.id === __fc1Region; });
-    return r ? r.name : '';
+    if (!r) return;
+    fc1isRegionObj(r.name);
+    if (!__fc1isRegion) __fc1isRegion = r.name;
 }
 function fc1isRenderRegion(v) {
     return fc1isSection('地区信息',
-        '<div class="fc1is-region-head"><button class="fc1is-region-custom" onclick="fc1isCustomRegion()">+ 自定义地区</button></div>' +
+        '<div class="fc1is-region-head">' +
+            '<button class="fc1is-region-custom" onclick="fc1isOpenRegionPicker()">\u2756 预设地区 \u2756</button>' +
+            '<button class="fc1is-region-custom" onclick="fc1isCustomRegion()">+ 自定义地区</button>' +
+        '</div>' +
+        '<div class="fc1is-region-chips" id="fc1is-region-chips"></div>' +
         '<div class="fc1is-region-display" id="fc1is-region-display"></div>');
 }
+function fc1isRenderRegionChips() {
+    var box = document.getElementById('fc1is-region-chips');
+    if (!box) return;
+    var v = fc1isEnsureVar();
+    var regions = v['背景信息']['地区'] || {};
+    var chips = '';
+    Object.keys(regions).forEach(function(name) {
+        chips += '<button class="fc1is-region-chip' + (name === __fc1isRegion ? ' active' : '') + '" onclick="fc1isSelectRegionChip(' + fc1isAttrJs(name) + ')">' + mtH(name) + '</button>';
+    });
+    box.innerHTML = chips;
+}
+window.fc1isSelectRegionChip = function(name) {
+    __fc1isRegion = name;
+    __fc1isRegionCustom = false;
+    fc1isRenderRegionChips();
+    fc1isRenderRegionDisplay();
+};
 function fc1isRenderRegionDisplay() {
     var box = document.getElementById('fc1is-region-display');
     if (!box) return;
-    var name = fc1isResolveRegion();
-    if (!name) {
-        box.innerHTML = '<div class="fc1is-region-empty">请先前往「区域选择」选择你的起始之地，再回来编辑该地区。</div>';
+    if (!__fc1isRegion) {
+        box.innerHTML = '<div class="fc1is-region-empty">请先前往「区域选择」选择你的起始之地，或点击上方「预设地区」添加。</div>';
         return;
     }
-    __fc1isRegion = name;
-    fc1isRegionObj(name);
     var v = fc1isEnsureVar();
-    var rd = v['背景信息']['地区'][name] || { 描述: '', 民俗风情: {} };
+    var rd = v['背景信息']['地区'][__fc1isRegion] || { 描述: '', 民俗风情: {} };
     var customs = rd.民俗风情 || {};
     var rows = '';
     Object.keys(customs).forEach(function(k) {
@@ -225,7 +315,7 @@ function fc1isRenderRegionDisplay() {
     });
     rows += '<div class="fc1is-add" onclick="fc1isAddCustom()">+ 添加风情词条</div>';
     box.innerHTML = '<div class="fc1is-region-editor">' +
-        (__fc1isRegionCustom ? '<div class="fc1is-row"><span class="fc1is-label">地区名</span><input id="fc1is-region-name" value="' + fc1isAttrJs(name) + '" onchange="fc1isRenameRegion(' + fc1isAttrJs(name) + ', this.value)"></div>' : '') +
+        (__fc1isRegionCustom ? '<div class="fc1is-row"><span class="fc1is-label">地区名</span><input id="fc1is-region-name" value="' + fc1isAttrJs(__fc1isRegion) + '" onchange="fc1isRenameRegion(' + fc1isAttrJs(__fc1isRegion) + ', this.value)"></div>' : '') +
         '<div class="fc1is-row-col"><span class="fc1is-label">描述</span><textarea id="fc1is-region-desc" oninput="fc1isSetRegionDesc(this.value)">' + fc1isEsc(rd.描述 || '') + '</textarea></div>' +
         '<div class="fc1is-sub"><div class="fc1is-label">民俗风情</div><div class="fc1is-customs" id="fc1is-customs">' + rows + '</div></div>' +
     '</div>';
@@ -235,6 +325,7 @@ window.fc1isCustomRegion = function() {
     __fc1isRegion = '新地区';
     var v = fc1isEnsureVar();
     if (!v['背景信息']['地区']['新地区']) v['背景信息']['地区']['新地区'] = { 描述: '', 民俗风情: {} };
+    fc1isRenderRegionChips();
     fc1isRenderRegionDisplay();
 };
 window.fc1isRenameRegion = function(oldName, newName) {
@@ -403,10 +494,53 @@ function fc1isWH(scale) {
     if (m) return { w: parseInt(m[1], 10) || 1, h: parseInt(m[2], 10) || 1 };
     return { w: 4, h: 1 };
 }
+var FC1IS_SHIP_SIZE = {
+    '小艇': { w: 1, h: 1 },
+    '渔船': { w: 1, h: 1 },
+    '双桅帆船': { w: 2, h: 1 },
+    '商船': { w: 2, h: 1 },
+    '盖伦船': { w: 2, h: 2 },
+    '大型商船': { w: 2, h: 2 },
+    '护卫舰': { w: 2, h: 2 },
+    '战列舰': { w: 4, h: 2 }
+};
 function fc1isShipWH(type) {
-    var map = { '小艇': [1, 1], '渔船': [2, 1], '双桅帆船': [2, 1], '商船': [3, 1], '盖伦船': [3, 1], '大型商船': [4, 1], '护卫舰': [3, 1], '战列舰': [4, 2] };
-    var s = map[type] || [2, 1];
-    return { w: s[0], h: s[1] };
+    return FC1IS_SHIP_SIZE[type] || { w: 2, h: 1 };
+}
+// 地块颜色（与状态栏一致：灰=待分配、黄=已就职、蓝=无需就职、红=荒废/重损）
+function fc1isEstateTileClass(estate, staffed) {
+    var needsStaff = estate.type === '商业' || estate.type === '农事' || estate.type === '手工业';
+    if (!needsStaff) return 'tile-neutral';
+    if (estate.status === '荒废' || estate.status === '歇业') return 'tile-derelict';
+    return staffed ? 'tile-staffed' : 'tile-vacant';
+}
+function fc1isShipTileClass(ship, staffed) {
+    var cond = ship.status && ship.status.condition;
+    if (cond !== undefined && cond !== null && cond !== '' && cond <= 30) return 'tile-derelict';
+    return staffed ? 'tile-staffed' : 'tile-vacant';
+}
+// 就职：employment 独立变量 { 人名: { type:'estate'|'ship', name:目标名 } }
+function fc1isAllPersons() {
+    var v = fc1isEnsureVar();
+    var out = [];
+    ['family', 'friends', 'hands', 'slaves'].forEach(function(cat) {
+        Object.keys(v.relationship[cat] || {}).forEach(function(name) { if (out.indexOf(name) === -1) out.push(name); });
+    });
+    return out;
+}
+function fc1isUnassignedPersons() {
+    var v = fc1isEnsureVar();
+    var emp = v.employment || {};
+    return fc1isAllPersons().filter(function(name) { return !emp[name]; });
+}
+function fc1isStaffList(type, name) {
+    var v = fc1isEnsureVar();
+    var emp = v.employment || {};
+    var out = [];
+    Object.keys(emp).forEach(function(person) {
+        if (emp[person] && emp[person].type === type && emp[person].name === name) out.push(person);
+    });
+    return out;
 }
 function fc1isLayoutTiles(items) {
     var grid = [], result = [];
@@ -442,9 +576,13 @@ function fc1isLayoutTiles(items) {
 }
 function fc1isBoard(type, items) {
     var layout = fc1isLayoutTiles(items);
+    var v = fc1isEnsureVar();
     var cells = '';
     layout.forEach(function(it) {
-        cells += '<div class="fc1-board-tile" style="grid-column:' + (it.col + 1) + ' / span ' + it.w + '; grid-row:' + (it.row + 1) + ' / span ' + it.h + ';" onclick="fc1isEditAsset(\'' + type + '\', ' + fc1isAttrJs(it.name) + ')">' + mtH(it.name) + '</div>';
+        var asset = (type === 'estate' ? v.estate : v.ships)[it.name] || {};
+        var staffed = fc1isStaffList(type, it.name).length > 0;
+        var cls = type === 'estate' ? fc1isEstateTileClass(asset, staffed) : fc1isShipTileClass(asset, staffed);
+        cells += '<div class="fc1-board-tile ' + cls + '" style="grid-column:' + (it.col + 1) + ' / span ' + it.w + '; grid-row:' + (it.row + 1) + ' / span ' + it.h + ';" onclick="fc1isEditAsset(\'' + type + '\', ' + fc1isAttrJs(it.name) + ')">' + mtH(it.name) + '</div>';
     });
     return '<div class="fc1-board"><div class="fc1-board-grid">' + cells + '</div></div>';
 }
@@ -569,7 +707,37 @@ window.fc1isCommitShipCustom = function() {
     fc1isRenderShipSection();
 };
 
-// 编辑地块/船只（简单字段编辑）
+// 编辑地块/船只（简单字段编辑 + 就职安排）
+function fc1isRenderEmploymentHTML(type, name) {
+    var staff = fc1isStaffList(type, name);
+    var staffHtml = '';
+    staff.forEach(function(p) {
+        staffHtml += '<span class="fc1is-emp-chip">' + mtH(p) + ' <span class="fc1is-del" onclick="fc1isUnassignPerson(\'' + type + '\', ' + fc1isAttrJs(name) + ', ' + fc1isAttrJs(p) + ')">\u2715</span></span>';
+    });
+    var unassigned = fc1isUnassignedPersons();
+    var opts = '<option value="">请选择角色</option>';
+    unassigned.forEach(function(p) { opts += '<option value="' + fc1isAttrJs(p) + '">' + mtH(p) + '</option>'; });
+    return '<div class="fc1is-sub fc1is-emp">' +
+        '<span class="fc1is-label">就职</span>' +
+        '<div class="fc1is-emp-list">' + (staffHtml || '<span class="fc1is-empty-inline">无人就职</span>') + '</div>' +
+        '<div class="fc1is-row"><select id="fc1is-emp-select">' + opts + '</select><button class="fc1-drawer-confirm" onclick="fc1isAssignPerson(\'' + type + '\', ' + fc1isAttrJs(name) + ')">就职</button></div>' +
+    '</div>';
+}
+window.fc1isAssignPerson = function(type, name) {
+    var v = fc1isEnsureVar(); if (!v) return;
+    var sel = document.getElementById('fc1is-emp-select');
+    var person = sel ? sel.value : '';
+    if (!person) { showCustomAlert('请先选择角色'); return; }
+    v.employment[person] = { type: type, name: name };
+    if (type === 'estate') fc1isRenderEstateSection(); else fc1isRenderShipSection();
+    fc1isEditAsset(type, name);
+};
+window.fc1isUnassignPerson = function(type, name, person) {
+    var v = fc1isEnsureVar(); if (!v) return;
+    delete v.employment[person];
+    if (type === 'estate') fc1isRenderEstateSection(); else fc1isRenderShipSection();
+    fc1isEditAsset(type, name);
+};
 window.fc1isEditAsset = function(type, name) {
     var v = fc1isEnsureVar(); if (!v) return;
     var map = type === 'estate' ? v.estate : v.ships;
@@ -582,6 +750,7 @@ window.fc1isEditAsset = function(type, name) {
                 '<div class="fc1is-row"><span class="fc1is-label">状态</span><input id="fc1is-e-status" value="' + fc1isAttrJs(asset.status) + '"></div>' +
                 '<div class="fc1is-row"><span class="fc1is-label">产物</span><input id="fc1is-e-product" value="' + fc1isAttrJs(asset.product) + '"></div>' +
                 '<div class="fc1is-row-col"><span class="fc1is-label">描述</span><textarea id="fc1is-e-desc">' + fc1isEsc(asset.description || '') + '</textarea></div>' +
+                fc1isRenderEmploymentHTML('estate', name) +
                 '<button class="fc1-drawer-confirm" onclick="fc1isCommitAssetEdit(\'estate\', ' + fc1isAttrJs(name) + ')">\u2727 保存 \u2727</button>' +
             '</div>');
     } else {
@@ -593,6 +762,7 @@ window.fc1isEditAsset = function(type, name) {
                 '<div class="fc1is-row"><span class="fc1is-label">船况</span><input id="fc1is-s-cond" value="' + fc1isAttrJs((asset.status && asset.status.condition) || '') + '"></div>' +
                 '<div class="fc1is-row"><span class="fc1is-label">造价</span><input id="fc1is-s-cost" value="' + fc1isAttrJs((asset.value && asset.value.cost) || '') + '"></div>' +
                 '<div class="fc1is-sub"><span class="fc1is-label">货物（' + Object.keys(cargo).length + '）</span><button class="fc1is-add-btn" onclick="fc1isOpenCargo(\'ship\', ' + fc1isAttrJs(name) + ')">+ 添加货物</button></div>' +
+                fc1isRenderEmploymentHTML('ship', name) +
                 '<button class="fc1-drawer-confirm" onclick="fc1isCommitAssetEdit(\'ship\', ' + fc1isAttrJs(name) + ')">\u2727 保存 \u2727</button>' +
             '</div>');
     }
@@ -734,6 +904,17 @@ window.fc1isDelWare = function(item) {
             '<div class="fc1-modal-body" id="fc1is-idp-body"></div>' +
         '</div>';
     document.body.appendChild(m);
+
+    var rm = document.createElement('div');
+    rm.className = 'fc1-modal';
+    rm.id = 'fc1-region-picker';
+    rm.innerHTML = '<div class="fc1-modal-backdrop" onclick="fc1isCloseRegionPicker()"></div>' +
+        '<div class="fc1-modal-box">' +
+            '<div class="fc1-modal-head"><span class="fc1-modal-title">\u2756 预设地区 \u2756</span><button class="fc1-modal-close" onclick="fc1isCloseRegionPicker()">\u2715</button></div>' +
+            '<div class="fc1-modal-tabs" id="fc1is-rg-tabs"></div>' +
+            '<div class="fc1-modal-body" id="fc1is-rg-body"></div>' +
+        '</div>';
+    document.body.appendChild(rm);
 })();
 window.fc1isOpenDrawer = function(title, html) {
     var d = document.getElementById('fc1-drawer');
@@ -753,13 +934,6 @@ window.fc1isCloseDrawer = function() {
 };
 
 // ==================== 预设身份组弹窗 ====================
-var FC1IS_IDENTITY_TABS = [
-    { key: 'base', label: '通用' },
-    { key: 'europe', label: '欧洲' },
-    { key: 'west_africa', label: '西非' },
-    { key: 'south_america', label: '南美' },
-    { key: 'sea', label: '海洋' }
-];
 var __fc1isIdpTab = 'base';
 window.fc1isOpenIdentityPicker = function() {
     var m = document.getElementById('fc1-identity-picker');
@@ -787,7 +961,8 @@ window.fc1isSetIdpTab = function(key) {
 function fc1isRenderIdpBody() {
     var box = document.getElementById('fc1is-idp-body');
     if (!box) return;
-    var list = (FC1_IDENTITIES || []).filter(function(it) { return it.region === __fc1isIdpTab; });
+    var list = (FC1_PRESETS.identities || []).filter(function(it) { return it.region === __fc1isIdpTab; });
+    if (!list.length) list = (FC1_IDENTITIES || []).filter(function(it) { return it.region === __fc1isIdpTab; });
     var cards = list.map(function(it) {
         return '<div class="fc1-idp-card" onclick="fc1isPickIdentity(\'' + it.id + '\')">' +
             '<div class="fc1-idp-name">' + mtH(it.name) + '</div>' +
@@ -799,7 +974,8 @@ function fc1isRenderIdpBody() {
 }
 window.fc1isPickIdentity = function(id) {
     __fc1Identity = id;
-    var it = (FC1_IDENTITIES || []).find(function(x) { return x.id === id; });
+    var pool = (FC1_PRESETS.identities && FC1_PRESETS.identities.length) ? FC1_PRESETS.identities : (FC1_IDENTITIES || []);
+    var it = pool.find(function(x) { return x.id === id; });
     var v = fc1isEnsureVar();
     if (v && it) v.user.identity = it.name;
     var input = document.getElementById('fc1-identity-input');
@@ -808,11 +984,65 @@ window.fc1isPickIdentity = function(id) {
     fc1InitRender();
 };
 
+// ==================== 预设地区弹窗（五个选项卡 + 区域/地点） ====================
+var __fc1isRgTab = 'base';
+window.fc1isOpenRegionPicker = function() {
+    var m = document.getElementById('fc1-region-picker');
+    if (!m) return;
+    m.classList.add('open');
+    fc1isRenderRgTabs();
+    fc1isRenderRgBody();
+};
+window.fc1isCloseRegionPicker = function() {
+    var m = document.getElementById('fc1-region-picker');
+    if (m) m.classList.remove('open');
+};
+function fc1isRenderRgTabs() {
+    var box = document.getElementById('fc1is-rg-tabs');
+    if (!box) return;
+    box.innerHTML = FC1IS_IDENTITY_TABS.map(function(t) {
+        return '<button class="fc1-modal-tab' + (__fc1isRgTab === t.key ? ' active' : '') + '" onclick="fc1isSetRgTab(\'' + t.key + '\')">' + t.label + '</button>';
+    }).join('');
+}
+window.fc1isSetRgTab = function(key) {
+    __fc1isRgTab = key;
+    fc1isRenderRgTabs();
+    fc1isRenderRgBody();
+};
+function fc1isRenderRgBody() {
+    var box = document.getElementById('fc1is-rg-body');
+    if (!box) return;
+    var html = '';
+    ['区域', '地点'].forEach(function(kind) {
+        var list = (FC1_PRESETS.regions || []).filter(function(r) { return r.region === __fc1isRgTab && r.kind === kind; });
+        var cards = list.map(function(r) {
+            return '<div class="fc1-idp-card" onclick="fc1isPickRegion(' + fc1isAttrJs(r.name) + ')">' +
+                '<div class="fc1-idp-name">' + mtH(r.name) + '</div>' +
+                '<div class="fc1-idp-desc">' + mtH(r.描述 || '') + '</div>' +
+            '</div>';
+        }).join('');
+        html += '<div class="fc1-modal-subtitle">' + kind + '</div>' + (cards || '<div class="fc1is-empty">暂无' + kind + '</div>');
+    });
+    box.innerHTML = html;
+}
+window.fc1isPickRegion = function(name) {
+    var v = fc1isEnsureVar(); if (!v) return;
+    var pres = (FC1_PRESETS.regions || []).find(function(r) { return r.name === name; }) || {};
+    if (!v['背景信息']['地区'][name]) {
+        v['背景信息']['地区'][name] = { 描述: pres.描述 || '', 民俗风情: JSON.parse(JSON.stringify(pres.民俗风情 || {})) };
+    }
+    __fc1isRegion = name;
+    __fc1isRegionCustom = false;
+    fc1isCloseRegionPicker();
+    fc1InitRender();
+};
+
 // ==================== 总渲染 ====================
 window.fc1InitRender = function() {
     var root = document.getElementById('fc1-init-root');
     if (!root) return;
     fc1isSyncPreset();
+    fc1isEnsureStartRegion();
     var v = fc1isEnsureVar();
     if (!v) return;
     root.innerHTML =
@@ -824,6 +1054,7 @@ window.fc1InitRender = function() {
         fc1isRenderEstate(v) +
         fc1isRenderShip(v) +
         fc1isRenderWarehouse(v);
+    fc1isRenderRegionChips();
     fc1isRenderRegionDisplay();
 };
 
