@@ -149,37 +149,66 @@ function fc1isSection(title, body) {
 }
 
 // ==================== ① 世界信息 ====================
+var __fc1isWorldDraft = { y: '', mo: '', dd: '', wd: '' };
+
 function fc1isWeekday(y, mo, dd) {
     var d = new Date(parseInt(y, 10), parseInt(mo, 10) - 1, parseInt(dd, 10));
     if (isNaN(d.getTime())) return '';
     return ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'][d.getDay()];
 }
-function fc1isRenderWorld(v) {
-    var d = v.world.date || '';
-    var m = d.match(/(\d{1,4})年(\d{1,2})月(\d{1,2})日/);
-    var y = m ? m[1] : '', mo = m ? m[2] : '', dd = m ? m[3] : '';
-    var wd = fc1isWeekday(y, mo, dd);
+function fc1isInitWorldDraft() {
+    if (__fc1isWorldDraft.y || __fc1isWorldDraft.mo || __fc1isWorldDraft.dd || __fc1isWorldDraft.wd) return;
+    var v = fc1isEnsureVar();
+    var d = (v && v.world && v.world.date) || '';
+    var m = d.match(/(\d{1,4})年(\d{1,2})月(\d{1,2})日(?:\s*星期(.+))?/);
+    __fc1isWorldDraft = {
+        y: m ? m[1] : '',
+        mo: m ? m[2] : '',
+        dd: m ? m[3] : '',
+        wd: m ? (m[4] ? m[4].replace(/^星期/, '') : '') : ''
+    };
+}
+function fc1isRenderWorld() {
     return fc1isSection('世界信息', '<div class="fc1is-world">' +
         '<span class="fc1is-world-text">如今是</span>' +
-        '<input class="fc1is-date-input" id="fc1is-year" value="' + y + '" placeholder="1689" oninput="fc1isOnWorldDate()">' +
+        '<input class="fc1is-date-input" id="fc1is-year" value="' + fc1isAttrJs(__fc1isWorldDraft.y) + '" placeholder="1689" oninput="fc1isOnWorldDate()">' +
         '<span class="fc1is-world-text">年，</span>' +
-        '<input class="fc1is-date-input" id="fc1is-month" value="' + mo + '" placeholder="5" oninput="fc1isOnWorldDate()">' +
+        '<input class="fc1is-date-input" id="fc1is-month" value="' + fc1isAttrJs(__fc1isWorldDraft.mo) + '" placeholder="5" oninput="fc1isOnWorldDate()">' +
         '<span class="fc1is-world-text">月，约莫是</span>' +
-        '<input class="fc1is-date-input" id="fc1is-day" value="' + dd + '" placeholder="12" oninput="fc1isOnWorldDate()">' +
-        '<span class="fc1is-world-text">日</span>' +
-        '<span class="fc1is-world-text fc1is-weekday" id="fc1is-weekday">' + (wd ? '，' + wd : '') + '</span>' +
+        '<input class="fc1is-date-input" id="fc1is-day" value="' + fc1isAttrJs(__fc1isWorldDraft.dd) + '" placeholder="12" oninput="fc1isOnWorldDate()">' +
+        '<span class="fc1is-world-text">日，星期</span>' +
+        '<input class="fc1is-date-input" id="fc1is-weekday-input" value="' + fc1isAttrJs(__fc1isWorldDraft.wd) + '" placeholder="三" oninput="fc1isOnWeekday()">' +
         '<button class="fc1is-random-btn" onclick="fc1isRandomDate()">随机</button>' +
     '</div>');
 }
+function fc1isCommitWorldDate() {
+    var yEl = document.getElementById('fc1is-year');
+    var moEl = document.getElementById('fc1is-month');
+    var ddEl = document.getElementById('fc1is-day');
+    var wdEl = document.getElementById('fc1is-weekday-input');
+    var y = yEl ? yEl.value.trim() : '';
+    var mo = moEl ? moEl.value.trim() : '';
+    var dd = ddEl ? ddEl.value.trim() : '';
+    var wd = wdEl ? wdEl.value.trim() : '';
+    __fc1isWorldDraft = { y: y, mo: mo, dd: dd, wd: wd };
+    var v = fc1isEnsureVar();
+    if (v) v.world.date = (y && mo && dd && wd) ? (y + '年' + mo + '月' + dd + '日 星期' + wd) : '';
+    fc1isUpdateNav();
+}
 window.fc1isOnWorldDate = function() {
-    var v = fc1isEnsureVar(); if (!v) return;
-    var y = document.getElementById('fc1is-year').value.trim();
-    var mo = document.getElementById('fc1is-month').value.trim();
-    var dd = document.getElementById('fc1is-day').value.trim();
+    var yEl = document.getElementById('fc1is-year');
+    var moEl = document.getElementById('fc1is-month');
+    var ddEl = document.getElementById('fc1is-day');
+    var wdEl = document.getElementById('fc1is-weekday-input');
+    var y = yEl ? yEl.value.trim() : '';
+    var mo = moEl ? moEl.value.trim() : '';
+    var dd = ddEl ? ddEl.value.trim() : '';
     var wd = fc1isWeekday(y, mo, dd);
-    v.world.date = (y && mo && dd) ? (y + '年' + mo + '月' + dd + '日' + (wd ? ' ' + wd : '')) : '';
-    var wdEl = document.getElementById('fc1is-weekday');
-    if (wdEl) wdEl.textContent = (y && mo && dd && wd) ? ('，' + wd) : '';
+    if (wdEl && wd) wdEl.value = wd.replace(/^星期/, '');
+    fc1isCommitWorldDate();
+};
+window.fc1isOnWeekday = function() {
+    fc1isCommitWorldDate();
 };
 window.fc1isRandomDate = function() {
     var v = fc1isEnsureVar(); if (!v) return;
@@ -187,13 +216,15 @@ window.fc1isRandomDate = function() {
     var mo = 1 + Math.floor(Math.random() * 12);
     var days = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][mo - 1];
     var dd = 1 + Math.floor(Math.random() * days);
+    var wd = fc1isWeekday(y, mo, dd);
     document.getElementById('fc1is-year').value = y;
     document.getElementById('fc1is-month').value = mo;
     document.getElementById('fc1is-day').value = dd;
-    var wd = fc1isWeekday(y, mo, dd);
-    v.world.date = y + '年' + mo + '月' + dd + '日' + (wd ? ' ' + wd : '');
-    var wdEl = document.getElementById('fc1is-weekday');
-    if (wdEl) wdEl.textContent = '，' + wd;
+    var wdEl = document.getElementById('fc1is-weekday-input');
+    if (wdEl) wdEl.value = wd.replace(/^星期/, '');
+    __fc1isWorldDraft = { y: String(y), mo: String(mo), dd: String(dd), wd: wd.replace(/^星期/, '') };
+    v.world.date = y + '年' + mo + '月' + dd + '日 ' + wd;
+    fc1isUpdateNav();
 };
 
 // ==================== ② 角色信息 ====================
@@ -250,6 +281,7 @@ window.fc1isOnUser = function(field) {
     var v = fc1isEnsureVar(); if (!v) return;
     var el = document.getElementById('fc1is-' + field);
     if (el) v.user[field] = el.value.trim();
+    fc1isUpdateNav();
 };
 window.fc1isAddInv = function() {
     var box = document.getElementById('fc1is-inv');
@@ -1084,25 +1116,96 @@ window.fc1isPickRegion = function(name) {
     fc1InitRender();
 };
 
+// ==================== 引导式步骤（世界信息 → 性别 → 身份 → 完整编辑器） ====================
+var __fc1isStep = 0;
+
+function fc1isStepFilled() {
+    var v = fc1isEnsureVar();
+    if (!v) return false;
+    if (__fc1isStep === 0) {
+        return !!(__fc1isWorldDraft.y && __fc1isWorldDraft.mo && __fc1isWorldDraft.dd && __fc1isWorldDraft.wd);
+    }
+    if (__fc1isStep === 1) {
+        return !!(v.user && v.user.gender);
+    }
+    if (__fc1isStep === 2) {
+        return !!(v.user && v.user.identity);
+    }
+    return true;
+}
+
+function fc1isUpdateNav() {
+    var btn = document.getElementById('fc1is-continue');
+    if (!btn) return;
+    btn.style.display = fc1isStepFilled() ? '' : 'none';
+}
+
+window.fc1isNext = function() {
+    __fc1isStep++;
+    fc1isRenderStep();
+};
+
+function fc1isNavHTML() {
+    return '<div class="fc1is-nav">' +
+        '<button class="fc1is-nav-btn fc1is-nav-skip" onclick="fc1isNext()">跳过</button>' +
+        '<button class="fc1is-nav-btn fc1is-nav-continue" id="fc1is-continue" style="display:none;" onclick="fc1isNext()">继续</button>' +
+    '</div>';
+}
+
+function fc1isRenderGenderStep(v) {
+    var u = v.user;
+    var genderOpts = ['', '男性', '伊芙', '伊菈'].map(function(g) {
+        return '<option value="' + g + '"' + ((u.gender || '') === g ? ' selected' : '') + '>' + (g || '请选择') + '</option>';
+    }).join('');
+    return fc1isSection('角色信息',
+        '<div class="fc1is-row"><span class="fc1is-label">性别</span><select id="fc1is-gender" onchange="fc1isOnUser(\'gender\')">' + genderOpts + '</select></div>');
+}
+
+function fc1isRenderIdentityStep(v) {
+    var u = v.user;
+    return fc1isSection('角色信息',
+        '<div class="fc1is-row"><span class="fc1is-label">用户身份</span><input id="fc1is-identity" value="' + fc1isAttrJs(u.identity) + '" oninput="fc1isOnUser(\'identity\')"></div>' +
+        '<div class="fc1is-row"><span class="fc1is-label"></span><button class="fc1is-idp-btn" onclick="fc1isOpenIdentityPicker()">\u2756 预设身份组 \u2756</button></div>');
+}
+
+function fc1isRenderStep() {
+    var root = document.getElementById('fc1-init-root');
+    if (!root) return;
+    var v = fc1isEnsureVar();
+    if (!v) return;
+    fc1isInitWorldDraft();
+    var content = '';
+    if (__fc1isStep === 0) {
+        content = fc1isRenderWorld();
+    } else if (__fc1isStep === 1) {
+        content = fc1isRenderGenderStep(v);
+    } else if (__fc1isStep === 2) {
+        content = fc1isRenderIdentityStep(v);
+    } else {
+        content = fc1isRenderWorld() +
+            fc1isRenderChar(v) +
+            fc1isRenderRegion(v) +
+            fc1isRenderRel(v) +
+            fc1isRenderEstate(v) +
+            fc1isRenderShip(v) +
+            fc1isRenderWarehouse(v);
+    }
+    var nav = (__fc1isStep >= 3) ? '' : fc1isNavHTML();
+    root.innerHTML = '<div class="fc1is-hint">所有未填写的项请留空，无需填写「无」。</div>' + content + nav;
+    if (__fc1isStep >= 3) {
+        fc1isRenderRegionChips();
+        fc1isRenderRegionDisplay();
+    }
+    fc1isUpdateNav();
+}
+
 // ==================== 总渲染 ====================
 window.fc1InitRender = function() {
     var root = document.getElementById('fc1-init-root');
     if (!root) return;
     fc1isSyncPreset();
     fc1isEnsureStartRegion();
-    var v = fc1isEnsureVar();
-    if (!v) return;
-    root.innerHTML =
-        '<div class="fc1is-hint">所有未填写的项请留空，无需填写「无」。</div>' +
-        fc1isRenderWorld(v) +
-        fc1isRenderChar(v) +
-        fc1isRenderRegion(v) +
-        fc1isRenderRel(v) +
-        fc1isRenderEstate(v) +
-        fc1isRenderShip(v) +
-        fc1isRenderWarehouse(v);
-    fc1isRenderRegionChips();
-    fc1isRenderRegionDisplay();
+    fc1isRenderStep();
 };
 
 // ==================== 收集变量（替代 fc1CollectVariable） ====================

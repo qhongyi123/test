@@ -1285,6 +1285,14 @@ body {
 .fc1is-random-btn { padding: 4px 14px; border-radius: 12px; border: 1px dashed var(--color-primary-dark); background: rgba(212,175,55,0.08); color: var(--color-primary-dark); cursor: pointer; font-family: inherit; font-size: 0.85rem; transition: all 0.2s; }
 .fc1is-random-btn:hover { background: rgba(212,175,55,0.22); }
 
+/* 引导式步骤导航按钮 */
+.fc1is-nav { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 4px; }
+.fc1is-nav-btn { padding: 8px 28px; border-radius: 8px; cursor: pointer; font-family: inherit; font-size: 0.95rem; font-weight: bold; letter-spacing: 2px; transition: all 0.2s; }
+.fc1is-nav-skip { border: 1px solid rgba(184,134,11,0.45); background: transparent; color: var(--color-text-dark); }
+.fc1is-nav-skip:hover { background: rgba(184,134,11,0.12); border-color: var(--color-primary-dark); }
+.fc1is-nav-continue { border: none; background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%); color: #1a0f2e; box-shadow: 0 2px 6px rgba(0,0,0,0.2); }
+.fc1is-nav-continue:hover { filter: brightness(1.08); }
+
 /* 地区信息头部（预设地区/自定义地区按钮） */
 .fc1is-region-head { display: flex; justify-content: flex-end; gap: 6px; margin-bottom: 6px; }
 .fc1is-region-custom { position: static; padding: 4px 12px; font-size: 0.78rem; border: 1px dashed var(--color-primary-dark); border-radius: 12px; background: rgba(212,175,55,0.1); color: var(--color-primary-dark); cursor: pointer; }
