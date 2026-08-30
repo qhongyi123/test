@@ -1191,6 +1191,7 @@ body {
 
 /* 物品栏 */
 .fc1is-inv { display: flex; flex-direction: column; gap: 6px; }
+.fc1is-inv-actions { display: flex; gap: 10px; align-items: center; margin-bottom: 4px; }
 .fc1is-inv-row { display: flex; gap: 6px; align-items: center; }
 .fc1is-inv-key { width: 36%; }
 .fc1is-inv-val { flex: 1; }
@@ -1278,6 +1279,7 @@ body {
 /* 世界信息（代入感句式 + 随机按钮） */
 .fc1is-world { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .fc1is-world-text { color: var(--color-text-dark); font-size: 0.95rem; }
+.fc1is-weekday { color: var(--color-primary-dark); font-weight: bold; }
 .fc1is-date-input { width: 62px; padding: 4px 6px; text-align: center; border: none; border-bottom: 1px solid rgba(184,134,11,0.5); background: transparent; color: var(--color-primary-dark); font-family: inherit; font-size: 0.95rem; outline: none; font-weight: bold; }
 .fc1is-date-input:focus { border-bottom-color: var(--color-primary); background: rgba(253,246,227,0.4); }
 .fc1is-random-btn { padding: 4px 14px; border-radius: 12px; border: 1px dashed var(--color-primary-dark); background: rgba(212,175,55,0.08); color: var(--color-primary-dark); cursor: pointer; font-family: inherit; font-size: 0.85rem; transition: all 0.2s; }
@@ -1299,6 +1301,11 @@ body {
 .fc1is-empty-inline { font-size: 0.82rem; color: #999; }
 .fc1-drawer .fc1is-emp .fc1is-row select { background: rgba(253,246,227,0.12); color: #fdf6e3; border-color: rgba(212,175,55,0.4); }
 .fc1-drawer .fc1is-emp .fc1is-label { color: var(--color-primary); }
+
+/* 关系标签选择 */
+.fc1is-tag-opts { display: flex; gap: 10px; flex-wrap: wrap; }
+.fc1is-tag-opt { display: flex; align-items: center; gap: 4px; font-size: 0.85rem; color: var(--color-text-light); cursor: pointer; }
+.fc1-drawer .fc1is-tag-opt { color: rgba(253,246,227,0.85); }
 
 /* 预设身份组按钮 */
 .fc1is-idp-btn { padding: 4px 14px; border-radius: 6px; border: 1px dashed var(--color-primary-dark); background: rgba(212,175,55,0.08); color: var(--color-primary-dark); cursor: pointer; font-family: inherit; font-size: 0.85rem; transition: all 0.2s; }

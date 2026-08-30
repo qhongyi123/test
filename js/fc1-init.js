@@ -3,7 +3,7 @@
 //   showCustomAlert, showCustomConfirm, setLorebookEntries, fetchCharEntries,
 //   FC1_REGIONS, FC1_IDENTITIES, fc1BuildVariablePreset, LOREBOOK_NAME, __cachedEntries
 
-var FC1_PRESETS = { regions: [], items: [], characters: [], identities: [], estates: [], ships: [] };
+var FC1_PRESETS = { regions: [], items: [], inventory: [], characters: [], identities: [], estates: [], ships: [] };
 
 // 身份组选项卡（key 用于 region 字段，label 也是预设文件夹名）
 var FC1IS_IDENTITY_TABS = [
@@ -92,6 +92,7 @@ window.loadFc1Presets = async function() {
     FC1_PRESETS.estates = await fc1isLoadFlat('estates');
     FC1_PRESETS.ships = await fc1isLoadFlat('ships');
     FC1_PRESETS.items = await fc1isLoadFlat('items');
+    FC1_PRESETS.inventory = await fc1isLoadFlat('inventory');
 };
 
 // ---- 通用工具 ----
@@ -115,10 +116,6 @@ function fc1isEnsureVar() {
     v['背景信息'] = v['背景信息'] || {};
     v['背景信息']['地区'] = v['背景信息']['地区'] || {};
     v.relationship = v.relationship || {};
-    v.relationship.family = v.relationship.family || {};
-    v.relationship.friends = v.relationship.friends || {};
-    v.relationship.hands = v.relationship.hands || {};
-    v.relationship.slaves = v.relationship.slaves || {};
     v.estate = v.estate || {};
     v.ships = v.ships || {};
     v.warehouse = v.warehouse || {};
@@ -138,9 +135,8 @@ function fc1isSyncPreset() {
     if (!v.world.position) v.world.position = preset.position;
     if (Object.keys(v.ships).length === 0 && preset.ships) v.ships = JSON.parse(JSON.stringify(preset.ships));
     if (Object.keys(v.estate).length === 0 && preset.estate) v.estate = JSON.parse(JSON.stringify(preset.estate));
-    ['family', 'friends', 'hands', 'slaves'].forEach(function(k) {
-        var src = preset.relationship && preset.relationship[k];
-        if (src && Object.keys(v.relationship[k]).length === 0) v.relationship[k] = JSON.parse(JSON.stringify(src));
+    Object.keys(preset.relationship || {}).forEach(function(name) {
+        if (!v.relationship[name]) v.relationship[name] = JSON.parse(JSON.stringify(preset.relationship[name]));
     });
 }
 
@@ -153,10 +149,16 @@ function fc1isSection(title, body) {
 }
 
 // ==================== ① 世界信息 ====================
+function fc1isWeekday(y, mo, dd) {
+    var d = new Date(parseInt(y, 10), parseInt(mo, 10) - 1, parseInt(dd, 10));
+    if (isNaN(d.getTime())) return '';
+    return ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'][d.getDay()];
+}
 function fc1isRenderWorld(v) {
     var d = v.world.date || '';
     var m = d.match(/(\d{1,4})年(\d{1,2})月(\d{1,2})日/);
     var y = m ? m[1] : '', mo = m ? m[2] : '', dd = m ? m[3] : '';
+    var wd = fc1isWeekday(y, mo, dd);
     return fc1isSection('世界信息', '<div class="fc1is-world">' +
         '<span class="fc1is-world-text">如今是</span>' +
         '<input class="fc1is-date-input" id="fc1is-year" value="' + y + '" placeholder="1689" oninput="fc1isOnWorldDate()">' +
@@ -165,6 +167,7 @@ function fc1isRenderWorld(v) {
         '<span class="fc1is-world-text">月，约莫是</span>' +
         '<input class="fc1is-date-input" id="fc1is-day" value="' + dd + '" placeholder="12" oninput="fc1isOnWorldDate()">' +
         '<span class="fc1is-world-text">日</span>' +
+        '<span class="fc1is-world-text fc1is-weekday" id="fc1is-weekday">' + (wd ? '，' + wd : '') + '</span>' +
         '<button class="fc1is-random-btn" onclick="fc1isRandomDate()">随机</button>' +
     '</div>');
 }
@@ -173,7 +176,10 @@ window.fc1isOnWorldDate = function() {
     var y = document.getElementById('fc1is-year').value.trim();
     var mo = document.getElementById('fc1is-month').value.trim();
     var dd = document.getElementById('fc1is-day').value.trim();
-    v.world.date = (y && mo && dd) ? (y + '年' + mo + '月' + dd + '日') : '';
+    var wd = fc1isWeekday(y, mo, dd);
+    v.world.date = (y && mo && dd) ? (y + '年' + mo + '月' + dd + '日' + (wd ? ' ' + wd : '')) : '';
+    var wdEl = document.getElementById('fc1is-weekday');
+    if (wdEl) wdEl.textContent = (y && mo && dd && wd) ? ('，' + wd) : '';
 };
 window.fc1isRandomDate = function() {
     var v = fc1isEnsureVar(); if (!v) return;
@@ -184,13 +190,16 @@ window.fc1isRandomDate = function() {
     document.getElementById('fc1is-year').value = y;
     document.getElementById('fc1is-month').value = mo;
     document.getElementById('fc1is-day').value = dd;
-    v.world.date = y + '年' + mo + '月' + dd + '日';
+    var wd = fc1isWeekday(y, mo, dd);
+    v.world.date = y + '年' + mo + '月' + dd + '日' + (wd ? ' ' + wd : '');
+    var wdEl = document.getElementById('fc1is-weekday');
+    if (wdEl) wdEl.textContent = '，' + wd;
 };
 
 // ==================== ② 角色信息 ====================
-function fc1isRenderChar(v) {
-    var u = v.user;
-    var inv = u.inventory || {};
+function fc1isInvRowsHTML() {
+    var v = fc1isEnsureVar();
+    var inv = v.user.inventory || {};
     var rows = '';
     Object.keys(inv).forEach(function(k) {
         rows += '<div class="fc1is-inv-row">' +
@@ -200,6 +209,14 @@ function fc1isRenderChar(v) {
         '</div>';
     });
     rows += '<div class="fc1is-add" onclick="fc1isAddInv()">+ 添加物品</div>';
+    return rows;
+}
+function fc1isRenderInvList() {
+    var box = document.getElementById('fc1is-inv');
+    if (box) box.innerHTML = fc1isInvRowsHTML();
+}
+function fc1isRenderChar(v) {
+    var u = v.user;
     var genderOpts = ['', '男性', '伊芙', '伊菈'].map(function(g) {
         return '<option value="' + g + '"' + ((u.gender || '') === g ? ' selected' : '') + '>' + (g || '请选择') + '</option>';
     }).join('');
@@ -209,8 +226,26 @@ function fc1isRenderChar(v) {
         '<div class="fc1is-row"><span class="fc1is-label"></span><button class="fc1is-idp-btn" onclick="fc1isOpenIdentityPicker()">\u2756 预设身份组 \u2756</button></div>' +
         '<div class="fc1is-row"><span class="fc1is-label">身体状态</span><input id="fc1is-body" value="' + fc1isAttrJs(u.body_state) + '" oninput="fc1isOnUser(\'body_state\')"></div>' +
         '<div class="fc1is-row"><span class="fc1is-label">财富</span><input id="fc1is-wealth" value="' + fc1isAttrJs(u.wealth) + '" oninput="fc1isOnUser(\'wealth\')"></div>' +
-        '<div class="fc1is-sub"><div class="fc1is-label">物品栏</div><div class="fc1is-inv" id="fc1is-inv">' + rows + '</div></div>');
+        '<div class="fc1is-sub">' +
+            '<div class="fc1is-label">物品栏</div>' +
+            '<div class="fc1is-inv-actions"><button class="fc1is-idp-btn" onclick="fc1isOpenInventoryDrawer()">预设物品</button></div>' +
+            '<div class="fc1is-inv" id="fc1is-inv">' + fc1isInvRowsHTML() + '</div>' +
+        '</div>');
 }
+window.fc1isOpenInventoryDrawer = function() {
+    var cards = FC1_PRESETS.inventory.map(function(it, i) {
+        return '<div class="fc1-drawer-item" onclick="fc1isAddInventoryItem(' + i + ')"><b>' + mtH(it.name) + '</b><span>' + mtH(it.value) + '</span></div>';
+    }).join('');
+    fc1isOpenDrawer('预设物品', cards || '<div class="fc1is-empty">暂无预设物品</div>');
+};
+window.fc1isAddInventoryItem = function(idx) {
+    var it = FC1_PRESETS.inventory[idx]; if (!it) return;
+    var v = fc1isEnsureVar(); if (!v) return;
+    v.user.inventory = v.user.inventory || {};
+    if (!v.user.inventory[it.name]) v.user.inventory[it.name] = it.value || '';
+    fc1isCloseDrawer();
+    fc1isRenderInvList();
+};
 window.fc1isOnUser = function(field) {
     var v = fc1isEnsureVar(); if (!v) return;
     var el = document.getElementById('fc1is-' + field);
@@ -392,23 +427,29 @@ var FC1IS_REL_CATS = [
     { key: 'hands', label: '手下' },
     { key: 'slaves', label: '奴隶' }
 ];
+var FC1IS_TAG_OPTIONS = ['宠物', '性奴', '情人'];
+var FC1IS_REL_FIELDS = ['gender', 'location', 'expense'];
+
 function fc1isRelLabel(key) {
     var c = FC1IS_REL_CATS.find(function(x) { return x.key === key; });
     return c ? c.label : key;
 }
 function fc1isRenderRel(v) {
+    var rel = v.relationship || {};
     var html = '';
     FC1IS_REL_CATS.forEach(function(c) {
-        var rel = v.relationship[c.key] || {};
-        var names = Object.keys(rel);
+        var names = Object.keys(rel).filter(function(n) {
+            var t = rel[n] && rel[n].tags;
+            return t && t[0] === c.label;
+        });
         var rows = '';
         names.forEach(function(n) {
             var r = rel[n] || {};
-            var brief = r.role || r.relation || r.affection || '';
+            var brief = r.desc || r.location || '';
             rows += '<div class="fc1is-rel-row">' +
                 '<span class="fc1is-rel-name">' + mtH(n) + '</span>' +
                 '<span class="fc1is-rel-brief">' + mtH(brief) + '</span>' +
-                '<span class="fc1is-del" onclick="fc1isRemoveRelation(\'' + c.key + '\', ' + fc1isAttrJs(n) + ')">\u2715</span>' +
+                '<span class="fc1is-del" onclick="fc1isRemoveRelation(' + fc1isAttrJs(n) + ')">\u2715</span>' +
             '</div>';
         });
         html += '<div class="fc1is-rel-table">' +
@@ -429,9 +470,9 @@ function fc1isRenderRelSection() {
     if (!wrap) return;
     wrap.outerHTML = fc1isRenderRel(v);
 }
-window.fc1isRemoveRelation = function(category, name) {
+window.fc1isRemoveRelation = function(name) {
     var v = fc1isEnsureVar(); if (!v) return;
-    delete v.relationship[category][name];
+    delete v.relationship[name];
     fc1isRenderRelSection();
 };
 window.fc1isOpenRelation = async function(category) {
@@ -439,7 +480,7 @@ window.fc1isOpenRelation = async function(category) {
     var list = FC1_PRESETS.characters.filter(function(c) { return c.category === category; });
     var cards = '';
     list.forEach(function(c, i) {
-        cards += '<div class="fc1-drawer-item" onclick="fc1isPickChar(' + i + ')"><b>' + mtH(c.name) + '</b><span>' + mtH(c.role || c.relation || '') + '</span></div>';
+        cards += '<div class="fc1-drawer-item" onclick="fc1isPickChar(' + i + ')"><b>' + mtH(c.name) + '</b><span>' + mtH(c.location || c.desc || '') + '</span></div>';
     });
     if (!cards) cards = '<div class="fc1is-empty">该类别暂无预设人物</div>';
     window.__fc1isCharList = list;
@@ -456,9 +497,13 @@ window.fc1isPickChar = function(idx) {
     (window.__fc1isEntries || []).forEach(function(e) {
         opts += '<option value="' + e.uid + '">' + mtH(e.comment || ('#' + e.uid)) + '</option>';
     });
+    var tagOpts = FC1IS_TAG_OPTIONS.map(function(t) {
+        return '<label class="fc1is-tag-opt"><input type="checkbox" class="fc1is-tag-chk" value="' + t + '">' + t + '</label>';
+    }).join('');
     var pick = document.getElementById('fc1-drawer-pick');
     if (pick) pick.innerHTML =
         '<div class="fc1is-row-col"><span class="fc1is-label">角色描述（可编辑）</span><textarea id="fc1is-char-desc">' + fc1isEsc(c.desc || '') + '</textarea></div>' +
+        '<div class="fc1is-row-col"><span class="fc1is-label">附加标签（可选）</span><div class="fc1is-tag-opts">' + tagOpts + '</div></div>' +
         '<div class="fc1is-row"><span class="fc1is-label">写入目标条目</span><select id="fc1is-char-entry">' + opts + '</select></div>' +
         '<button class="fc1-drawer-confirm" onclick="fc1isInsertRelation()">\u2727 确认塞入 \u2727</button>';
 };
@@ -469,17 +514,23 @@ window.fc1isInsertRelation = async function() {
     var c = window.__fc1isPickedChar;
     if (!c) return;
     if (!uid) { showCustomAlert('请先选择目标条目'); return; }
-    var desc = descEl ? descEl.value : (c.desc || '');
+    var desc = descEl ? descEl.value.trim() : (c.desc || '');
     if (typeof setLorebookEntries === 'function') {
         try { await setLorebookEntries(LOREBOOK_NAME, [{ uid: uid, content: desc }]); } catch(e) { showCustomAlert('写入失败'); return; }
     }
     var v = fc1isEnsureVar(); if (!v) return;
-    var rel = v.relationship[window.__fc1isRelCat];
-    rel[c.name] = rel[c.name] || {};
-    ['role', 'relation', 'gender', 'affection', 'loyalty', 'origin', 'location', 'status', 'expense'].forEach(function(k) {
-        if (c[k] !== undefined) rel[c.name][k] = c[k];
+    var rel = v.relationship[c.name] || {};
+    FC1IS_REL_FIELDS.forEach(function(k) {
+        var val = (c[k] !== undefined && c[k] !== '') ? c[k] : '';
+        rel[k] = (val === '') ? '待更新' : val;
     });
-    rel[c.name].desc = desc;
+    rel.desc = (desc === '') ? '待更新' : desc;
+    var tags = [fc1isRelLabel(window.__fc1isRelCat)];
+    document.querySelectorAll('.fc1is-tag-chk:checked').forEach(function(chk) {
+        if (tags.indexOf(chk.value) === -1) tags.push(chk.value);
+    });
+    rel.tags = tags;
+    v.relationship[c.name] = rel;
     fc1isCloseDrawer();
     fc1isRenderRelSection();
     showCustomAlert('\u2728 已塞入角色');
@@ -522,11 +573,7 @@ function fc1isShipTileClass(ship, staffed) {
 // 就职：employment 独立变量 { 人名: { type:'estate'|'ship', name:目标名 } }
 function fc1isAllPersons() {
     var v = fc1isEnsureVar();
-    var out = [];
-    ['family', 'friends', 'hands', 'slaves'].forEach(function(cat) {
-        Object.keys(v.relationship[cat] || {}).forEach(function(name) { if (out.indexOf(name) === -1) out.push(name); });
-    });
-    return out;
+    return Object.keys(v.relationship || {});
 }
 function fc1isUnassignedPersons() {
     var v = fc1isEnsureVar();
@@ -686,7 +733,7 @@ window.fc1isAddShipCustom = function() {
             '<div class="fc1is-row"><span class="fc1is-label">船名</span><input id="fc1is-c-sname"></div>' +
             '<div class="fc1is-row"><span class="fc1is-label">类型</span><input id="fc1is-c-stype" placeholder="小艇/渔船/双桅帆船/商船/盖伦船..."></div>' +
             '<div class="fc1is-row"><span class="fc1is-label">船员数</span><input id="fc1is-c-screw" placeholder="30"></div>' +
-            '<div class="fc1is-row"><span class="fc1is-label">造价</span><input id="fc1is-c-scost" placeholder="4000 银元"></div>' +
+            '<div class="fc1is-row"><span class="fc1is-label">造价</span><input id="fc1is-c-scost" placeholder="4000 银币"></div>' +
             '<button class="fc1-drawer-confirm" onclick="fc1isCommitShipCustom()">\u2727 确认添加 \u2727</button>' +
         '</div>');
 };

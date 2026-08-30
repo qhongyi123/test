@@ -329,14 +329,14 @@ window.selectRegion = function(region) {
 };
 
 var FC1_IDENTITIES = [
-    { id: "privateer", name: "私掠船长", region: "base", desc: "出身水手或退伍军官，持有一纸母国签发的私掠许可证，战时合法劫掠敌国商船，战利品与母国分成，与海盗只隔着一张许可证。", res: "1 艘武装船 + 船员 + 少量银元" },
+    { id: "privateer", name: "私掠船长", region: "base", desc: "出身水手或退伍军官，持有一纸母国签发的私掠许可证，战时合法劫掠敌国商船，战利品与母国分成，与海盗只隔着一张许可证。", res: "1 艘武装船 + 船员 + 少量银币" },
     { id: "merchant_captain", name: "商船船长", region: "base", desc: "家学渊源或从水手做起，拥有一艘跑三角贸易的商船，往返于欧洲、西非与美洲之间倒买倒卖，逐利海上。", res: "1 艘商船 + 货物本金" },
     { id: "indentured", name: "契约劳工", region: "base", desc: "为偿还横渡大西洋的船费，以数年劳作抵债，期满后有望获得自由与一块土地，眼下却一无所有。", res: "无资产 + 债务" },
     { id: "maroon", name: "逃奴·玛戎", region: "base", desc: "从奴隶制下逃亡，躲进深山密林或自由港，无合法身份却拥有自由，靠胆识在夹缝中求生。", res: "无资产 + 无合法身份 + 自由" },
 
     { id: "company_agent", name: "特许公司代理人", region: "europe", desc: "受母国特许公司委派，在殖民地与航线间经营垄断贸易，靠官商关系与佣金立足。", res: "本金 + 母国特许关系" },
     { id: "noble_second_son", name: "没落贵族次子", region: "europe", desc: "出身贵族却无继承权，携家中余钱漂洋过海，指望在新大陆挣出一份属于自己的家业与名号。", res: "家产余钱" },
-    { id: "shipwright", name: "造船商·船坞主", region: "europe", desc: "祖辈经营船坞，熟谙船价、木料与改装门道，守着港口船坞，为往来船只造新补旧。", res: "船坞 + 银元" },
+    { id: "shipwright", name: "造船商·船坞主", region: "europe", desc: "祖辈经营船坞，熟谙船价、木料与改装门道，守着港口船坞，为往来船只造新补旧。", res: "船坞 + 银币" },
 
     { id: "slave_fort_agent", name: "奴隶要塞代理", region: "west_africa", desc: "受雇于欧洲奴隶商人，驻守西非海岸的奴隶要塞与商站，用制成品从部落酋长处换取深色奴。", res: "商站 + 奴隶货源" },
     { id: "tribal_middleman", name: "部落中间商", region: "west_africa", desc: "西非本地酋长或掮客，组织掳掠与贩奴，把同族人卖给欧洲人换取火器、布匹与铜器。", res: "西非人脉 + 掳奴渠道" },
@@ -345,7 +345,7 @@ var FC1_IDENTITIES = [
     { id: "overseer", name: "种植园监工", region: "south_america", desc: "受雇于种植园主，手执皮鞭驱使深色奴劳作，负责催收供精、维持秩序，向上头交差。", res: "职位（无产，领薪水）" },
     { id: "free_colored", name: "自由有色人种", region: "south_america", desc: "早已赎身或生而自由的有色人种，凭一门手艺或小本买卖在殖民地立足，身份却仍低人一等。", res: "小本钱 + 手艺" },
     { id: "sugar_mill_owner", name: "制糖坊主", region: "south_america", desc: "经营榨糖与蒸馏作坊，收购甘蔗榨汁熬糖、酿朗姆酒，是种植园下游的实业者。", res: "制糖坊 + 原料" },
-    { id: "noble_scion", name: "贵族子嗣", region: "south_america", desc: "出身欧洲显赫贵族，奉家族之命漂洋过海来历练，随身带着一名管家，并在殖民地置下一栋大型庄园。", res: "管家（下属）+ 巨额资金 + 大型庄园" },
+    { id: "noble_scion", name: "贵族子嗣", region: "south_america", desc: "出身欧洲显赫贵族，奉家族之命漂洋过海来历练，随身带着一名管家，并在殖民地置下一栋大型庄园。", res: "管家（手下）+ 巨额资金 + 大型庄园" },
 
     { id: "pirate", name: "海盗", region: "sea", desc: "无国界的海上亡命徒，选举船长、按份分赃，悬骷髅旗劫掠商船，被各国海军悬赏通缉。", res: "1 艘船 + 船员 + 被悬赏通缉" },
     { id: "navigator", name: "领航员·舵手", region: "sea", desc: "自幼在海上长大，熟记加勒比群岛的水道、洋流与暗礁，凭一手过硬的领航手艺被船长争相雇佣。", res: "航海技术（被雇佣）" },
@@ -555,7 +555,7 @@ function fc1MakeShip(type, cost, crewCount, condition, crewWeapons, shipGuns, mo
 }
 
 function fc1EmptyRelationship() {
-    return { family: {}, friends: {}, hands: {}, slaves: {} };
+    return {};
 }
 
 window.fc1BuildVariablePreset = function(identityId, regionId) {
@@ -577,23 +577,23 @@ window.fc1BuildVariablePreset = function(identityId, regionId) {
         if (extra) { for (var k in extra) e[k] = extra[k]; }
         base.estate[name] = e;
     }
-    function addHand(name, role, gender, loyalty, expense) {
-        base.relationship.hands[name] = { role: role, gender: gender || "男性", loyalty: loyalty || "顺从", location: pos, status: "健康", expense: expense };
+    function addHand(name, gender, expense) {
+        base.relationship[name] = { tags: ["手下"], gender: gender || "男性", location: pos, expense: expense };
     }
-    function addSlave(name, origin, gender, role, loyalty, expense) {
-        base.relationship.slaves[name] = { origin: origin || "西非", gender: gender || "男性", role: role || "田间苦工", loyalty: loyalty || "顺从", location: pos, status: "健康", expense: expense };
+    function addSlave(name, gender, expense) {
+        base.relationship[name] = { tags: ["奴隶"], gender: gender || "男性", location: pos, expense: expense };
     }
 
     switch (identityId) {
         case "privateer":
             base.wealth = "银币 80 枚";
-            addShip("私掠船", "双桅帆船", "2000 银元", 40, 90,
+            addShip("私掠船", "双桅帆船", "2000 银币", 40, 90,
                 { "弯刀": { count: "30把", category: "冷兵器" }, "燧发枪": { count: "15支", category: "轻火器" } },
                 { "前膛炮": { count: "8门", category: "标准舰炮" } });
             break;
         case "merchant_captain":
             base.wealth = "银币 500 枚";
-            addShip("商船", "盖伦船", "4000 银元", 30, 95,
+            addShip("商船", "盖伦船", "4000 银币", 30, 95,
                 { "弯刀": { count: "10把", category: "冷兵器" } },
                 { "前膛炮": { count: "4门", category: "轻型舰炮" } });
             break;
@@ -610,7 +610,7 @@ window.fc1BuildVariablePreset = function(identityId, regionId) {
             break;
         case "noble_second_son":
             base.wealth = "银币 1200 枚";
-            base.relationship.family["母亲"] = { relation: "母亲", gender: "伊芙", affection: "和睦", location: "英格兰 - 布里斯托", status: "健康", expense: "10 银元/月" };
+            base.relationship["母亲"] = { tags: ["家人"], gender: "伊芙", location: "欧洲 - 布里斯托", expense: "10 银币/月" };
             break;
         case "shipwright":
             base.wealth = "银币 600 枚";
@@ -619,15 +619,15 @@ window.fc1BuildVariablePreset = function(identityId, regionId) {
         case "slave_fort_agent":
             base.wealth = "银币 400 枚";
             addEstate("奴隶商站", "商业", "西非海岸 - 奴隶要塞", { status: "营业中", business: "奴隶贸易" });
-            addHand("翻译掮客", "掮客", "男性", "顺从", "15 银元/月");
+            addHand("翻译掮客", "男性", "15 银币/月");
             break;
         case "tribal_middleman":
             base.wealth = "银币 300 枚";
-            addHand("部落武士", "护卫", "男性", "顺从", "8 银元/月");
+            addHand("部落武士", "男性", "8 银币/月");
             break;
         case "arms_dealer":
             base.wealth = "银币 700 枚";
-            addShip("货船", "双桅帆船", "1500 银元", 20, 90,
+            addShip("货船", "双桅帆船", "1500 银币", 20, 90,
                 { "弯刀": { count: "10把", category: "冷兵器" } },
                 {});
             base.ships["货船"].status.cargo = {
@@ -645,17 +645,17 @@ window.fc1BuildVariablePreset = function(identityId, regionId) {
         case "sugar_mill_owner":
             base.wealth = "银币 500 枚";
             addEstate("制糖坊", "手工业", pos, { status: "营业中", product: "糖" });
-            addSlave("库姆巴", "西非", "男性", "供精母牛", "隐忍", "4 银元/月");
-            addSlave("阿玛拉", "西非", "伊芙", "田间苦工", "顺从", "3 银元/月");
+            addSlave("库姆巴", "男性", "4 银币/月");
+            addSlave("阿玛拉", "伊芙", "3 银币/月");
             break;
         case "noble_scion":
             base.wealth = "银币 3000 枚";
             addEstate("大型庄园", "居所", pos);
-            addHand("管家", "管家", "男性", "忠心", "40 银元/月");
+            addHand("管家", "男性", "40 银币/月");
             break;
         case "pirate":
             base.wealth = "银币 40 枚";
-            addShip("海盗船", "双桅帆船", "1500 银元", 45, 85,
+            addShip("海盗船", "双桅帆船", "1500 银币", 45, 85,
                 { "弯刀": { count: "35把", category: "冷兵器" }, "燧发枪": { count: "20支", category: "轻火器" } },
                 { "前膛炮": { count: "6门", category: "标准舰炮" } });
             break;
