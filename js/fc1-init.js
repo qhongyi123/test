@@ -99,6 +99,10 @@ window.loadFc1Presets = async function() {
 function fc1isAttrJs(s) {
     return JSON.stringify(s == null ? '' : String(s)).replace(/"/g, '&quot;');
 }
+// 纯 HTML 属性转义（用于 value="..." 等属性值，不额外加引号）
+function fc1isAttr(s) {
+    return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
 function fc1isEsc(s) { return fc1EscapeHtml(s); }
 
 // ---- 变量访问 ----
@@ -171,13 +175,13 @@ function fc1isInitWorldDraft() {
 function fc1isRenderWorld() {
     return fc1isSection('世界信息', '<div class="fc1is-world">' +
         '<span class="fc1is-world-text">如今是</span>' +
-        '<input class="fc1is-date-input" id="fc1is-year" value="' + fc1isAttrJs(__fc1isWorldDraft.y) + '" placeholder="1689" oninput="fc1isOnWorldDate()">' +
+        '<input class="fc1is-date-input" id="fc1is-year" value="' + fc1isAttr(__fc1isWorldDraft.y) + '" placeholder="1689" oninput="fc1isOnWorldDate()">' +
         '<span class="fc1is-world-text">年，</span>' +
-        '<input class="fc1is-date-input" id="fc1is-month" value="' + fc1isAttrJs(__fc1isWorldDraft.mo) + '" placeholder="5" oninput="fc1isOnWorldDate()">' +
+        '<input class="fc1is-date-input" id="fc1is-month" value="' + fc1isAttr(__fc1isWorldDraft.mo) + '" placeholder="5" oninput="fc1isOnWorldDate()">' +
         '<span class="fc1is-world-text">月，约莫是</span>' +
-        '<input class="fc1is-date-input" id="fc1is-day" value="' + fc1isAttrJs(__fc1isWorldDraft.dd) + '" placeholder="12" oninput="fc1isOnWorldDate()">' +
+        '<input class="fc1is-date-input" id="fc1is-day" value="' + fc1isAttr(__fc1isWorldDraft.dd) + '" placeholder="12" oninput="fc1isOnWorldDate()">' +
         '<span class="fc1is-world-text">日，星期</span>' +
-        '<input class="fc1is-date-input" id="fc1is-weekday-input" value="' + fc1isAttrJs(__fc1isWorldDraft.wd) + '" placeholder="三" oninput="fc1isOnWeekday()">' +
+        '<input class="fc1is-date-input" id="fc1is-weekday-input" value="' + fc1isAttr(__fc1isWorldDraft.wd) + '" placeholder="三" oninput="fc1isOnWeekday()">' +
         '<button class="fc1is-random-btn" onclick="fc1isRandomDate()">随机</button>' +
     '</div>');
 }
@@ -234,8 +238,8 @@ function fc1isInvRowsHTML() {
     var rows = '';
     Object.keys(inv).forEach(function(k) {
         rows += '<div class="fc1is-inv-row">' +
-            '<input class="fc1is-inv-key" value="' + fc1isAttrJs(k) + '" oninput="fc1isCollectInventory()">' +
-            '<input class="fc1is-inv-val" value="' + fc1isAttrJs(inv[k]) + '" oninput="fc1isCollectInventory()">' +
+            '<input class="fc1is-inv-key" value="' + fc1isAttr(k) + '" oninput="fc1isCollectInventory()">' +
+            '<input class="fc1is-inv-val" value="' + fc1isAttr(inv[k]) + '" oninput="fc1isCollectInventory()">' +
             '<span class="fc1is-del" onclick="fc1isDelInv(this)">\u2715</span>' +
         '</div>';
     });
@@ -253,10 +257,10 @@ function fc1isRenderChar(v) {
     }).join('');
     return fc1isSection('角色信息',
         '<div class="fc1is-row"><span class="fc1is-label">性别</span><select id="fc1is-gender" onchange="fc1isOnUser(\'gender\')">' + genderOpts + '</select></div>' +
-        '<div class="fc1is-row"><span class="fc1is-label">用户身份</span><input id="fc1is-identity" value="' + fc1isAttrJs(u.identity) + '" oninput="fc1isOnUser(\'identity\')"></div>' +
+        '<div class="fc1is-row"><span class="fc1is-label">用户身份</span><input id="fc1is-identity" value="' + fc1isAttr(u.identity) + '" oninput="fc1isOnUser(\'identity\')"></div>' +
         '<div class="fc1is-row"><span class="fc1is-label"></span><button class="fc1is-idp-btn" onclick="fc1isOpenIdentityPicker()">\u2756 预设身份组 \u2756</button></div>' +
-        '<div class="fc1is-row"><span class="fc1is-label">身体状态</span><input id="fc1is-body" value="' + fc1isAttrJs(u.body_state) + '" oninput="fc1isOnUser(\'body_state\')"></div>' +
-        '<div class="fc1is-row"><span class="fc1is-label">财富</span><input id="fc1is-wealth" value="' + fc1isAttrJs(u.wealth) + '" oninput="fc1isOnUser(\'wealth\')"></div>' +
+        '<div class="fc1is-row"><span class="fc1is-label">身体状态</span><input id="fc1is-body" value="' + fc1isAttr(u.body_state) + '" oninput="fc1isOnUser(\'body_state\')"></div>' +
+        '<div class="fc1is-row"><span class="fc1is-label">财富</span><input id="fc1is-wealth" value="' + fc1isAttr(u.wealth) + '" oninput="fc1isOnUser(\'wealth\')"></div>' +
         '<div class="fc1is-sub">' +
             '<div class="fc1is-label">物品栏</div>' +
             '<div class="fc1is-inv-actions"><button class="fc1is-idp-btn" onclick="fc1isOpenInventoryDrawer()">预设物品</button></div>' +
@@ -361,6 +365,7 @@ window.fc1isSelectRegionChip = function(name) {
     __fc1isRegionCustom = false;
     fc1isRenderRegionChips();
     fc1isRenderRegionDisplay();
+    fc1isUpdateNav();
 };
 function fc1isRenderRegionDisplay() {
     var box = document.getElementById('fc1is-region-display');
@@ -375,14 +380,14 @@ function fc1isRenderRegionDisplay() {
     var rows = '';
     Object.keys(customs).forEach(function(k) {
         rows += '<div class="fc1is-custom-row">' +
-            '<input class="fc1is-custom-key" value="' + fc1isAttrJs(k) + '" onchange="fc1isRenameCustom(' + fc1isAttrJs(k) + ', this.value)">' +
+            '<input class="fc1is-custom-key" value="' + fc1isAttr(k) + '" onchange="fc1isRenameCustom(' + fc1isAttrJs(k) + ', this.value)">' +
             '<textarea class="fc1is-custom-val" oninput="fc1isSetCustomVal(' + fc1isAttrJs(k) + ', this.value)">' + fc1isEsc(customs[k] || '') + '</textarea>' +
             '<span class="fc1is-del" onclick="fc1isDelCustom(' + fc1isAttrJs(k) + ')">\u2715</span>' +
         '</div>';
     });
     rows += '<div class="fc1is-add" onclick="fc1isAddCustom()">+ 添加风情词条</div>';
     box.innerHTML = '<div class="fc1is-region-editor">' +
-        (__fc1isRegionCustom ? '<div class="fc1is-row"><span class="fc1is-label">地区名</span><input id="fc1is-region-name" value="' + fc1isAttrJs(__fc1isRegion) + '" onchange="fc1isRenameRegion(' + fc1isAttrJs(__fc1isRegion) + ', this.value)"></div>' : '') +
+        (__fc1isRegionCustom ? '<div class="fc1is-row"><span class="fc1is-label">地区名</span><input id="fc1is-region-name" value="' + fc1isAttr(__fc1isRegion) + '" onchange="fc1isRenameRegion(' + fc1isAttrJs(__fc1isRegion) + ', this.value)"></div>' : '') +
         '<div class="fc1is-row-col"><span class="fc1is-label">描述</span><textarea id="fc1is-region-desc" oninput="fc1isSetRegionDesc(this.value)">' + fc1isEsc(rd.描述 || '') + '</textarea></div>' +
         '<div class="fc1is-sub"><div class="fc1is-label">民俗风情</div><div class="fc1is-customs" id="fc1is-customs">' + rows + '</div></div>' +
     '</div>';
@@ -394,6 +399,7 @@ window.fc1isCustomRegion = function() {
     if (!v['背景信息']['地区']['新地区']) v['背景信息']['地区']['新地区'] = { 描述: '', 民俗风情: {} };
     fc1isRenderRegionChips();
     fc1isRenderRegionDisplay();
+    fc1isUpdateNav();
 };
 window.fc1isRenameRegion = function(oldName, newName) {
     var v = fc1isEnsureVar(); if (!v) return;
@@ -443,7 +449,7 @@ function fc1isRenderCustoms() {
     var rows = '';
     Object.keys(customs).forEach(function(k) {
         rows += '<div class="fc1is-custom-row">' +
-            '<input class="fc1is-custom-key" value="' + fc1isAttrJs(k) + '" onchange="fc1isRenameCustom(' + fc1isAttrJs(k) + ', this.value)">' +
+            '<input class="fc1is-custom-key" value="' + fc1isAttr(k) + '" onchange="fc1isRenameCustom(' + fc1isAttrJs(k) + ', this.value)">' +
             '<textarea class="fc1is-custom-val" oninput="fc1isSetCustomVal(' + fc1isAttrJs(k) + ', this.value)">' + fc1isEsc(customs[k] || '') + '</textarea>' +
             '<span class="fc1is-del" onclick="fc1isDelCustom(' + fc1isAttrJs(k) + ')">\u2715</span>' +
         '</div>';
@@ -795,7 +801,7 @@ function fc1isRenderEmploymentHTML(type, name) {
     });
     var unassigned = fc1isUnassignedPersons();
     var opts = '<option value="">请选择角色</option>';
-    unassigned.forEach(function(p) { opts += '<option value="' + fc1isAttrJs(p) + '">' + mtH(p) + '</option>'; });
+    unassigned.forEach(function(p) { opts += '<option value="' + fc1isAttr(p) + '">' + mtH(p) + '</option>'; });
     return '<div class="fc1is-sub fc1is-emp">' +
         '<span class="fc1is-label">就职</span>' +
         '<div class="fc1is-emp-list">' + (staffHtml || '<span class="fc1is-empty-inline">无人就职</span>') + '</div>' +
@@ -824,10 +830,10 @@ window.fc1isEditAsset = function(type, name) {
     if (type === 'estate') {
         fc1isOpenDrawer('家产 · ' + name,
             '<div class="fc1is-col">' +
-                '<div class="fc1is-row"><span class="fc1is-label">类型</span><input id="fc1is-e-type" value="' + fc1isAttrJs(asset.type) + '"></div>' +
-                '<div class="fc1is-row"><span class="fc1is-label">大小</span><input id="fc1is-e-scale" value="' + fc1isAttrJs(asset.scale) + '"></div>' +
-                '<div class="fc1is-row"><span class="fc1is-label">状态</span><input id="fc1is-e-status" value="' + fc1isAttrJs(asset.status) + '"></div>' +
-                '<div class="fc1is-row"><span class="fc1is-label">产物</span><input id="fc1is-e-product" value="' + fc1isAttrJs(asset.product) + '"></div>' +
+                '<div class="fc1is-row"><span class="fc1is-label">类型</span><input id="fc1is-e-type" value="' + fc1isAttr(asset.type) + '"></div>' +
+                '<div class="fc1is-row"><span class="fc1is-label">大小</span><input id="fc1is-e-scale" value="' + fc1isAttr(asset.scale) + '"></div>' +
+                '<div class="fc1is-row"><span class="fc1is-label">状态</span><input id="fc1is-e-status" value="' + fc1isAttr(asset.status) + '"></div>' +
+                '<div class="fc1is-row"><span class="fc1is-label">产物</span><input id="fc1is-e-product" value="' + fc1isAttr(asset.product) + '"></div>' +
                 '<div class="fc1is-row-col"><span class="fc1is-label">描述</span><textarea id="fc1is-e-desc">' + fc1isEsc(asset.description || '') + '</textarea></div>' +
                 fc1isRenderEmploymentHTML('estate', name) +
                 '<button class="fc1-drawer-confirm" onclick="fc1isCommitAssetEdit(\'estate\', ' + fc1isAttrJs(name) + ')">\u2727 保存 \u2727</button>' +
@@ -836,10 +842,10 @@ window.fc1isEditAsset = function(type, name) {
         var cargo = asset.status && asset.status.cargo ? asset.status.cargo : {};
         fc1isOpenDrawer('船只 · ' + name,
             '<div class="fc1is-col">' +
-                '<div class="fc1is-row"><span class="fc1is-label">类型</span><input id="fc1is-s-type" value="' + fc1isAttrJs(asset.type) + '"></div>' +
-                '<div class="fc1is-row"><span class="fc1is-label">船员数</span><input id="fc1is-s-crew" value="' + fc1isAttrJs((asset.crew && asset.crew.count) || 0) + '"></div>' +
-                '<div class="fc1is-row"><span class="fc1is-label">船况</span><input id="fc1is-s-cond" value="' + fc1isAttrJs((asset.status && asset.status.condition) || '') + '"></div>' +
-                '<div class="fc1is-row"><span class="fc1is-label">造价</span><input id="fc1is-s-cost" value="' + fc1isAttrJs((asset.value && asset.value.cost) || '') + '"></div>' +
+                '<div class="fc1is-row"><span class="fc1is-label">类型</span><input id="fc1is-s-type" value="' + fc1isAttr(asset.type) + '"></div>' +
+                '<div class="fc1is-row"><span class="fc1is-label">船员数</span><input id="fc1is-s-crew" value="' + fc1isAttr((asset.crew && asset.crew.count) || 0) + '"></div>' +
+                '<div class="fc1is-row"><span class="fc1is-label">船况</span><input id="fc1is-s-cond" value="' + fc1isAttr((asset.status && asset.status.condition) || '') + '"></div>' +
+                '<div class="fc1is-row"><span class="fc1is-label">造价</span><input id="fc1is-s-cost" value="' + fc1isAttr((asset.value && asset.value.cost) || '') + '"></div>' +
                 '<div class="fc1is-sub"><span class="fc1is-label">货物（' + Object.keys(cargo).length + '）</span><button class="fc1is-add-btn" onclick="fc1isOpenCargo(\'ship\', ' + fc1isAttrJs(name) + ')">+ 添加货物</button></div>' +
                 fc1isRenderEmploymentHTML('ship', name) +
                 '<button class="fc1-drawer-confirm" onclick="fc1isCommitAssetEdit(\'ship\', ' + fc1isAttrJs(name) + ')">\u2727 保存 \u2727</button>' +
@@ -1131,6 +1137,9 @@ function fc1isStepFilled() {
     if (__fc1isStep === 2) {
         return !!(v.user && v.user.identity);
     }
+    if (__fc1isStep === 3) {
+        return !!__fc1isRegion;
+    }
     return true;
 }
 
@@ -1145,11 +1154,32 @@ window.fc1isNext = function() {
     fc1isRenderStep();
 };
 
+// 决策：跳过后续变量 → 直接进入「开始剧情」
+window.fc1isSkipRemaining = function() {
+    if (typeof fc1RenderStartPreview === 'function') fc1RenderStartPreview();
+    if (typeof goToSubTab === 'function') goToSubTab('FC1', 'FC1-sub4');
+};
+
+// 决策：填写后续变量 → 展开完整编辑器
+window.fc1isFillRemaining = function() {
+    __fc1isStep = 5;
+    fc1isRenderStep();
+};
+
 function fc1isNavHTML() {
     return '<div class="fc1is-nav">' +
         '<button class="fc1is-nav-btn fc1is-nav-skip" onclick="fc1isNext()">跳过</button>' +
         '<button class="fc1is-nav-btn fc1is-nav-continue" id="fc1is-continue" style="display:none;" onclick="fc1isNext()">继续</button>' +
     '</div>';
+}
+
+function fc1isDecisionHTML() {
+    return fc1isSection('是否跳过后续变量填写',
+            '<div class="fc1is-hint">（若你选择了预设身份组，推荐跳过）</div>') +
+        '<div class="fc1is-nav">' +
+            '<button class="fc1is-nav-btn fc1is-nav-skip" onclick="fc1isSkipRemaining()">跳过</button>' +
+            '<button class="fc1is-nav-btn fc1is-nav-continue" onclick="fc1isFillRemaining()">填写</button>' +
+        '</div>';
 }
 
 function fc1isRenderGenderStep(v) {
@@ -1164,8 +1194,20 @@ function fc1isRenderGenderStep(v) {
 function fc1isRenderIdentityStep(v) {
     var u = v.user;
     return fc1isSection('角色信息',
-        '<div class="fc1is-row"><span class="fc1is-label">用户身份</span><input id="fc1is-identity" value="' + fc1isAttrJs(u.identity) + '" oninput="fc1isOnUser(\'identity\')"></div>' +
+        '<div class="fc1is-row"><span class="fc1is-label">用户身份</span><input id="fc1is-identity" value="' + fc1isAttr(u.identity) + '" oninput="fc1isOnUser(\'identity\')"></div>' +
         '<div class="fc1is-row"><span class="fc1is-label"></span><button class="fc1is-idp-btn" onclick="fc1isOpenIdentityPicker()">\u2756 预设身份组 \u2756</button></div>');
+}
+
+function fc1isRenderCharRest(v) {
+    var u = v.user;
+    return fc1isSection('角色信息',
+        '<div class="fc1is-row"><span class="fc1is-label">身体状态</span><input id="fc1is-body" value="' + fc1isAttr(u.body_state) + '" oninput="fc1isOnUser(\'body_state\')"></div>' +
+        '<div class="fc1is-row"><span class="fc1is-label">财富</span><input id="fc1is-wealth" value="' + fc1isAttr(u.wealth) + '" oninput="fc1isOnUser(\'wealth\')"></div>' +
+        '<div class="fc1is-sub">' +
+            '<div class="fc1is-label">物品栏</div>' +
+            '<div class="fc1is-inv-actions"><button class="fc1is-idp-btn" onclick="fc1isOpenInventoryDrawer()">预设物品</button></div>' +
+            '<div class="fc1is-inv" id="fc1is-inv">' + fc1isInvRowsHTML() + '</div>' +
+        '</div>');
 }
 
 function fc1isRenderStep() {
@@ -1174,24 +1216,25 @@ function fc1isRenderStep() {
     var v = fc1isEnsureVar();
     if (!v) return;
     fc1isInitWorldDraft();
-    var content = '';
-    if (__fc1isStep === 0) {
-        content = fc1isRenderWorld();
-    } else if (__fc1isStep === 1) {
-        content = fc1isRenderGenderStep(v);
-    } else if (__fc1isStep === 2) {
-        content = fc1isRenderIdentityStep(v);
-    } else {
-        content = fc1isRenderWorld() +
-            fc1isRenderChar(v) +
-            fc1isRenderRegion(v) +
+
+    var content = fc1isRenderWorld();
+    if (__fc1isStep >= 1) content += fc1isRenderGenderStep(v);
+    if (__fc1isStep >= 2) content += fc1isRenderIdentityStep(v);
+    if (__fc1isStep >= 3) content += fc1isRenderRegion(v);
+    if (__fc1isStep >= 5) {
+        content += fc1isRenderCharRest(v) +
             fc1isRenderRel(v) +
             fc1isRenderEstate(v) +
             fc1isRenderShip(v) +
             fc1isRenderWarehouse(v);
     }
-    var nav = (__fc1isStep >= 3) ? '' : fc1isNavHTML();
+
+    var nav = '';
+    if (__fc1isStep === 4) nav = fc1isDecisionHTML();
+    else if (__fc1isStep < 4) nav = fc1isNavHTML();
+
     root.innerHTML = '<div class="fc1is-hint">所有未填写的项请留空，无需填写「无」。</div>' + content + nav;
+
     if (__fc1isStep >= 3) {
         fc1isRenderRegionChips();
         fc1isRenderRegionDisplay();
