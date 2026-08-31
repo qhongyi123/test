@@ -1229,34 +1229,56 @@ window.fc1isSkipRemaining = function() {
     }
 };
 
-// 找出身份组预设变量里「写了键但内容留空」的字段（返回结构化条目；跳过用户信息，仅当当前变量仍为空时算未填）
+// 找出身份组预设变量里「写了键但内容留空」的字段（按实体分组，附带上下文；跳过用户信息，仅当当前变量仍为空时算未填）
 function fc1isFindEmptyPresetFields() {
     var it = (FC1_PRESETS.identities || []).find(function(x) { return x.id === __fc1Identity; })
         || (FC1_IDENTITIES || []).find(function(x) { return x.id === __fc1Identity; });
     if (!it || !it.variable) return [];
     var v = fc1isEnsureVar() || {};
-    var names = { date: '日期', gender: '性别', identity: '身份', body_state: '身体状态', wealth: '财富', gold: '金币', surroundings: '周围环境', psychological_description: '心理描写', position: '地点', time: '时间' };
-    var out = [];
-    function walk(pObj, lObj, path) {
-        if (!pObj || typeof pObj !== 'object') return;
-        Object.keys(pObj).forEach(function(k) {
-            if (k === 'user') return;
-            var pval = pObj[k];
-            var lval = (lObj && typeof lObj === 'object') ? lObj[k] : undefined;
-            var isPersonField = (path.length >= 2 && path[path.length - 2] === 'relationship');
-            if (pval === '' || pval === null || pval === undefined) {
-                if (lval === '' || lval === null || lval === undefined) {
-                    var label = names[k] || k;
-                    if (isPersonField && k === 'gender') label = path[path.length - 1] + ' 的性别';
-                    out.push({ path: path.concat([k]), label: label, type: (k === 'gender') ? 'gender' : 'text' });
-                }
-            } else if (typeof pval === 'object') {
-                walk(pval, (lObj && typeof lObj === 'object') ? lObj[k] : {}, path.concat([k]));
-            }
+    var groups = [];
+    function isEmpty(x) { return x === '' || x === null || x === undefined; }
+
+    // 关系变量：按角色分组，展示该角色的完整信息
+    var relLabels = { gender: '性别', tags: '标签', location: '位置', expense: '薪资/月', desc: '描述' };
+    var relPreset = it.variable.relationship || {};
+    var relLive = v.relationship || {};
+    Object.keys(relPreset).forEach(function(name) {
+        var pChar = relPreset[name] || {};
+        var lChar = relLive[name] || {};
+        var info = [];
+        var fields = [];
+        ['tags', 'location', 'expense', 'desc'].forEach(function(k) {
+            var lval = lChar[k];
+            var disp = Array.isArray(lval) ? lval.join('、') : (lval || '');
+            info.push({ label: relLabels[k] || k, value: disp || '未填写' });
         });
-    }
-    walk(it.variable, v, []);
-    return out;
+        if (isEmpty(pChar.gender) && isEmpty(lChar.gender)) {
+            fields.push({ path: ['relationship', name, 'gender'], label: '性别', type: 'gender' });
+        }
+        if (fields.length) {
+            groups.push({
+                section: '关系变量',
+                title: name,
+                tag: (lChar.tags && lChar.tags[0]) || (pChar.tags && pChar.tags[0]) || '',
+                info: info,
+                fields: fields
+            });
+        }
+    });
+
+    // 其它区块（world 等）的空字段
+    var wNames = { date: '日期', position: '地点', time: '时间' };
+    var wPreset = it.variable.world || {};
+    var wLive = v.world || {};
+    var wFields = [];
+    Object.keys(wPreset).forEach(function(k) {
+        if (isEmpty(wPreset[k]) && isEmpty(wLive[k])) {
+            wFields.push({ path: ['world', k], label: wNames[k] || k, type: 'text' });
+        }
+    });
+    if (wFields.length) groups.push({ section: '世界信息', title: '', tag: '', info: [], fields: wFields });
+
+    return groups;
 }
 
 function fc1isSetPath(obj, path, value) {
@@ -1274,24 +1296,48 @@ function fc1isDoSkip() {
 }
 
 // ==================== 补全未填写变量弹窗 ====================
-var __fc1isFillEntries = [];
+var __fc1isFillGroups = [];
+var __fc1isFillFields = [];
 
-window.fc1isOpenFillModal = function(entries) {
+function fc1isGenderSelectHTML(id) {
+    var opts = ['', '男性', '伊芙', '伊菈'].map(function(g) {
+        return '<option value="' + g + '">' + (g || '请选择') + '</option>';
+    }).join('');
+    return '<select id="' + id + '">' + opts + '</select>';
+}
+
+window.fc1isOpenFillModal = function(groups) {
     var m = document.getElementById('fc1-fill-modal');
     var body = document.getElementById('fc1-fill-body');
     if (!m || !body) return;
-    __fc1isFillEntries = entries || [];
+    __fc1isFillGroups = groups || [];
+    __fc1isFillFields = [];
     var html = '<div class="fc1is-hint">以下变量尚未填写，可在此直接补全（留空则交由 AI 自动补全）</div>';
-    __fc1isFillEntries.forEach(function(e, i) {
-        var id = 'fc1-fill-' + i;
-        if (e.type === 'gender') {
-            var opts = ['', '男性', '伊芙', '伊菈'].map(function(g) {
-                return '<option value="' + g + '">' + (g || '请选择') + '</option>';
-            }).join('');
-            html += '<div class="fc1is-row"><span class="fc1is-label">' + mtH(e.label) + '</span><select id="' + id + '">' + opts + '</select></div>';
-        } else {
-            html += '<div class="fc1is-row"><span class="fc1is-label">' + mtH(e.label) + '</span><input id="' + id + '" placeholder="留空由 AI 补全"></div>';
+    __fc1isFillGroups.forEach(function(g) {
+        html += '<div class="fc1is-fill-group">';
+        html += '<div class="fc1is-fill-head">';
+        if (g.section) html += '<span class="fc1is-fill-section">' + mtH(g.section) + '</span>';
+        if (g.tag) html += '<span class="fc1is-fill-tag">' + mtH(g.tag) + '</span>';
+        if (g.title) html += '<span class="fc1is-fill-name">' + mtH(g.title) + '</span>';
+        html += '</div>';
+        if (g.info && g.info.length) {
+            html += '<div class="fc1is-fill-info">';
+            g.info.forEach(function(inf) {
+                html += '<div class="fc1is-fill-info-row"><span class="fc1is-info-label">' + mtH(inf.label) + '：</span><span>' + mtH(inf.value) + '</span></div>';
+            });
+            html += '</div>';
         }
+        g.fields.forEach(function(f) {
+            var idx = __fc1isFillFields.length;
+            __fc1isFillFields.push(f);
+            var id = 'fc1-fill-' + idx;
+            if (f.type === 'gender') {
+                html += '<div class="fc1is-row fc1is-fill-input-row"><span class="fc1is-label">' + mtH(f.label) + '</span>' + fc1isGenderSelectHTML(id) + '</div>';
+            } else {
+                html += '<div class="fc1is-row fc1is-fill-input-row"><span class="fc1is-label">' + mtH(f.label) + '</span><input id="' + id + '" placeholder="留空由 AI 补全"></div>';
+            }
+        });
+        html += '</div>';
     });
     body.innerHTML = html;
     m.classList.add('open');
@@ -1304,10 +1350,10 @@ window.fc1isCloseFillModal = function() {
 
 window.fc1isConfirmFill = function() {
     var v = fc1isEnsureVar();
-    __fc1isFillEntries.forEach(function(e, i) {
+    __fc1isFillFields.forEach(function(f, i) {
         var el = document.getElementById('fc1-fill-' + i);
         var val = el ? el.value.trim() : '';
-        if (val) fc1isSetPath(v, e.path, val);
+        if (val) fc1isSetPath(v, f.path, val);
     });
     fc1isCloseFillModal();
     fc1isDoSkip();
