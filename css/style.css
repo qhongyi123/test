@@ -878,7 +878,7 @@ body {
 .tabs-content-area ul[data-dict], .tabs-content-area ul[data-complex-dict], #dynamic-tabs-area ul { padding-left: 12px !important; margin: 4px 0 !important; list-style-type: none; }
 
 /* ===== FC1 自由模式-贩奴贸易 ===== */
-.fc1-overview { position:relative; display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:60vh; padding:30px 20px; gap:18px; text-align:center; box-sizing:border-box; }
+.fc1-overview { display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:60vh; padding:30px 20px; gap:18px; text-align:center; box-sizing:border-box; }
 .fc1-overview-title { font-family:'Ma Shan Zheng', cursive; font-size:1.6rem; color:var(--color-primary-dark); border-bottom:2px dashed rgba(212,175,55,0.4); padding-bottom:10px; }
 .fc1-overview-text { line-height:1.9; color:var(--color-text-dark); max-width:540px; font-size:0.95rem; text-align:justify; }
 .fc1-overview-text p { margin:10px 0; text-indent:2em; }

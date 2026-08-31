@@ -841,7 +841,7 @@ function nextPage() {
         var gateIndex = btns.findIndex(function(btn) { return btn.getAttribute('data-target') === 'tab4'; });
         if (!__selectionConfirmed && gateIndex !== -1 && nextIndex > gateIndex) {
             nextIndex = gateIndex;
-            showCustomAlert("请先在「模式选择与世界观调整」中完成选择");
+            showCustomAlert("请先选择模式和世界观");
         }
         switchTab(btns[nextIndex].getAttribute('data-target'), btns[nextIndex]);
     }
@@ -860,6 +860,10 @@ function selectFromToc(tabId) {
 }
 
 function goToRoleTab() {
+    var activeBtn = document.querySelector('.tab-btn.active');
+    __roleReturnTab = activeBtn ? activeBtn.getAttribute('data-target') : null;
+    var returnBtn = document.getElementById('bookmark-return');
+    if (returnBtn) returnBtn.style.display = '';
     var targetBtn = document.querySelector('.tab-btn[data-target="tab7"]');
     if(targetBtn) { switchTab('tab7', targetBtn); }
 }
