@@ -1229,28 +1229,33 @@ window.fc1isSkipRemaining = function() {
     }
 };
 
-// 找出身份组预设变量里「写了键但内容留空」的字段（返回结构化条目）
+// 找出身份组预设变量里「写了键但内容留空」的字段（返回结构化条目；跳过用户信息，仅当当前变量仍为空时算未填）
 function fc1isFindEmptyPresetFields() {
     var it = (FC1_PRESETS.identities || []).find(function(x) { return x.id === __fc1Identity; })
         || (FC1_IDENTITIES || []).find(function(x) { return x.id === __fc1Identity; });
     if (!it || !it.variable) return [];
+    var v = fc1isEnsureVar() || {};
     var names = { date: '日期', gender: '性别', identity: '身份', body_state: '身体状态', wealth: '财富', gold: '金币', surroundings: '周围环境', psychological_description: '心理描写', position: '地点', time: '时间' };
     var out = [];
-    function walk(obj, path) {
-        if (!obj || typeof obj !== 'object') return;
-        Object.keys(obj).forEach(function(k) {
-            var val = obj[k];
+    function walk(pObj, lObj, path) {
+        if (!pObj || typeof pObj !== 'object') return;
+        Object.keys(pObj).forEach(function(k) {
+            if (k === 'user') return;
+            var pval = pObj[k];
+            var lval = (lObj && typeof lObj === 'object') ? lObj[k] : undefined;
             var isPersonField = (path.length >= 2 && path[path.length - 2] === 'relationship');
-            if (val === '' || val === null || val === undefined) {
-                var label = names[k] || k;
-                if (isPersonField && k === 'gender') label = path[path.length - 1] + ' 的性别';
-                out.push({ path: path.concat([k]), label: label, type: (k === 'gender') ? 'gender' : 'text' });
-            } else if (typeof val === 'object') {
-                walk(val, path.concat([k]));
+            if (pval === '' || pval === null || pval === undefined) {
+                if (lval === '' || lval === null || lval === undefined) {
+                    var label = names[k] || k;
+                    if (isPersonField && k === 'gender') label = path[path.length - 1] + ' 的性别';
+                    out.push({ path: path.concat([k]), label: label, type: (k === 'gender') ? 'gender' : 'text' });
+                }
+            } else if (typeof pval === 'object') {
+                walk(pval, (lObj && typeof lObj === 'object') ? lObj[k] : {}, path.concat([k]));
             }
         });
     }
-    walk(it.variable, []);
+    walk(it.variable, v, []);
     return out;
 }
 
@@ -1314,9 +1319,11 @@ window.fc1isFillRemaining = function() {
     fc1isRenderStep();
 };
 
-function fc1isNavHTML() {
-    return '<div class="fc1is-nav">' +
-        '<button class="fc1is-nav-btn fc1is-nav-skip" onclick="fc1isNext()">跳过</button>' +
+function fc1isNavHTML(skipAllowed) {
+    var skipBtn = skipAllowed ? '<button class="fc1is-nav-btn fc1is-nav-skip" onclick="fc1isNext()">跳过</button>' : '';
+    var alignStyle = skipAllowed ? '' : ' style="justify-content: flex-end;"';
+    return '<div class="fc1is-nav"' + alignStyle + '>' +
+        skipBtn +
         '<button class="fc1is-nav-btn fc1is-nav-continue" id="fc1is-continue" style="display:none;" onclick="fc1isNext()">继续</button>' +
     '</div>';
 }
@@ -1390,7 +1397,7 @@ function fc1isRenderStep() {
 
     var nav = '';
     if (__fc1isStep === 6) nav = fc1isDecisionHTML();
-    else if (__fc1isStep < 6 || __fc1isStep === 7) nav = fc1isNavHTML();
+    else if (__fc1isStep < 6 || __fc1isStep === 7) nav = fc1isNavHTML(__fc1isStep !== 0 && __fc1isStep !== 1);
 
     root.innerHTML = '<div class="fc1is-hint">跳过的选项将在后续剧情生成中由ai自动补全</div>' + content + nav;
 
