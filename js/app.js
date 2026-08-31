@@ -342,11 +342,6 @@ var FC1_IDENTITIES = [
     { id: "tribal_middleman", name: "部落中间商", region: "west_africa", desc: "西非本地酋长或掮客，组织掳掠与贩奴，把同族人卖给欧洲人换取火器、布匹与铜器。", res: "西非人脉 + 掳奴渠道" },
     { id: "arms_dealer", name: "军火贩子", region: "west_africa", desc: "往来西非海岸，向部落兜售火器与弹药，以此换取奴隶与黄金，游走在血腥的贸易链上。", res: "军火货物 + 本金" },
 
-    { id: "overseer", name: "种植园监工", region: "south_america", desc: "受雇于种植园主，手执皮鞭驱使深色奴劳作，负责催收供精、维持秩序，向上头交差。", res: "职位（无产，领薪水）" },
-    { id: "free_colored", name: "自由有色人种", region: "south_america", desc: "早已赎身或生而自由的有色人种，凭一门手艺或小本买卖在殖民地立足，身份却仍低人一等。", res: "小本钱 + 手艺" },
-    { id: "sugar_mill_owner", name: "制糖坊主", region: "south_america", desc: "经营榨糖与蒸馏作坊，收购甘蔗榨汁熬糖、酿朗姆酒，是种植园下游的实业者。", res: "制糖坊 + 原料" },
-    { id: "noble_scion", name: "贵族子嗣", region: "south_america", desc: "出身欧洲显赫贵族，奉家族之命漂洋过海来历练，随身带着一名管家，并在殖民地置下一栋大型庄园。", res: "管家（手下）+ 巨额资金 + 大型庄园" },
-
     { id: "pirate", name: "海盗", region: "sea", desc: "无国界的海上亡命徒，选举船长、按份分赃，悬骷髅旗劫掠商船，被各国海军悬赏通缉。", res: "1 艘船 + 船员 + 被悬赏通缉" },
     { id: "navigator", name: "领航员·舵手", region: "sea", desc: "自幼在海上长大，熟记加勒比群岛的水道、洋流与暗礁，凭一手过硬的领航手艺被船长争相雇佣。", res: "航海技术（被雇佣）" },
     { id: "ship_doctor", name: "船医·外科医生", region: "sea", desc: "略通医术，会截肢、放血、缝合伤口，也会治坏血病与船热，是长航程中船员们不敢得罪的救命人。", res: "医术 + 药品" }
@@ -777,9 +772,10 @@ window.fc1SaveVariables = function() {
 var __fc1StartMode = "auto";
 
 window.fc1BuildAutoPrompt = function() {
-    var it = FC1_IDENTITIES.find(function(x) { return x.id === __fc1Identity; });
-    var idInput = document.getElementById('fc1-identity-input');
-    var identity = (idInput && idInput.value.trim()) ? idInput.value.trim() : (it ? it.name : '');
+    var it = (typeof FC1_PRESETS !== 'undefined' && FC1_PRESETS.identities ? FC1_PRESETS.identities.find(function(x) { return x.id === __fc1Identity; }) : null)
+        || (FC1_IDENTITIES || []).find(function(x) { return x.id === __fc1Identity; });
+    var v = (typeof fc1isGetVar === 'function') ? fc1isGetVar() : null;
+    var identity = (v && v.user && v.user.identity) || (it ? it.name : '');
     if (!identity) return null;
     var desc = it ? it.desc : '';
     return '生成开场白，以下是' + identity + '的相关信息：' + desc;

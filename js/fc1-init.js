@@ -130,18 +130,56 @@ function fc1isEnsureVar() {
 // 身份组预设 → 变量种子（仅在字段为空时写入，避免覆盖玩家已改内容）
 function fc1isSyncPreset() {
     if (typeof __fc1Identity !== 'string' || !__fc1Identity) return;
-    if (typeof fc1BuildVariablePreset !== 'function') return;
-    var preset = fc1BuildVariablePreset(__fc1Identity, __fc1Region);
-    window.__fc1Variables = preset;
     var v = fc1isEnsureVar(); if (!v) return;
-    if (!v.user.wealth) v.user.wealth = preset.wealth;
-    if (!v.user.body_state) v.user.body_state = preset.body_state;
-    if (!v.world.position) v.world.position = preset.position;
-    if (Object.keys(v.ships).length === 0 && preset.ships) v.ships = JSON.parse(JSON.stringify(preset.ships));
-    if (Object.keys(v.estate).length === 0 && preset.estate) v.estate = JSON.parse(JSON.stringify(preset.estate));
+
+    var it = (FC1_PRESETS.identities || []).find(function(x) { return x.id === __fc1Identity; })
+        || (FC1_IDENTITIES || []).find(function(x) { return x.id === __fc1Identity; });
+
+    var preset = null;
+    if (it && it.variable) {
+        preset = it.variable;
+    } else if (typeof fc1BuildVariablePreset === 'function') {
+        preset = fc1BuildVariablePreset(__fc1Identity, __fc1Region);
+    }
+    if (!preset) return;
+    window.__fc1Variables = preset;
+
+    if (preset.world) {
+        if (!v.world.position && preset.world.position) v.world.position = preset.world.position;
+        if (!v.world.time && preset.world.time) v.world.time = preset.world.time;
+    }
+    if (preset.user) {
+        if (!v.user.identity && preset.user.identity) v.user.identity = preset.user.identity;
+        if (!v.user.gender && preset.user.gender) v.user.gender = preset.user.gender;
+        if (!v.user.body_state && preset.user.body_state) v.user.body_state = preset.user.body_state;
+        if (!v.user.wealth && preset.user.wealth) v.user.wealth = preset.user.wealth;
+        if (!v.user.gold && preset.user.gold) v.user.gold = preset.user.gold;
+        if (!v.user.surroundings && preset.user.surroundings) v.user.surroundings = preset.user.surroundings;
+        if (!v.user.psychological_description && preset.user.psychological_description) v.user.psychological_description = preset.user.psychological_description;
+        if (preset.user.inventory) {
+            Object.keys(preset.user.inventory).forEach(function(k) {
+                if (!v.user.inventory[k]) v.user.inventory[k] = preset.user.inventory[k];
+            });
+        }
+    }
+    if (preset.ships && Object.keys(v.ships).length === 0) v.ships = JSON.parse(JSON.stringify(preset.ships));
+    if (preset.estate && Object.keys(v.estate).length === 0) v.estate = JSON.parse(JSON.stringify(preset.estate));
     Object.keys(preset.relationship || {}).forEach(function(name) {
         if (!v.relationship[name]) v.relationship[name] = JSON.parse(JSON.stringify(preset.relationship[name]));
     });
+
+    // 绑定起始地区：将该身份组绑定的地区写入背景信息.地区（已存在则不覆盖）
+    var bound = it && it.bound_region;
+    if (bound) {
+        var rp = (FC1_PRESETS.regions || []).find(function(r) { return r.name === bound; });
+        if (rp && !v['背景信息']['地区'][bound]) {
+            v['背景信息']['地区'][bound] = { 描述: rp.描述 || '', 民俗风情: JSON.parse(JSON.stringify(rp.民俗风情 || {})) };
+        }
+        if (v['背景信息']['地区'][bound] && !__fc1isRegion) {
+            __fc1isRegion = bound;
+            __fc1isRegionCustom = false;
+        }
+    }
 }
 
 // ---- 分区标题 ----
@@ -1064,9 +1102,10 @@ window.fc1isPickIdentity = function(id) {
     var pool = (FC1_PRESETS.identities && FC1_PRESETS.identities.length) ? FC1_PRESETS.identities : (FC1_IDENTITIES || []);
     var it = pool.find(function(x) { return x.id === id; });
     var v = fc1isEnsureVar();
-    if (v && it) v.user.identity = it.name;
+    var identityName = (it && it.variable && it.variable.user && it.variable.user.identity) ? it.variable.user.identity : (it ? it.name : '');
+    if (v && identityName && !v.user.identity) v.user.identity = identityName;
     var input = document.getElementById('fc1-identity-input');
-    if (input) input.value = it ? it.name : '';
+    if (input) input.value = identityName;
     fc1isCloseIdentityPicker();
     fc1InitRender();
 };
@@ -1255,7 +1294,7 @@ function fc1isRenderStep() {
     if (__fc1isStep === 6) nav = fc1isDecisionHTML();
     else if (__fc1isStep < 6 || __fc1isStep === 7) nav = fc1isNavHTML();
 
-    root.innerHTML = '<div class="fc1is-hint">所有未填写的项请留空，无需填写「无」。</div>' + content + nav;
+    root.innerHTML = '<div class="fc1is-hint">跳过的选项将在后续剧情生成中由ai自动补全</div>' + content + nav;
 
     if (__fc1isStep >= 7) {
         fc1isRenderRegionChips();
