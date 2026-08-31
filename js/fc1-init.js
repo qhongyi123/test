@@ -1193,39 +1193,45 @@ function fc1isDecisionHTML() {
         '</div>';
 }
 
-function fc1isRenderGenderStep(v) {
+function fc1isGenderRow(v) {
     var u = v.user;
     var genderOpts = ['', '男性', '伊芙', '伊菈'].map(function(g) {
         return '<option value="' + g + '"' + ((u.gender || '') === g ? ' selected' : '') + '>' + (g || '请选择') + '</option>';
     }).join('');
-    return fc1isSection('角色信息',
-        '<div class="fc1is-row"><span class="fc1is-label">性别</span><select id="fc1is-gender" onchange="fc1isOnUser(\'gender\')">' + genderOpts + '</select></div>');
+    return '<div class="fc1is-row"><span class="fc1is-label">性别</span><select id="fc1is-gender" onchange="fc1isOnUser(\'gender\')">' + genderOpts + '</select></div>';
 }
 
-function fc1isRenderIdentityStep(v) {
+function fc1isIdentityRows(v) {
     var u = v.user;
-    return fc1isSection('角色信息',
-        '<div class="fc1is-row"><span class="fc1is-label">用户身份</span><input id="fc1is-identity" value="' + fc1isAttr(u.identity) + '" oninput="fc1isOnUser(\'identity\')"></div>' +
-        '<div class="fc1is-row"><span class="fc1is-label"></span><button class="fc1is-idp-btn" onclick="fc1isOpenIdentityPicker()">\u2756 预设身份组 \u2756</button></div>');
+    return '<div class="fc1is-row"><span class="fc1is-label">用户身份</span><input id="fc1is-identity" value="' + fc1isAttr(u.identity) + '" oninput="fc1isOnUser(\'identity\')"></div>' +
+        '<div class="fc1is-row"><span class="fc1is-label"></span><button class="fc1is-idp-btn" onclick="fc1isOpenIdentityPicker()">\u2756 预设身份组 \u2756</button></div>';
 }
 
-function fc1isRenderBodyStep(v) {
-    return fc1isSection('角色信息',
-        '<div class="fc1is-row"><span class="fc1is-label">身体状态</span><input id="fc1is-body" value="' + fc1isAttr(v.user.body_state) + '" oninput="fc1isOnUser(\'body_state\')"></div>');
+function fc1isBodyRow(v) {
+    return '<div class="fc1is-row"><span class="fc1is-label">身体状态</span><input id="fc1is-body" value="' + fc1isAttr(v.user.body_state) + '" oninput="fc1isOnUser(\'body_state\')"></div>';
 }
 
-function fc1isRenderWealthStep(v) {
-    return fc1isSection('角色信息',
-        '<div class="fc1is-row"><span class="fc1is-label">财富</span><input id="fc1is-wealth" value="' + fc1isAttr(v.user.wealth) + '" oninput="fc1isOnUser(\'wealth\')"></div>');
+function fc1isWealthRow(v) {
+    return '<div class="fc1is-row"><span class="fc1is-label">财富</span><input id="fc1is-wealth" value="' + fc1isAttr(v.user.wealth) + '" oninput="fc1isOnUser(\'wealth\')"></div>';
 }
 
-function fc1isRenderInventoryStep(v) {
-    return fc1isSection('角色信息',
-        '<div class="fc1is-sub">' +
-            '<div class="fc1is-label">物品栏</div>' +
-            '<div class="fc1is-inv-actions"><button class="fc1is-idp-btn" onclick="fc1isOpenInventoryDrawer()">预设物品</button></div>' +
-            '<div class="fc1is-inv" id="fc1is-inv">' + fc1isInvRowsHTML() + '</div>' +
-        '</div>');
+function fc1isInventoryBlock(v) {
+    return '<div class="fc1is-sub">' +
+        '<div class="fc1is-label">物品栏</div>' +
+        '<div class="fc1is-inv-actions"><button class="fc1is-idp-btn" onclick="fc1isOpenInventoryDrawer()">预设物品</button></div>' +
+        '<div class="fc1is-inv" id="fc1is-inv">' + fc1isInvRowsHTML() + '</div>' +
+    '</div>';
+}
+
+function fc1isRenderCharSection(v) {
+    var rows = '';
+    if (__fc1isStep >= 1) rows += fc1isGenderRow(v);
+    if (__fc1isStep >= 2) rows += fc1isIdentityRows(v);
+    if (__fc1isStep >= 3) rows += fc1isBodyRow(v);
+    if (__fc1isStep >= 4) rows += fc1isWealthRow(v);
+    if (__fc1isStep >= 5) rows += fc1isInventoryBlock(v);
+    if (!rows) return '';
+    return fc1isSection('角色信息', rows);
 }
 
 function fc1isRenderStep() {
@@ -1236,11 +1242,7 @@ function fc1isRenderStep() {
     fc1isInitWorldDraft();
 
     var content = fc1isRenderWorld();
-    if (__fc1isStep >= 1) content += fc1isRenderGenderStep(v);
-    if (__fc1isStep >= 2) content += fc1isRenderIdentityStep(v);
-    if (__fc1isStep >= 3) content += fc1isRenderBodyStep(v);
-    if (__fc1isStep >= 4) content += fc1isRenderWealthStep(v);
-    if (__fc1isStep >= 5) content += fc1isRenderInventoryStep(v);
+    if (__fc1isStep >= 1) content += fc1isRenderCharSection(v);
     if (__fc1isStep >= 7) content += fc1isRenderRegion(v);
     if (__fc1isStep >= 8) {
         content += fc1isRenderRel(v) +
