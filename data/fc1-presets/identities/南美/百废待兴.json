@@ -38,8 +38,8 @@
         "scale": "小型",
         "status": "荒废",
         "product": "无",
-        "output": "0",
-        "revenue": "0 银币"
+        "output": "无",
+        "revenue": "无"
       },
       "南侧种植园": {
         "type": "农事",
@@ -47,27 +47,27 @@
         "scale": "小型",
         "status": "荒废",
         "product": "无",
-        "output": "0",
-        "revenue": "0 银币"
+        "output": "无",
+        "revenue": "无"
       }
     },
     "relationship": {
-      "埃尔默": {
-        "gender": "男性",
+      "埃尔雯": {
+        "gender": "",
         "tags": ["手下"],
         "location": "南美 - 萨尔瓦多 - 城外高地",
         "expense": "3 银币/月",
         "desc": "卡文迪许家族的老派随身管家，极度注重体面与严谨的贵族做派。"
       },
       "索菲": {
-        "gender": "女性",
+        "gender": "",
         "tags": ["手下"],
         "location": "南美 - 萨尔瓦多 - 城外高地",
         "expense": "1 银币/月",
         "desc": "随身女仆，性格跳脱，情绪容易挂在脸上，对脏乱差的环境表现出极度不适。"
       },
       "玛丽亚": {
-        "gender": "女性",
+        "gender": "",
         "tags": ["手下"],
         "location": "南美 - 萨尔瓦多 - 城外高地",
         "expense": "1 银币/月",

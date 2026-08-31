@@ -75,7 +75,7 @@ var emptyTemplateInfo = {
         "user": { "identity": "", "gender": "", "body_state": "", "inventory": {}, "surroundings": "", "psychological_description": "" },
         "剧情线": {},
         "用户偏好": {},
-        "背景信息": { "地区": { "未知地图": { "描述": "尚未开拓之地...", "民俗风情": {} } } }
+        "背景信息": { "地区": {} }
     }
 };
 

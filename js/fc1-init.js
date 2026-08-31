@@ -1040,6 +1040,20 @@ window.fc1isDelWare = function(item) {
             '<div class="fc1-modal-body" id="fc1is-rg-body"></div>' +
         '</div>';
     document.body.appendChild(rm);
+
+    var fm = document.createElement('div');
+    fm.className = 'fc1-modal';
+    fm.id = 'fc1-fill-modal';
+    fm.innerHTML = '<div class="fc1-modal-backdrop" onclick="fc1isCloseFillModal()"></div>' +
+        '<div class="fc1-modal-box">' +
+            '<div class="fc1-modal-head"><span class="fc1-modal-title">\u2756 补全未填写变量 \u2756</span><button class="fc1-modal-close" onclick="fc1isCloseFillModal()">\u2715</button></div>' +
+            '<div class="fc1-modal-body" id="fc1-fill-body"></div>' +
+            '<div class="fc1-modal-foot">' +
+                '<button class="fc1is-nav-btn fc1is-nav-skip" onclick="fc1isCloseFillModal()">取消</button>' +
+                '<button class="fc1is-nav-btn fc1is-nav-continue" onclick="fc1isConfirmFill()">确定并跳过</button>' +
+            '</div>' +
+        '</div>';
+    document.body.appendChild(fm);
 })();
 window.fc1isOpenDrawer = function(title, html) {
     var d = document.getElementById('fc1-drawer');
@@ -1106,6 +1120,7 @@ window.fc1isPickIdentity = function(id) {
     if (v && identityName && !v.user.identity) v.user.identity = identityName;
     var input = document.getElementById('fc1-identity-input');
     if (input) input.value = identityName;
+    __fc1isStep = Math.max(__fc1isStep, 5);
     fc1isCloseIdentityPicker();
     fc1InitRender();
 };
@@ -1204,10 +1219,93 @@ window.fc1isNext = function() {
     fc1isRenderStep();
 };
 
-// 决策：跳过后续变量 → 直接进入「开始剧情」
+// 决策：跳过后续变量 → 检测未填写变量后进入「开始剧情」
 window.fc1isSkipRemaining = function() {
+    var entries = fc1isFindEmptyPresetFields();
+    if (entries.length > 0) {
+        fc1isOpenFillModal(entries);
+    } else {
+        fc1isDoSkip();
+    }
+};
+
+// 找出身份组预设变量里「写了键但内容留空」的字段（返回结构化条目）
+function fc1isFindEmptyPresetFields() {
+    var it = (FC1_PRESETS.identities || []).find(function(x) { return x.id === __fc1Identity; })
+        || (FC1_IDENTITIES || []).find(function(x) { return x.id === __fc1Identity; });
+    if (!it || !it.variable) return [];
+    var names = { date: '日期', gender: '性别', identity: '身份', body_state: '身体状态', wealth: '财富', gold: '金币', surroundings: '周围环境', psychological_description: '心理描写', position: '地点', time: '时间' };
+    var out = [];
+    function walk(obj, path) {
+        if (!obj || typeof obj !== 'object') return;
+        Object.keys(obj).forEach(function(k) {
+            var val = obj[k];
+            var isPersonField = (path.length >= 2 && path[path.length - 2] === 'relationship');
+            if (val === '' || val === null || val === undefined) {
+                var label = names[k] || k;
+                if (isPersonField && k === 'gender') label = path[path.length - 1] + ' 的性别';
+                out.push({ path: path.concat([k]), label: label, type: (k === 'gender') ? 'gender' : 'text' });
+            } else if (typeof val === 'object') {
+                walk(val, path.concat([k]));
+            }
+        });
+    }
+    walk(it.variable, []);
+    return out;
+}
+
+function fc1isSetPath(obj, path, value) {
+    var cur = obj;
+    for (var i = 0; i < path.length - 1; i++) {
+        if (!cur[path[i]]) cur[path[i]] = {};
+        cur = cur[path[i]];
+    }
+    cur[path[path.length - 1]] = value;
+}
+
+function fc1isDoSkip() {
     if (typeof fc1RenderStartPreview === 'function') fc1RenderStartPreview();
     if (typeof goToSubTab === 'function') goToSubTab('FC1', 'FC1-sub4');
+}
+
+// ==================== 补全未填写变量弹窗 ====================
+var __fc1isFillEntries = [];
+
+window.fc1isOpenFillModal = function(entries) {
+    var m = document.getElementById('fc1-fill-modal');
+    var body = document.getElementById('fc1-fill-body');
+    if (!m || !body) return;
+    __fc1isFillEntries = entries || [];
+    var html = '<div class="fc1is-hint">以下变量尚未填写，可在此直接补全（留空则交由 AI 自动补全）</div>';
+    __fc1isFillEntries.forEach(function(e, i) {
+        var id = 'fc1-fill-' + i;
+        if (e.type === 'gender') {
+            var opts = ['', '男性', '伊芙', '伊菈'].map(function(g) {
+                return '<option value="' + g + '">' + (g || '请选择') + '</option>';
+            }).join('');
+            html += '<div class="fc1is-row"><span class="fc1is-label">' + mtH(e.label) + '</span><select id="' + id + '">' + opts + '</select></div>';
+        } else {
+            html += '<div class="fc1is-row"><span class="fc1is-label">' + mtH(e.label) + '</span><input id="' + id + '" placeholder="留空由 AI 补全"></div>';
+        }
+    });
+    body.innerHTML = html;
+    m.classList.add('open');
+};
+
+window.fc1isCloseFillModal = function() {
+    var m = document.getElementById('fc1-fill-modal');
+    if (m) m.classList.remove('open');
+};
+
+window.fc1isConfirmFill = function() {
+    var v = fc1isEnsureVar();
+    __fc1isFillEntries.forEach(function(e, i) {
+        var el = document.getElementById('fc1-fill-' + i);
+        var val = el ? el.value.trim() : '';
+        if (val) fc1isSetPath(v, e.path, val);
+    });
+    fc1isCloseFillModal();
+    fc1isDoSkip();
 };
 
 // 决策：填写后续变量 → 进入地区信息
@@ -1308,7 +1406,6 @@ window.fc1InitRender = function() {
     var root = document.getElementById('fc1-init-root');
     if (!root) return;
     fc1isSyncPreset();
-    fc1isEnsureStartRegion();
     fc1isRenderStep();
 };
 
@@ -1326,5 +1423,8 @@ window.fc1CollectInitialVars = function() {
     Object.keys(v).forEach(function(k) { out[k] = v[k]; });
     delete out.write;
     delete out['剧情线'];
+    if (!out['背景信息'] || Object.keys(out['背景信息']['地区'] || {}).length === 0) {
+        delete out['背景信息'];
+    }
     return out;
 };
