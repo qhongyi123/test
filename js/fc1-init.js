@@ -280,6 +280,7 @@ window.fc1isAddInventoryItem = function(idx) {
     if (!v.user.inventory[it.name]) v.user.inventory[it.name] = it.value || '';
     fc1isCloseDrawer();
     fc1isRenderInvList();
+    fc1isUpdateNav();
 };
 window.fc1isOnUser = function(field) {
     var v = fc1isEnsureVar(); if (!v) return;
@@ -313,6 +314,7 @@ window.fc1isCollectInventory = function() {
         if (k) inv[k] = val;
     });
     v.user.inventory = inv;
+    fc1isUpdateNav();
 };
 
 // ==================== ③ 地区信息（重点） ====================
@@ -1122,7 +1124,7 @@ window.fc1isPickRegion = function(name) {
     fc1InitRender();
 };
 
-// ==================== 引导式步骤（世界信息 → 性别 → 身份 → 完整编辑器） ====================
+// ==================== 引导式步骤（世界信息 → 性别 → 身份 → 身体状态 → 财富 → 物品栏 → 决策 → 地区信息 → 完整编辑器） ====================
 var __fc1isStep = 0;
 
 function fc1isStepFilled() {
@@ -1138,6 +1140,15 @@ function fc1isStepFilled() {
         return !!(v.user && v.user.identity);
     }
     if (__fc1isStep === 3) {
+        return !!(v.user && v.user.body_state);
+    }
+    if (__fc1isStep === 4) {
+        return !!(v.user && v.user.wealth);
+    }
+    if (__fc1isStep === 5) {
+        return Object.keys((v.user && v.user.inventory) || {}).length > 0;
+    }
+    if (__fc1isStep === 7) {
         return !!__fc1isRegion;
     }
     return true;
@@ -1160,9 +1171,9 @@ window.fc1isSkipRemaining = function() {
     if (typeof goToSubTab === 'function') goToSubTab('FC1', 'FC1-sub4');
 };
 
-// 决策：填写后续变量 → 展开完整编辑器
+// 决策：填写后续变量 → 进入地区信息
 window.fc1isFillRemaining = function() {
-    __fc1isStep = 5;
+    __fc1isStep = 7;
     fc1isRenderStep();
 };
 
@@ -1198,11 +1209,18 @@ function fc1isRenderIdentityStep(v) {
         '<div class="fc1is-row"><span class="fc1is-label"></span><button class="fc1is-idp-btn" onclick="fc1isOpenIdentityPicker()">\u2756 预设身份组 \u2756</button></div>');
 }
 
-function fc1isRenderCharRest(v) {
-    var u = v.user;
+function fc1isRenderBodyStep(v) {
     return fc1isSection('角色信息',
-        '<div class="fc1is-row"><span class="fc1is-label">身体状态</span><input id="fc1is-body" value="' + fc1isAttr(u.body_state) + '" oninput="fc1isOnUser(\'body_state\')"></div>' +
-        '<div class="fc1is-row"><span class="fc1is-label">财富</span><input id="fc1is-wealth" value="' + fc1isAttr(u.wealth) + '" oninput="fc1isOnUser(\'wealth\')"></div>' +
+        '<div class="fc1is-row"><span class="fc1is-label">身体状态</span><input id="fc1is-body" value="' + fc1isAttr(v.user.body_state) + '" oninput="fc1isOnUser(\'body_state\')"></div>');
+}
+
+function fc1isRenderWealthStep(v) {
+    return fc1isSection('角色信息',
+        '<div class="fc1is-row"><span class="fc1is-label">财富</span><input id="fc1is-wealth" value="' + fc1isAttr(v.user.wealth) + '" oninput="fc1isOnUser(\'wealth\')"></div>');
+}
+
+function fc1isRenderInventoryStep(v) {
+    return fc1isSection('角色信息',
         '<div class="fc1is-sub">' +
             '<div class="fc1is-label">物品栏</div>' +
             '<div class="fc1is-inv-actions"><button class="fc1is-idp-btn" onclick="fc1isOpenInventoryDrawer()">预设物品</button></div>' +
@@ -1220,22 +1238,24 @@ function fc1isRenderStep() {
     var content = fc1isRenderWorld();
     if (__fc1isStep >= 1) content += fc1isRenderGenderStep(v);
     if (__fc1isStep >= 2) content += fc1isRenderIdentityStep(v);
-    if (__fc1isStep >= 3) content += fc1isRenderRegion(v);
-    if (__fc1isStep >= 5) {
-        content += fc1isRenderCharRest(v) +
-            fc1isRenderRel(v) +
+    if (__fc1isStep >= 3) content += fc1isRenderBodyStep(v);
+    if (__fc1isStep >= 4) content += fc1isRenderWealthStep(v);
+    if (__fc1isStep >= 5) content += fc1isRenderInventoryStep(v);
+    if (__fc1isStep >= 7) content += fc1isRenderRegion(v);
+    if (__fc1isStep >= 8) {
+        content += fc1isRenderRel(v) +
             fc1isRenderEstate(v) +
             fc1isRenderShip(v) +
             fc1isRenderWarehouse(v);
     }
 
     var nav = '';
-    if (__fc1isStep === 4) nav = fc1isDecisionHTML();
-    else if (__fc1isStep < 4) nav = fc1isNavHTML();
+    if (__fc1isStep === 6) nav = fc1isDecisionHTML();
+    else if (__fc1isStep < 6 || __fc1isStep === 7) nav = fc1isNavHTML();
 
     root.innerHTML = '<div class="fc1is-hint">所有未填写的项请留空，无需填写「无」。</div>' + content + nav;
 
-    if (__fc1isStep >= 3) {
+    if (__fc1isStep >= 7) {
         fc1isRenderRegionChips();
         fc1isRenderRegionDisplay();
     }
