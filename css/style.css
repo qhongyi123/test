@@ -108,11 +108,12 @@ body {
 .title-area { z-index: 10; text-align: center; padding: 0 20px 0 40px; margin-top: -10%; }
 .book-title {
     font-family: 'Ma Shan Zheng', cursive;
-    font-size: clamp(2.8rem, 9vw, 4.6rem);
+    font-size: clamp(1.6rem, 4.5vw, 2.6rem);
     color: var(--color-text-light);
     margin: 0;
     text-shadow: 0 0 10px rgba(212, 175, 55, 0.8), 0 0 20px rgba(212, 175, 55, 0.4), 2px 2px 4px rgba(0,0,0,0.8);
     letter-spacing: 2px;
+    white-space: nowrap;
 }
 .book-subtitle { font-family: 'Noto Serif SC', serif; color: var(--color-primary); font-size: clamp(1rem, 3.5vw, 1.4rem); margin-top: 15px; letter-spacing: 5px; opacity: 0.9; }
 
@@ -464,8 +465,8 @@ body {
     .param-group { padding: 6px; }
     .control-item-row { padding: 6px; }
     .sub-panels-wrapper { padding-right: 2px; }
-    .sub-tabs-header { position: static !important; overflow-x: auto; flex-wrap: nowrap; white-space: nowrap; -webkit-overflow-scrolling: touch; padding-right: 5px; padding-top: 25px; margin-bottom: 0.5rem; }
-    .sub-tab-btn { padding: 4px 8px; font-size: 0.85rem; }
+    .sub-tabs-header { position: static !important; overflow-x: auto; flex-wrap: nowrap; white-space: nowrap; -webkit-overflow-scrolling: touch; padding-right: 5px; padding-top: 25px; margin-bottom: 0.5rem; gap: 2px; }
+    .sub-tab-btn { padding: 3px 6px; font-size: 0.72rem; }
     .edit-switch-container {
         position: absolute !important;
         right: 0px !important;
@@ -1165,6 +1166,9 @@ body {
 .fc1is-hint { text-align: center; font-size: 0.78rem; color: #999; padding: 4px 0; letter-spacing: 1px; }
 .fc1is-section { border: 1px solid rgba(212,175,55,0.25); border-radius: 8px; background: rgba(255,255,255,0.22); padding: 10px 12px; }
 .fc1is-title { font-family: 'Ma Shan Zheng', cursive; font-size: 1.05rem; color: var(--color-primary-dark); border-bottom: 1px dashed rgba(184,134,11,0.35); padding-bottom: 6px; margin-bottom: 10px; }
+.fc1is-title-flex { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.fc1is-title-text { flex-shrink: 0; }
+.fc1is-title-extra { flex-shrink: 0; display: inline-flex; align-items: center; }
 .fc1is-body { display: flex; flex-direction: column; gap: 10px; }
 .fc1is-row { display: flex; align-items: center; gap: 10px; }
 .fc1is-row-col { display: flex; flex-direction: column; gap: 6px; }
@@ -1225,6 +1229,8 @@ body {
 .fc1is-rel-count { font-size: 0.8rem; color: #8b5a2b; }
 .fc1is-rel-add { margin-left: auto; width: 26px; height: 26px; border-radius: 50%; border: 1px solid var(--color-primary-dark); background: rgba(253,246,227,0.6); color: var(--color-primary-dark); cursor: pointer; font-size: 1rem; line-height: 1; }
 .fc1is-rel-add:hover { background: var(--color-primary); color: #1a0f2e; }
+.fc1is-rel-custom-add { padding: 3px 12px; border-radius: 6px; border: 1px dashed var(--color-primary-dark); background: rgba(212,175,55,0.08); color: var(--color-primary-dark); cursor: pointer; font-family: 'Noto Serif SC', serif; font-size: 0.78rem; font-weight: bold; }
+.fc1is-rel-custom-add:hover { background: rgba(212,175,55,0.22); }
 .fc1is-rel-body { padding: 6px 10px; }
 .fc1is-rel-row { display: flex; flex-direction: column; gap: 3px; padding: 5px 0; border-bottom: 1px dashed rgba(184,134,11,0.2); }
 .fc1is-rel-row:last-child { border-bottom: none; }

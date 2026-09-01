@@ -774,18 +774,18 @@ var __fc1StartMode = "auto";
 window.fc1BuildAutoPrompt = function() {
     var it = (typeof FC1_PRESETS !== 'undefined' && FC1_PRESETS.identities ? FC1_PRESETS.identities.find(function(x) { return x.id === __fc1Identity; }) : null)
         || (FC1_IDENTITIES || []).find(function(x) { return x.id === __fc1Identity; });
+    if (!it) return null;
     var v = (typeof fc1isGetVar === 'function') ? fc1isGetVar() : null;
-    var identity = (v && v.user && v.user.identity) || (it ? it.name : '');
+    var identity = (v && v.user && v.user.identity) || it.name;
     if (!identity) return null;
-    var desc = it ? it.desc : '';
-    return '生成开场白，这是一个关于{{user}}的故事......\n' + desc;
+    return '生成开场白，这是一个关于{{user}}的故事......\n' + it.desc;
 };
 
 window.fc1RenderStartPreview = function() {
     var el = document.getElementById('fc1-start-preview');
     if (!el) return;
     var prompt = fc1BuildAutoPrompt();
-    el.textContent = prompt !== null ? prompt : '请先在「初始设定」中选择身份组';
+    el.textContent = prompt !== null ? prompt : '请先在「初始设定」中选择预设身份组（方式一）';
 };
 
 window.fc1SelectStartMode = function(mode) {
@@ -802,7 +802,6 @@ window.fc1SelectStartMode = function(mode) {
 };
 
 window.fc1StartGame = async function() {
-    if (!__fc1Identity) { showCustomAlert("请先在「初始设定」中选择身份组"); return; }
     var v;
     try {
         v = (typeof fc1CollectInitialVars === 'function') ? fc1CollectInitialVars() : fc1CollectVariable();
@@ -819,7 +818,7 @@ window.fc1StartGame = async function() {
         if (!prompt) { showCustomAlert("请先填写你的自定义开局"); return; }
     } else {
         prompt = fc1BuildAutoPrompt();
-        if (prompt === null) { showCustomAlert("请先在「初始设定」中选择身份组"); return; }
+        if (prompt === null) { showCustomAlert("方式一需要先在「初始设定」中选择预设身份组，或改用方式二自定义开局"); return; }
     }
 
     var agree = await showCustomConfirm("确认开始自由模式并发送开局信息吗");
@@ -1459,7 +1458,7 @@ function triggerSTSlashSend(storyText, finalJsonObj) {
     var finalMsg = storyText + '\n' + tokenTagOpen + '\n' + compactJSONStr + '\n' + tokenTagClose;
     console.log("即将投递出的世界讯息：\n", finalMsg);
     try {
-        if (typeof triggerSlash === 'function') { triggerSlash('/sendas name="《千叶的睡前小故事》" ' + finalMsg); }
+        if (typeof triggerSlash === 'function') { triggerSlash('/sendas name="千叶的睡前小故事" ' + finalMsg); }
         else if (typeof window.parent.triggerSlash === 'function') { window.parent.triggerSlash('/sendas name="Frontend Assistant" ' + finalMsg); }
         else { showCustomAlert("\u26A0 脚本检测未连接到主核心，讯息将仅留刻在网页虚空(控制台输出)。"); }
     } catch(e) { console.error(e); showCustomAlert("通讯投递受阻！"); }

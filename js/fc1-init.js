@@ -183,9 +183,12 @@ function fc1isSyncPreset() {
 }
 
 // ---- 分区标题 ----
-function fc1isSection(title, body) {
+function fc1isSection(title, body, titleExtra) {
+    var extra = titleExtra ? '<span class="fc1is-title-extra">' + titleExtra + '</span>' : '';
     return '<div class="fc1is-section">' +
-        '<div class="fc1is-title">\u2756 ' + title + ' \u2756</div>' +
+        '<div class="fc1is-title' + (titleExtra ? ' fc1is-title-flex' : '') + '">' +
+            '<span class="fc1is-title-text">\u2756 ' + title + ' \u2756</span>' + extra +
+        '</div>' +
         '<div class="fc1is-body">' + body + '</div>' +
     '</div>';
 }
@@ -444,7 +447,7 @@ function fc1isRenderRegionDisplay() {
     var box = document.getElementById('fc1is-region-display');
     if (!box) return;
     if (!__fc1isRegion) {
-        box.innerHTML = '<div class="fc1is-region-empty">请先前往「区域选择」选择你的起始之地，或点击上方「预设地区」添加。</div>';
+        box.innerHTML = '<div class="fc1is-region-empty">区域为空，你可以点击上方按钮添加地区或进行自定义</div>';
         return;
     }
     var v = fc1isEnsureVar();
@@ -603,7 +606,8 @@ function fc1isRenderRel(v) {
             '<div class="fc1is-rel-body">' + (rows || '<div class="fc1is-empty">暂无</div>') + '</div>' +
         '</div>';
     });
-    return fc1isSection('关系', '<div class="fc1is-rel-wrap" id="fc1is-rel">' + html + '</div>');
+    return fc1isSection('关系', '<div class="fc1is-rel-wrap" id="fc1is-rel">' + html + '</div>',
+        '<button class="fc1is-rel-custom-add" onclick="fc1isAddCustomRelation()">+ 自定义添加角色</button>');
 }
 function fc1isRenderRelSection() {
     var v = fc1isEnsureVar(); if (!v) return;
@@ -709,6 +713,86 @@ window.fc1isInsertRelation = async function() {
     fc1isCloseDrawer();
     fc1isRenderRelSection();
     showCustomAlert('\u2728 已塞入角色');
+};
+
+function fc1isCustomRelTagOptsHTML() {
+    var catOpts = FC1IS_REL_CATS.map(function(c) {
+        return '<label class="fc1is-tag-opt"><input type="checkbox" class="fc1is-rel-cat-chk" value="' + c.label + '">' + c.label + '</label>';
+    }).join('');
+    var extraOpts = FC1IS_TAG_OPTIONS.map(function(t) {
+        return '<label class="fc1is-tag-opt"><input type="checkbox" class="fc1is-tag-chk" value="' + t + '">' + t + '</label>';
+    }).join('');
+    return '<div class="fc1is-tag-opts">' + catOpts + extraOpts + '</div>' +
+        '<div class="fc1is-row" style="margin-top:8px;"><span class="fc1is-label">自定义标签</span>' +
+        '<input id="fc1is-custom-tag" class="fc1is-custom-tag-input" placeholder="输入自定义标签，确认时一并生效">' +
+        '</div>';
+}
+
+window.fc1isAddCustomRelation = async function() {
+    var entries = [];
+    if (typeof fetchCharEntries === 'function') { try { entries = await fetchCharEntries(); } catch(e) {} }
+    window.__fc1isEntries = entries;
+    var opts = '<option value="">不写入条目（可选）</option>';
+    entries.forEach(function(e) {
+        opts += '<option value="' + e.uid + '">' + mtH(e.comment || ('#' + e.uid)) + '</option>';
+    });
+    var genderSel = '<select id="fc1is-rel-gender">' +
+        '<option value="">请选择</option>' +
+        ['男性', '伊芙', '伊菈'].map(function(g) { return '<option value="' + g + '">' + g + '</option>'; }).join('') +
+        '</select>';
+    fc1isOpenDrawer('自定义添加角色',
+        '<div class="fc1is-col">' +
+            '<div class="fc1is-row"><span class="fc1is-label">角色姓名</span><input id="fc1is-rel-name" placeholder="请输入角色姓名"></div>' +
+            '<div class="fc1is-row"><span class="fc1is-label">性别</span>' + genderSel + '</div>' +
+            '<div class="fc1is-row-col"><span class="fc1is-label">标签（必选其一：家人 / 朋友 / 手下 / 奴隶）</span>' + fc1isCustomRelTagOptsHTML() + '</div>' +
+            '<div class="fc1is-row-col"><span class="fc1is-label">简介 desc（简短，写入关系变量，可选）</span><textarea id="fc1is-rel-brief" placeholder="一句话介绍该角色"></textarea></div>' +
+            '<div class="fc1is-row-col"><span class="fc1is-label">角色描述（稍长，写入条目，可选）</span><textarea id="fc1is-rel-desc" placeholder="稍长的人物介绍，留空则不写入条目"></textarea></div>' +
+            '<div class="fc1is-row"><span class="fc1is-label">写入目标条目</span><select id="fc1is-rel-entry">' + opts + '</select></div>' +
+            '<button class="fc1-drawer-confirm" onclick="fc1isCommitCustomRelation()">\u2727 确认添加 \u2727</button>' +
+        '</div>');
+};
+
+window.fc1isCommitCustomRelation = async function() {
+    var v = fc1isEnsureVar(); if (!v) return;
+    var nameEl = document.getElementById('fc1is-rel-name');
+    var name = nameEl ? nameEl.value.trim() : '';
+    if (!name) { showCustomAlert('请填写角色姓名'); return; }
+
+    var cats = [];
+    document.querySelectorAll('.fc1is-rel-cat-chk:checked').forEach(function(chk) {
+        if (cats.indexOf(chk.value) === -1) cats.push(chk.value);
+    });
+    if (!cats.length) { showCustomAlert('请至少选择家人、朋友、手下、奴隶中的一个标签'); return; }
+
+    var tags = [cats[0]];
+    fc1isCollectTags().forEach(function(t) {
+        if (tags.indexOf(t) === -1) tags.push(t);
+    });
+
+    var genderEl = document.getElementById('fc1is-rel-gender');
+    var gender = genderEl ? genderEl.value : '';
+
+    var briefEl = document.getElementById('fc1is-rel-brief');
+    var brief = briefEl ? briefEl.value.trim() : '';
+
+    var descEl = document.getElementById('fc1is-rel-desc');
+    var desc = descEl ? descEl.value.trim() : '';
+
+    var uidEl = document.getElementById('fc1is-rel-entry');
+    var uid = uidEl ? parseInt(uidEl.value, 10) : 0;
+    if (desc && uid && typeof setLorebookEntries === 'function') {
+        var content = '<' + name + '>\n' + desc + '\n</' + name + '>';
+        try { await setLorebookEntries(LOREBOOK_NAME, [{ uid: uid, comment: name, content: content, enabled: true }]); } catch(e) { showCustomAlert('写入失败'); return; }
+    }
+
+    var rel = v.relationship[name] || {};
+    rel.gender = gender;
+    rel.desc = brief;
+    rel.tags = tags;
+    v.relationship[name] = rel;
+
+    fc1isCloseDrawer();
+    fc1isRenderRelSection();
 };
 
 // ==================== 棋盘与家产/船只 ====================
@@ -1290,14 +1374,8 @@ function fc1isStepFilled() {
     if (__fc1isStep === 2) {
         return !!(v.user && v.user.identity);
     }
-    if (__fc1isStep === 3) {
-        return !!(v.user && v.user.body_state);
-    }
-    if (__fc1isStep === 4) {
-        return !!(v.user && v.user.wealth);
-    }
-    if (__fc1isStep === 5) {
-        return Object.keys((v.user && v.user.inventory) || {}).length > 0;
+    if (__fc1isStep === 3 || __fc1isStep === 4 || __fc1isStep === 5) {
+        return true;
     }
     if (__fc1isStep === 7) {
         return !!__fc1isRegion;
