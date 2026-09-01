@@ -530,12 +530,33 @@ var FC1IS_REL_CATS = [
     { key: 'hands', label: '手下' },
     { key: 'slaves', label: '奴隶' }
 ];
-var FC1IS_TAG_OPTIONS = ['宠物', '性奴', '情人'];
+var FC1IS_TAG_OPTIONS = ['宠物', '性奴', '情人', '心腹', '挚友', '仇敌', '护卫', '医者'];
 var FC1IS_REL_FIELDS = ['gender', 'location', 'expense'];
 
 function fc1isRelLabel(key) {
     var c = FC1IS_REL_CATS.find(function(x) { return x.key === key; });
     return c ? c.label : key;
+}
+function fc1isTagOptsHTML(existing) {
+    existing = existing || [];
+    var opts = FC1IS_TAG_OPTIONS.map(function(t) {
+        var checked = existing.indexOf(t) !== -1 ? ' checked' : '';
+        return '<label class="fc1is-tag-opt"><input type="checkbox" class="fc1is-tag-chk" value="' + t + '"' + checked + '>' + t + '</label>';
+    }).join('');
+    return '<div class="fc1is-tag-opts">' + opts + '</div>' +
+        '<div class="fc1is-row" style="margin-top:8px;"><span class="fc1is-label">自定义标签</span>' +
+        '<input id="fc1is-custom-tag" class="fc1is-custom-tag-input" placeholder="输入自定义标签，确认时一并生效">' +
+        '</div>';
+}
+function fc1isCollectTags() {
+    var tags = [];
+    document.querySelectorAll('.fc1is-tag-chk:checked').forEach(function(chk) {
+        if (tags.indexOf(chk.value) === -1) tags.push(chk.value);
+    });
+    var customEl = document.getElementById('fc1is-custom-tag');
+    var custom = customEl ? customEl.value.trim() : '';
+    if (custom && tags.indexOf(custom) === -1) tags.push(custom);
+    return tags;
 }
 function fc1isRenderRel(v) {
     var rel = v.relationship || {};
@@ -610,12 +631,8 @@ window.fc1isAddRelTag = function(name) {
     var existing = (rel.tags || []).filter(function(t) {
         return FC1IS_REL_CATS.every(function(c) { return c.label !== t; });
     });
-    var opts = FC1IS_TAG_OPTIONS.map(function(t) {
-        var checked = existing.indexOf(t) !== -1 ? ' checked' : '';
-        return '<label class="fc1is-tag-opt"><input type="checkbox" class="fc1is-tag-chk" value="' + t + '"' + checked + '>' + t + '</label>';
-    }).join('');
     fc1isOpenDrawer('编辑标签 · ' + name,
-        '<div class="fc1is-row-col"><span class="fc1is-label">选择标签</span><div class="fc1is-tag-opts">' + opts + '</div></div>' +
+        '<div class="fc1is-row-col"><span class="fc1is-label">选择标签</span>' + fc1isTagOptsHTML(existing) + '</div>' +
         '<button class="fc1-drawer-confirm" onclick="fc1isCommitRelTags()">\u2727 确认 \u2727</button>');
 };
 window.fc1isCommitRelTags = function() {
@@ -624,8 +641,8 @@ window.fc1isCommitRelTags = function() {
     var rel = v.relationship[name] || {};
     var category = (rel.tags && rel.tags[0]) || FC1IS_REL_CATS[0].label;
     var tags = [category];
-    document.querySelectorAll('.fc1is-tag-chk:checked').forEach(function(chk) {
-        if (tags.indexOf(chk.value) === -1) tags.push(chk.value);
+    fc1isCollectTags().forEach(function(t) {
+        if (tags.indexOf(t) === -1) tags.push(t);
     });
     rel.tags = tags;
     v.relationship[name] = rel;
@@ -654,13 +671,11 @@ window.fc1isPickChar = function(idx) {
     (window.__fc1isEntries || []).forEach(function(e) {
         opts += '<option value="' + e.uid + '">' + mtH(e.comment || ('#' + e.uid)) + '</option>';
     });
-    var tagOpts = FC1IS_TAG_OPTIONS.map(function(t) {
-        return '<label class="fc1is-tag-opt"><input type="checkbox" class="fc1is-tag-chk" value="' + t + '">' + t + '</label>';
-    }).join('');
     var pick = document.getElementById('fc1-drawer-pick');
     if (pick) pick.innerHTML =
-        '<div class="fc1is-row-col"><span class="fc1is-label">角色描述（可编辑）</span><textarea id="fc1is-char-desc">' + fc1isEsc(c.desc || '') + '</textarea></div>' +
-        '<div class="fc1is-row-col"><span class="fc1is-label">附加标签（可选）</span><div class="fc1is-tag-opts">' + tagOpts + '</div></div>' +
+        '<div class="fc1is-row-col"><span class="fc1is-label">简介（简短，写入关系变量）</span><input id="fc1is-char-brief" placeholder="一句话介绍该角色"></div>' +
+        '<div class="fc1is-row-col"><span class="fc1is-label">角色描述（详细，塞入条目）</span><textarea id="fc1is-char-desc">' + fc1isEsc(c.desc || '') + '</textarea></div>' +
+        '<div class="fc1is-row-col"><span class="fc1is-label">附加标签（可选）</span>' + fc1isTagOptsHTML([]) + '</div>' +
         '<div class="fc1is-row"><span class="fc1is-label">写入目标条目</span><select id="fc1is-char-entry">' + opts + '</select></div>' +
         '<button class="fc1-drawer-confirm" onclick="fc1isInsertRelation()">\u2727 确认塞入 \u2727</button>';
 };
@@ -668,12 +683,15 @@ window.fc1isInsertRelation = async function() {
     var uidEl = document.getElementById('fc1is-char-entry');
     var uid = uidEl ? parseInt(uidEl.value, 10) : 0;
     var descEl = document.getElementById('fc1is-char-desc');
+    var briefEl = document.getElementById('fc1is-char-brief');
     var c = window.__fc1isPickedChar;
     if (!c) return;
     if (!uid) { showCustomAlert('请先选择目标条目'); return; }
     var desc = descEl ? descEl.value.trim() : (c.desc || '');
+    var brief = briefEl ? briefEl.value.trim() : '';
+    var content = desc ? ('<' + c.name + '>\n' + desc + '\n</' + c.name + '>') : '';
     if (typeof setLorebookEntries === 'function') {
-        try { await setLorebookEntries(LOREBOOK_NAME, [{ uid: uid, content: desc }]); } catch(e) { showCustomAlert('写入失败'); return; }
+        try { await setLorebookEntries(LOREBOOK_NAME, [{ uid: uid, comment: c.name, content: content, enabled: true }]); } catch(e) { showCustomAlert('写入失败'); return; }
     }
     var v = fc1isEnsureVar(); if (!v) return;
     var rel = v.relationship[c.name] || {};
@@ -681,10 +699,10 @@ window.fc1isInsertRelation = async function() {
         var val = (c[k] !== undefined && c[k] !== '') ? c[k] : '';
         rel[k] = (val === '') ? '待更新' : val;
     });
-    rel.desc = (desc === '') ? '待更新' : desc;
+    rel.desc = brief;
     var tags = [fc1isRelLabel(window.__fc1isRelCat)];
-    document.querySelectorAll('.fc1is-tag-chk:checked').forEach(function(chk) {
-        if (tags.indexOf(chk.value) === -1) tags.push(chk.value);
+    fc1isCollectTags().forEach(function(t) {
+        if (tags.indexOf(t) === -1) tags.push(t);
     });
     rel.tags = tags;
     v.relationship[c.name] = rel;
