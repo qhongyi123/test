@@ -1212,9 +1212,10 @@ body {
 .fc1is-region-empty { text-align: center; padding: 20px; color: #999; font-style: italic; }
 .fc1is-region-editor { display: flex; flex-direction: column; gap: 10px; }
 .fc1is-customs { display: flex; flex-direction: column; gap: 6px; }
-.fc1is-custom-row { display: flex; gap: 6px; align-items: flex-start; }
-.fc1is-custom-key { width: 32%; }
-.fc1is-custom-val { flex: 1; min-height: 48px; resize: vertical; }
+.fc1is-custom-row { display: flex; flex-direction: column; gap: 2px; padding: 4px 0; }
+.fc1is-custom-head { display: flex; align-items: center; gap: 6px; }
+.fc1is-custom-key { flex: 1; }
+.fc1is-custom-val { width: 100%; min-height: 72px; resize: vertical; }
 
 /* 关系 */
 .fc1is-rel-wrap { display: flex; flex-direction: column; gap: 8px; }
@@ -1225,10 +1226,14 @@ body {
 .fc1is-rel-add { margin-left: auto; width: 26px; height: 26px; border-radius: 50%; border: 1px solid var(--color-primary-dark); background: rgba(253,246,227,0.6); color: var(--color-primary-dark); cursor: pointer; font-size: 1rem; line-height: 1; }
 .fc1is-rel-add:hover { background: var(--color-primary); color: #1a0f2e; }
 .fc1is-rel-body { padding: 6px 10px; }
-.fc1is-rel-row { display: flex; align-items: center; gap: 8px; padding: 4px 0; border-bottom: 1px dashed rgba(184,134,11,0.2); }
+.fc1is-rel-row { display: flex; flex-direction: column; gap: 3px; padding: 5px 0; border-bottom: 1px dashed rgba(184,134,11,0.2); }
 .fc1is-rel-row:last-child { border-bottom: none; }
+.fc1is-rel-line1 { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .fc1is-rel-name { font-weight: bold; color: var(--color-text-dark); }
-.fc1is-rel-brief { flex: 1; font-size: 0.82rem; color: #8b5a2b; }
+.fc1is-rel-gender { font-size: 0.85rem; color: #8b5a2b; }
+.fc1is-rel-tags { font-size: 0.8rem; color: #6a5acd; }
+.fc1is-rel-line1 .fc1is-del { margin-left: auto; }
+.fc1is-rel-desc { font-size: 0.82rem; color: #8b5a2b; line-height: 1.5; }
 
 /* 棋盘 */
 .fc1is-asset-wrap { display: flex; flex-direction: column; }
@@ -1294,7 +1299,7 @@ body {
 .fc1is-nav-continue:hover { filter: brightness(1.08); }
 
 /* 地区信息头部（预设地区/自定义地区按钮） */
-.fc1is-region-head { display: flex; justify-content: flex-end; gap: 6px; margin-bottom: 6px; }
+.fc1is-region-head { display: flex; justify-content: space-between; gap: 6px; margin-bottom: 6px; }
 .fc1is-region-custom { position: static; padding: 4px 12px; font-size: 0.78rem; border: 1px dashed var(--color-primary-dark); border-radius: 12px; background: rgba(212,175,55,0.1); color: var(--color-primary-dark); cursor: pointer; }
 .fc1is-region-custom:hover { background: rgba(212,175,55,0.25); }
 .fc1is-region-chips { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
@@ -1355,4 +1360,52 @@ body {
     .fc1-drawer-card { width: 88%; max-width: none; }
     .fc1-board-grid { grid-auto-rows: 40px; }
     .fc1-modal-box { width: 94vw; max-height: 86vh; }
+}
+
+/* ===== FC1 地区信息：可编辑无框行（描述 / 民俗风情） ===== */
+/* 多行文本：去掉外框，每行文字下方显示浅色虚线（可编辑视觉提示） */
+textarea.fc1is-lined {
+    border: none;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    padding: 4px 2px;
+    outline: none;
+    resize: vertical;
+    line-height: 1.7em;
+    background-image: repeating-linear-gradient(
+        to bottom,
+        transparent,
+        transparent calc(1.7em - 1px),
+        rgba(184,134,11,0.22) calc(1.7em - 1px),
+        rgba(184,134,11,0.22) 1.7em
+    );
+}
+textarea.fc1is-lined:focus {
+    background-color: rgba(253,246,227,0.35);
+}
+/* 单行文本（民俗名）：去掉外框，底部浅色虚线 */
+input.fc1is-lined {
+    border: none;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    padding: 4px 2px;
+    outline: none;
+}
+input.fc1is-custom-key.fc1is-lined {
+    border-bottom: 1px dashed rgba(184,134,11,0.35);
+}
+/* 描述高度调大 50%（原 72px → 108px） */
+textarea.fc1is-desc { min-height: 108px; width: 100%; }
+
+/* ===== 移动端：区域选择按钮移到标题下方并调小 / 世界观概览音乐按钮调小 ===== */
+@media (max-width: 768px) {
+    .fc1-carousel { flex-wrap: wrap; column-gap: 40px; row-gap: 14px; }
+    .fc1-carousel-view { flex: 1 1 100%; order: 3; min-height: 0; }
+    .fc1-arrow-left { order: 1; }
+    .fc1-arrow-right { order: 2; }
+    .fc1-arrow { width: 40px; height: 40px; }
+    .fc1-arrow svg { width: 18px; height: 18px; }
+    .fc1-music-btn { width: 39px; height: 39px; font-size: 1.05rem; }
 }

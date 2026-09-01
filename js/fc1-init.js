@@ -407,6 +407,15 @@ window.fc1isSelectRegionChip = function(name) {
     fc1isRenderRegionDisplay();
     fc1isUpdateNav();
 };
+function fc1isCustomRow(k, val) {
+    return '<div class="fc1is-custom-row">' +
+        '<div class="fc1is-custom-head">' +
+            '<input class="fc1is-custom-key fc1is-lined" value="' + fc1isAttr(k) + '" onchange="fc1isRenameCustom(' + fc1isAttrJs(k) + ', this.value)">' +
+            '<span class="fc1is-del" onclick="fc1isDelCustom(' + fc1isAttrJs(k) + ')">\u2715</span>' +
+        '</div>' +
+        '<textarea class="fc1is-custom-val fc1is-lined" oninput="fc1isSetCustomVal(' + fc1isAttrJs(k) + ', this.value)">' + fc1isEsc(val || '') + '</textarea>' +
+    '</div>';
+}
 function fc1isRenderRegionDisplay() {
     var box = document.getElementById('fc1is-region-display');
     if (!box) return;
@@ -419,16 +428,12 @@ function fc1isRenderRegionDisplay() {
     var customs = rd.民俗风情 || {};
     var rows = '';
     Object.keys(customs).forEach(function(k) {
-        rows += '<div class="fc1is-custom-row">' +
-            '<input class="fc1is-custom-key" value="' + fc1isAttr(k) + '" onchange="fc1isRenameCustom(' + fc1isAttrJs(k) + ', this.value)">' +
-            '<textarea class="fc1is-custom-val" oninput="fc1isSetCustomVal(' + fc1isAttrJs(k) + ', this.value)">' + fc1isEsc(customs[k] || '') + '</textarea>' +
-            '<span class="fc1is-del" onclick="fc1isDelCustom(' + fc1isAttrJs(k) + ')">\u2715</span>' +
-        '</div>';
+        rows += fc1isCustomRow(k, customs[k] || '');
     });
     rows += '<div class="fc1is-add" onclick="fc1isAddCustom()">+ 添加风情词条</div>';
     box.innerHTML = '<div class="fc1is-region-editor">' +
         (__fc1isRegionCustom ? '<div class="fc1is-row"><span class="fc1is-label">地区名</span><input id="fc1is-region-name" value="' + fc1isAttr(__fc1isRegion) + '" onchange="fc1isRenameRegion(' + fc1isAttrJs(__fc1isRegion) + ', this.value)"></div>' : '') +
-        '<div class="fc1is-row-col"><span class="fc1is-label">描述</span><textarea id="fc1is-region-desc" oninput="fc1isSetRegionDesc(this.value)">' + fc1isEsc(rd.描述 || '') + '</textarea></div>' +
+        '<div class="fc1is-row-col"><span class="fc1is-label">描述</span><textarea id="fc1is-region-desc" class="fc1is-lined fc1is-desc" oninput="fc1isSetRegionDesc(this.value)">' + fc1isEsc(rd.描述 || '') + '</textarea></div>' +
         '<div class="fc1is-sub"><div class="fc1is-label">民俗风情</div><div class="fc1is-customs" id="fc1is-customs">' + rows + '</div></div>' +
     '</div>';
 }
@@ -488,11 +493,7 @@ function fc1isRenderCustoms() {
     var customs = v['背景信息']['地区'][__fc1isRegion].民俗风情 || {};
     var rows = '';
     Object.keys(customs).forEach(function(k) {
-        rows += '<div class="fc1is-custom-row">' +
-            '<input class="fc1is-custom-key" value="' + fc1isAttr(k) + '" onchange="fc1isRenameCustom(' + fc1isAttrJs(k) + ', this.value)">' +
-            '<textarea class="fc1is-custom-val" oninput="fc1isSetCustomVal(' + fc1isAttrJs(k) + ', this.value)">' + fc1isEsc(customs[k] || '') + '</textarea>' +
-            '<span class="fc1is-del" onclick="fc1isDelCustom(' + fc1isAttrJs(k) + ')">\u2715</span>' +
-        '</div>';
+        rows += fc1isCustomRow(k, customs[k] || '');
     });
     rows += '<div class="fc1is-add" onclick="fc1isAddCustom()">+ 添加风情词条</div>';
     box.innerHTML = rows;
@@ -523,11 +524,20 @@ function fc1isRenderRel(v) {
         var rows = '';
         names.forEach(function(n) {
             var r = rel[n] || {};
-            var brief = r.desc || r.location || '';
+            var gender = r.gender || '';
+            var extraTags = (r.tags || []).filter(function(t) {
+                return FC1IS_REL_CATS.every(function(c) { return c.label !== t; });
+            });
+            var tagsStr = extraTags.join(' ');
+            var desc = r.desc || '';
             rows += '<div class="fc1is-rel-row">' +
-                '<span class="fc1is-rel-name">' + mtH(n) + '</span>' +
-                '<span class="fc1is-rel-brief">' + mtH(brief) + '</span>' +
-                '<span class="fc1is-del" onclick="fc1isRemoveRelation(' + fc1isAttrJs(n) + ')">\u2715</span>' +
+                '<div class="fc1is-rel-line1">' +
+                    '<span class="fc1is-rel-name">' + mtH(n) + '</span>' +
+                    (gender ? '<span class="fc1is-rel-gender">' + mtH(gender) + '</span>' : '') +
+                    (tagsStr ? '<span class="fc1is-rel-tags">' + mtH(tagsStr) + '</span>' : '') +
+                    '<span class="fc1is-del" onclick="fc1isRemoveRelation(' + fc1isAttrJs(n) + ')">\u2715</span>' +
+                '</div>' +
+                '<div class="fc1is-rel-desc">' + mtH(desc) + '</div>' +
             '</div>';
         });
         html += '<div class="fc1is-rel-table">' +
