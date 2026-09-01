@@ -1,4 +1,4 @@
-var LOREBOOK_NAME = "千叶的睡前小故事";
+var LOREBOOK_NAME = "千叶童话";
 
 var __currentWorldviewId = "";
 var __currentMode = "";
@@ -47,7 +47,7 @@ window.applyWorldviewLorebook = async function(worldviewId, mode) {
         updates.push({ uid: 41 + W, enabled: isCurrent && mode === 'script' });
     });
     if (updates.length > 0 && typeof setLorebookEntries === 'function') {
-        try { await setLorebookEntries(LOREBOOK_NAME, updates); } catch(e) {}
+        try { await setLorebookEntries(LOREBOOK_NAME, updates); } catch(e) { console.warn("开关世界书条目失败：", e); }
     }
 };
 
