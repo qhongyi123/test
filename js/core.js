@@ -1,4 +1,4 @@
-var LOREBOOK_NAME = "千叶童话";
+var LOREBOOK_NAME = "千叶的睡前小故事";
 
 var __currentWorldviewId = "";
 var __currentMode = "";

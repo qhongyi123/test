@@ -778,7 +778,7 @@ window.fc1BuildAutoPrompt = function() {
     var identity = (v && v.user && v.user.identity) || (it ? it.name : '');
     if (!identity) return null;
     var desc = it ? it.desc : '';
-    return '生成开场白，以下是' + identity + '的相关信息：' + desc;
+    return '生成开场白，这是一个关于{{user}}的故事......\n' + desc;
 };
 
 window.fc1RenderStartPreview = function() {
@@ -1388,7 +1388,7 @@ window.refreshCharManager = async function() {
     charListBox.innerHTML = "<div style='text-align:center; padding:20px; opacity:0.7;'>寻找中...</div>";
     var chars = await fetchCharEntries();
     if(chars.length === 0) {
-        charListBox.innerHTML = "<div style='text-align:center; padding:20px; opacity:0.7;'>找不到《千叶童话》的世界书。</div>";
+        charListBox.innerHTML = "<div style='text-align:center; padding:20px; opacity:0.7;'>找不到《千叶的睡前小故事》的世界书。</div>";
         return;
     }
     var listHTML = "";
@@ -1459,7 +1459,7 @@ function triggerSTSlashSend(storyText, finalJsonObj) {
     var finalMsg = storyText + '\n' + tokenTagOpen + '\n' + compactJSONStr + '\n' + tokenTagClose;
     console.log("即将投递出的世界讯息：\n", finalMsg);
     try {
-        if (typeof triggerSlash === 'function') { triggerSlash('/sendas name="《千叶童话》" ' + finalMsg); }
+        if (typeof triggerSlash === 'function') { triggerSlash('/sendas name="《千叶的睡前小故事》" ' + finalMsg); }
         else if (typeof window.parent.triggerSlash === 'function') { window.parent.triggerSlash('/sendas name="Frontend Assistant" ' + finalMsg); }
         else { showCustomAlert("\u26A0 脚本检测未连接到主核心，讯息将仅留刻在网页虚空(控制台输出)。"); }
     } catch(e) { console.error(e); showCustomAlert("通讯投递受阻！"); }
