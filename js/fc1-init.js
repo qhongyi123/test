@@ -270,13 +270,34 @@ window.fc1isRandomDate = function() {
 };
 
 // ==================== ② 角色信息 ====================
+function fc1isAutoSizeInput(input) {
+    if (!input) return;
+    var cs = window.getComputedStyle(input);
+    var mirror = document.createElement('span');
+    mirror.style.position = 'absolute';
+    mirror.style.visibility = 'hidden';
+    mirror.style.whiteSpace = 'pre';
+    mirror.style.font = cs.font;
+    mirror.style.letterSpacing = cs.letterSpacing;
+    mirror.textContent = input.value || input.placeholder || '';
+    document.body.appendChild(mirror);
+    var w = mirror.offsetWidth;
+    document.body.removeChild(mirror);
+    var extra = parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight)
+        + parseFloat(cs.borderLeftWidth) + parseFloat(cs.borderRightWidth) + 4;
+    input.style.width = Math.max(70, Math.ceil(w + extra)) + 'px';
+}
+function fc1isAutoSizeInv(scope) {
+    var root = scope || document;
+    root.querySelectorAll('.fc1is-inv-key').forEach(function(el) { fc1isAutoSizeInput(el); });
+}
 function fc1isInvRowsHTML() {
     var v = fc1isEnsureVar();
     var inv = v.user.inventory || {};
     var rows = '';
     Object.keys(inv).forEach(function(k) {
         rows += '<div class="fc1is-inv-row">' +
-            '<input class="fc1is-inv-key" value="' + fc1isAttr(k) + '" oninput="fc1isCollectInventory()">' +
+            '<input class="fc1is-inv-key" value="' + fc1isAttr(k) + '" oninput="fc1isCollectInventory();fc1isAutoSizeInput(this)">' +
             '<input class="fc1is-inv-val" value="' + fc1isAttr(inv[k]) + '" oninput="fc1isCollectInventory()">' +
             '<span class="fc1is-del" onclick="fc1isDelInv(this)">\u2715</span>' +
         '</div>';
@@ -286,7 +307,9 @@ function fc1isInvRowsHTML() {
 }
 function fc1isRenderInvList() {
     var box = document.getElementById('fc1is-inv');
-    if (box) box.innerHTML = fc1isInvRowsHTML();
+    if (!box) return;
+    box.innerHTML = fc1isInvRowsHTML();
+    fc1isAutoSizeInv(box);
 }
 function fc1isRenderChar(v) {
     var u = v.user;
@@ -331,10 +354,11 @@ window.fc1isAddInv = function() {
     if (!box) return;
     var row = document.createElement('div');
     row.className = 'fc1is-inv-row';
-    row.innerHTML = '<input class="fc1is-inv-key" placeholder="物品名" oninput="fc1isCollectInventory()">' +
+    row.innerHTML = '<input class="fc1is-inv-key" placeholder="物品名" oninput="fc1isCollectInventory();fc1isAutoSizeInput(this)">' +
         '<input class="fc1is-inv-val" placeholder="描述" oninput="fc1isCollectInventory()">' +
         '<span class="fc1is-del" onclick="fc1isDelInv(this)">\u2715</span>';
     box.insertBefore(row, box.querySelector('.fc1is-add'));
+    fc1isAutoSizeInv(box);
 };
 window.fc1isDelInv = function(el) {
     var row = el.closest('.fc1is-inv-row');
@@ -528,13 +552,23 @@ function fc1isRenderRel(v) {
             var extraTags = (r.tags || []).filter(function(t) {
                 return FC1IS_REL_CATS.every(function(c) { return c.label !== t; });
             });
-            var tagsStr = extraTags.join(' ');
+            var genderSel = '<select class="fc1is-rel-gender-sel" onchange="fc1isSetRelGender(' + fc1isAttrJs(n) + ', this.value)">' +
+                '<option value=""' + (!gender ? ' selected' : '') + '>性别</option>' +
+                ['男性', '伊芙', '伊菈'].map(function(g) {
+                    return '<option value="' + g + '"' + (gender === g ? ' selected' : '') + '>' + g + '</option>';
+                }).join('') +
+                '</select>';
+            var tagChips = extraTags.map(function(t) {
+                return '<span class="fc1is-rel-tag">' + mtH(t) + '</span>';
+            }).join('');
+            if (!tagChips) tagChips = '<span class="fc1is-rel-tag fc1is-rel-tag-empty">标签</span>';
+            var tagArea = '<span class="fc1is-rel-tags" onclick="fc1isAddRelTag(' + fc1isAttrJs(n) + ')">' + tagChips + '</span>';
             var desc = r.desc || '';
             rows += '<div class="fc1is-rel-row">' +
                 '<div class="fc1is-rel-line1">' +
                     '<span class="fc1is-rel-name">' + mtH(n) + '</span>' +
-                    (gender ? '<span class="fc1is-rel-gender">' + mtH(gender) + '</span>' : '') +
-                    (tagsStr ? '<span class="fc1is-rel-tags">' + mtH(tagsStr) + '</span>' : '') +
+                    genderSel +
+                    tagArea +
                     '<span class="fc1is-del" onclick="fc1isRemoveRelation(' + fc1isAttrJs(n) + ')">\u2715</span>' +
                 '</div>' +
                 '<div class="fc1is-rel-desc">' + mtH(desc) + '</div>' +
@@ -561,6 +595,41 @@ function fc1isRenderRelSection() {
 window.fc1isRemoveRelation = function(name) {
     var v = fc1isEnsureVar(); if (!v) return;
     delete v.relationship[name];
+    fc1isRenderRelSection();
+};
+window.fc1isSetRelGender = function(name, val) {
+    var v = fc1isEnsureVar(); if (!v) return;
+    var rel = v.relationship[name]; if (!rel) return;
+    rel.gender = val;
+    fc1isUpdateNav();
+};
+window.fc1isAddRelTag = function(name) {
+    window.__fc1isRelTagName = name;
+    var v = fc1isEnsureVar(); if (!v) return;
+    var rel = v.relationship[name] || {};
+    var existing = (rel.tags || []).filter(function(t) {
+        return FC1IS_REL_CATS.every(function(c) { return c.label !== t; });
+    });
+    var opts = FC1IS_TAG_OPTIONS.map(function(t) {
+        var checked = existing.indexOf(t) !== -1 ? ' checked' : '';
+        return '<label class="fc1is-tag-opt"><input type="checkbox" class="fc1is-tag-chk" value="' + t + '"' + checked + '>' + t + '</label>';
+    }).join('');
+    fc1isOpenDrawer('编辑标签 · ' + name,
+        '<div class="fc1is-row-col"><span class="fc1is-label">选择标签</span><div class="fc1is-tag-opts">' + opts + '</div></div>' +
+        '<button class="fc1-drawer-confirm" onclick="fc1isCommitRelTags()">\u2727 确认 \u2727</button>');
+};
+window.fc1isCommitRelTags = function() {
+    var v = fc1isEnsureVar(); if (!v) return;
+    var name = window.__fc1isRelTagName; if (!name) return;
+    var rel = v.relationship[name] || {};
+    var category = (rel.tags && rel.tags[0]) || FC1IS_REL_CATS[0].label;
+    var tags = [category];
+    document.querySelectorAll('.fc1is-tag-chk:checked').forEach(function(chk) {
+        if (tags.indexOf(chk.value) === -1) tags.push(chk.value);
+    });
+    rel.tags = tags;
+    v.relationship[name] = rel;
+    fc1isCloseDrawer();
     fc1isRenderRelSection();
 };
 window.fc1isOpenRelation = async function(category) {
@@ -1456,6 +1525,8 @@ function fc1isRenderStep() {
     else if (__fc1isStep < 6 || __fc1isStep === 7) nav = fc1isNavHTML(__fc1isStep !== 0 && __fc1isStep !== 1);
 
     root.innerHTML = '<div class="fc1is-hint">跳过的选项将在后续剧情生成中由ai自动补全</div>' + content + nav;
+
+    fc1isAutoSizeInv(root);
 
     if (__fc1isStep >= 7) {
         fc1isRenderRegionChips();
