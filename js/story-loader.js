@@ -10,13 +10,20 @@ var STORY_MANIFEST = [
     { id: "tab6", name: "自定义剧本",        file: null, headers: ["背景信息", "剧情线", "人物信息", "参数调整", "开始剧情"] }
 ];
 
-// 根据当前模式 + 世界观动态插入/移除故事选项卡按钮（插入到「模式选择与世界观调整」之后、「自定义开局」之前）
+// 根据当前模式 + 世界观动态插入/移除故事选项卡按钮（插入到「模式选择与世界观调整」之后、「角色管理」之前）
+// 自定义开局(tab5)/自定义剧本(tab6) 仅剧情模式显示，且位于剧本按钮之后
 window.refreshConditionalStoryTabs = function() {
     var header = document.querySelector('.tabs-header');
     if (!header) return;
+    var isScript = (__currentMode === 'script');
+
+    // 移除旧的动态剧本按钮
     header.querySelectorAll('.tab-btn.dynamic-story').forEach(function(btn) { btn.remove(); });
-    var anchor = header.querySelector('.tab-btn[data-target="tab5"]');
+
+    var anchor = header.querySelector('.tab-btn[data-target="tab7"]');
     if (!anchor) return;
+
+    // 插入匹配的剧本按钮（位于 tab7 之前）
     var matched = STORY_MANIFEST.filter(function(s) {
         return s.mode && s.worldview && s.mode === __currentMode && s.worldview === __currentWorldviewId;
     });
@@ -26,6 +33,26 @@ window.refreshConditionalStoryTabs = function() {
         btn.setAttribute('data-target', s.id);
         btn.textContent = s.name;
         header.insertBefore(btn, anchor);
+    });
+
+    // 自定义开局 / 自定义剧本 按钮：仅剧情模式显示，插在剧本之后
+    ['tab5', 'tab6'].forEach(function(tid) {
+        var btn = header.querySelector('.tab-btn[data-target="' + tid + '"]');
+        if (btn) {
+            header.removeChild(btn);
+        }
+        if (isScript) {
+            var nb = document.createElement('button');
+            nb.className = 'tab-btn custom-start';
+            nb.setAttribute('data-target', tid);
+            nb.textContent = (tid === 'tab5' ? '自定义开局' : '自定义剧本');
+            header.insertBefore(nb, anchor);
+        }
+    });
+
+    // 目录弹窗中自定义开局/剧本按钮同步显示隐藏
+    document.querySelectorAll('.toc-corner-btn.custom-start').forEach(function(b) {
+        b.style.display = isScript ? '' : 'none';
     });
 };
 
