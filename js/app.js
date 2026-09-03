@@ -887,6 +887,8 @@ function selectFromToc(tabId) {
         showCustomAlert("该内容需先选择对应的模式与世界观");
     }
     toggleToc();
+    var preview = document.getElementById('global-img-preview');
+    if (preview) preview.classList.remove('active');
 }
 
 function goToRoleTab() {
