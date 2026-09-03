@@ -610,7 +610,7 @@ function fc1isRenderRel(v) {
             var desc = r.desc || '';
             rows += '<div class="fc1is-rel-row">' +
                 '<div class="fc1is-rel-line1">' +
-                    '<span class="fc1is-rel-name">' + mtH(n) + '</span>' +
+                    '<a class="fc1is-rel-name fc1is-rel-name-link" onclick="fc1isOpenRelationEditor(' + fc1isAttrJs(n) + ')">' + mtH(n) + '</a>' +
                     genderSel +
                     tagArea +
                     '<span class="fc1is-del" onclick="fc1isRemoveRelation(' + fc1isAttrJs(n) + ')">\u2715</span>' +
@@ -626,6 +626,7 @@ function fc1isRenderRel(v) {
             '<div class="fc1is-rel-body">' + (rows || '<div class="fc1is-empty">暂无</div>') + '</div>' +
         '</div>';
     });
+    html += '<div class="fc1is-hint-small">点击人物名称进行修改</div>';
     return fc1isSection('关系', '<div class="fc1is-rel-wrap" id="fc1is-rel">' + html + '</div>',
         '<button class="fc1is-rel-custom-add" onclick="fc1isAddCustomRelation()">+ 自定义添加角色</button>');
 }
@@ -729,6 +730,7 @@ window.fc1isInsertRelation = async function() {
         if (tags.indexOf(t) === -1) tags.push(t);
     });
     rel.tags = tags;
+    rel.entryUid = uid;
     v.relationship[c.name] = rel;
     fc1isCloseDrawer();
     fc1isRenderRelSection();
@@ -809,8 +811,58 @@ window.fc1isCommitCustomRelation = async function() {
     rel.gender = gender;
     rel.desc = brief;
     rel.tags = tags;
+    if (uid) rel.entryUid = uid;
     v.relationship[name] = rel;
 
+    fc1isCloseDrawer();
+    fc1isRenderRelSection();
+};
+
+// ==================== 人物编辑（点击人物名称） ====================
+window.fc1isOpenRelationEditor = async function(name) {
+    var v = fc1isEnsureVar(); if (!v) return;
+    var rel = v.relationship[name]; if (!rel) return;
+    window.__fc1isRelEditName = name;
+    var genderOpts = ['', '男性', '伊芙', '伊菈'].map(function(g) {
+        return '<option value="' + g + '"' + ((rel.gender || '') === g ? ' selected' : '') + '>' + (g || '请选择') + '</option>';
+    }).join('');
+    var entryHtml = '';
+    if (rel.entryUid) {
+        var entryContent = '';
+        if (typeof getLorebookEntries === 'function') {
+            try {
+                var entries = await getLorebookEntries(LOREBOOK_NAME, { fields: ['uid', 'content'] });
+                var found = entries.find(function(e) { return e.uid === rel.entryUid; });
+                if (found) entryContent = found.content || '';
+            } catch(e) {}
+        }
+        entryHtml = '<div class="fc1is-row-col"><span class="fc1is-label">写入条目内容（uid ' + rel.entryUid + '）</span><textarea id="fc1is-rel-content">' + fc1isEsc(entryContent) + '</textarea></div>';
+    }
+    fc1isOpenDrawer('人物 · ' + name,
+        '<div class="fc1is-col">' +
+            '<div class="fc1is-row"><span class="fc1is-label">姓名</span><span class="fc1is-readonly">' + mtH(name) + '</span></div>' +
+            '<div class="fc1is-row"><span class="fc1is-label">性别</span><select id="fc1is-rel-gender">' + genderOpts + '</select></div>' +
+            '<div class="fc1is-row-col"><span class="fc1is-label">描述 desc</span><textarea id="fc1is-rel-desc">' + fc1isEsc(rel.desc || '') + '</textarea></div>' +
+            entryHtml +
+            '<button class="fc1-drawer-confirm" onclick="fc1isCommitRelationEditor()">\u2727 保存 \u2727</button>' +
+        '</div>');
+};
+window.fc1isCommitRelationEditor = async function() {
+    var v = fc1isEnsureVar(); if (!v) return;
+    var name = window.__fc1isRelEditName; if (!name) return;
+    var rel = v.relationship[name]; if (!rel) return;
+    var gender = document.getElementById('fc1is-rel-gender').value;
+    var desc = document.getElementById('fc1is-rel-desc').value.trim();
+    rel.gender = gender;
+    rel.desc = desc;
+    if (rel.entryUid && typeof setLorebookEntries === 'function') {
+        var contentEl = document.getElementById('fc1is-rel-content');
+        if (contentEl) {
+            try {
+                await setLorebookEntries(LOREBOOK_NAME, [{ uid: rel.entryUid, content: contentEl.value }]);
+            } catch(e) { showCustomAlert('写入世界书失败'); }
+        }
+    }
     fc1isCloseDrawer();
     fc1isRenderRelSection();
 };
@@ -958,6 +1010,7 @@ function fc1isRenderEstate(v) {
     })) : '<div class="fc1is-empty">暂无家产，点击添加</div>';
     body += '<button class="fc1is-add-btn" onclick="fc1isOpenEstateDrawer()">+ 添加家产</button>';
     body += '<label class="fc1is-delete-toggle"><input type="checkbox" id="fc1is-delete-estate"' + (__fc1isDeleteMode.estate ? ' checked' : '') + ' onchange="fc1isDeleteModeChanged(\'estate\')"> 删除模式（勾选后点击地块删除）</label>';
+    body += '<div class="fc1is-hint-small">点击地块名称进行修改</div>';
     return fc1isSection('家产', '<div class="fc1is-asset-wrap" id="fc1is-estate">' + body + '</div>');
 }
 function fc1isRenderShip(v) {
@@ -969,6 +1022,7 @@ function fc1isRenderShip(v) {
     })) : '<div class="fc1is-empty">暂无船只，点击添加</div>';
     body += '<button class="fc1is-add-btn" onclick="fc1isOpenShipDrawer()">+ 添加船只</button>';
     body += '<label class="fc1is-delete-toggle"><input type="checkbox" id="fc1is-delete-ship"' + (__fc1isDeleteMode.ship ? ' checked' : '') + ' onchange="fc1isDeleteModeChanged(\'ship\')"> 删除模式（勾选后点击船只删除）</label>';
+    body += '<div class="fc1is-hint-small">点击船只名称进行修改</div>';
     return fc1isSection('船只', '<div class="fc1is-asset-wrap" id="fc1is-ship">' + body + '</div>');
 }
 function fc1isRenderEstateSection() {
@@ -1176,7 +1230,12 @@ window.fc1isCommitAssetEdit = function(type, name) {
 // ==================== 货物（船只 / 仓库共用） ====================
 var FC1IS_CATEGORIES = ['粮食', '酒类', '种植园作物', '纺织品', '军火', '杂货', '香料', '贵重珠宝', '奴隶', '动物'];
 var FC1IS_QUALITIES = ['上好', '优', '良', '中等', '次品'];
+var FC1IS_TYPES = ['健壮', '幼小', '瘦弱', '病老'];
 var FC1IS_UNITS = ['磅', '担', '吨', '加仑', '桶', '大桶', '捆', '包', '袋', '箱', '匹', '件', '支', '根', '名', '头', '只'];
+
+function fc1isIsSpecialCategory(cat) {
+    return cat === '奴隶' || cat === '动物';
+}
 
 function fc1isParseCount(countStr) {
     if (countStr === undefined || countStr === null) return { num: '', unit: '' };
@@ -1231,16 +1290,30 @@ window.fc1isAddCargoItem = function(idx) {
 };
 window.fc1isAddCargoCustom = function() {
     var catOpts = FC1IS_CATEGORIES.map(function(c) { return '<option value="' + c + '">' + c + '</option>'; }).join('');
-    var qOpts = FC1IS_QUALITIES.map(function(q) { return '<option value="' + q + '">' + q + '</option>'; }).join('');
     fc1isOpenDrawer('自定义货物',
         '<div class="fc1is-col">' +
             '<div class="fc1is-row"><span class="fc1is-label">名称</span><input id="fc1is-cg-name"></div>' +
             '<div class="fc1is-row"><span class="fc1is-label">数目</span><input id="fc1is-cg-num" placeholder="数字"></div>' +
             '<div class="fc1is-row"><span class="fc1is-label">量词</span><input id="fc1is-cg-unit" placeholder="如 桶 / 加仑 / 磅"></div>' +
-            '<div class="fc1is-row"><span class="fc1is-label">品质</span><select id="fc1is-cg-quality">' + qOpts + '</select></div>' +
-            '<div class="fc1is-row"><span class="fc1is-label">大类</span><select id="fc1is-cg-category">' + catOpts + '</select></div>' +
+            '<div class="fc1is-row"><span class="fc1is-label">大类</span><select id="fc1is-cg-category" onchange="fc1isCargoCustomCatChange()">' + catOpts + '</select></div>' +
+            '<div id="fc1is-cg-attr"></div>' +
             '<button class="fc1-drawer-confirm" onclick="fc1isCommitCargoCustom()">\u2727 确认添加 \u2727</button>' +
         '</div>');
+    fc1isCargoCustomCatChange();
+};
+window.fc1isCargoCustomCatChange = function() {
+    var catEl = document.getElementById('fc1is-cg-category');
+    var box = document.getElementById('fc1is-cg-attr');
+    if (!catEl || !box) return;
+    if (fc1isIsSpecialCategory(catEl.value)) {
+        box.innerHTML = '<div class="fc1is-row"><span class="fc1is-label">类型</span><select id="fc1is-cg-type">' +
+            FC1IS_TYPES.map(function(t) { return '<option value="' + t + '">' + t + '</option>'; }).join('') +
+            '</select></div>';
+    } else {
+        box.innerHTML = '<div class="fc1is-row"><span class="fc1is-label">品质</span><select id="fc1is-cg-quality">' +
+            FC1IS_QUALITIES.map(function(q) { return '<option value="' + q + '">' + q + '</option>'; }).join('') +
+            '</select></div>';
+    }
 };
 window.fc1isCommitCargoCustom = function() {
     var name = document.getElementById('fc1is-cg-name').value.trim();
@@ -1250,17 +1323,21 @@ window.fc1isCommitCargoCustom = function() {
     var count = (num && unit) ? (num + ' ' + unit) : (num || '');
     var map = fc1isGetCargoMap(window.__fc1isCargoKind, window.__fc1isCargoKey);
     if (!map) return;
-    map[name] = {
-        count: count,
-        quality: document.getElementById('fc1is-cg-quality').value.trim(),
-        category: document.getElementById('fc1is-cg-category').value.trim()
-    };
+    var category = document.getElementById('fc1is-cg-category').value.trim();
+    var newItem = { count: count, category: category };
+    if (fc1isIsSpecialCategory(category)) {
+        var typeEl = document.getElementById('fc1is-cg-type');
+        newItem.type = typeEl ? typeEl.value.trim() : '';
+    } else {
+        newItem.quality = document.getElementById('fc1is-cg-quality').value.trim();
+    }
+    map[name] = newItem;
     fc1isCloseDrawer();
     if (window.__fc1isCargoKind === 'ship') fc1isRenderShipSection();
     else fc1isRenderWarehouseSection();
 };
 
-// 点击已存在货物 → 编辑抽屉（展示大类，编辑品质/数目/量词）
+// 点击已存在货物 → 编辑抽屉（展示大类，编辑品质/类型/数目/量词）
 window.fc1isOpenCargoEditor = function(kind, key, name) {
     var map = fc1isGetCargoMap(kind, key);
     if (!map) return;
@@ -1269,10 +1346,19 @@ window.fc1isOpenCargoEditor = function(kind, key, name) {
     var parsed = fc1isParseCount(item.count);
     var preset = fc1isFindPresetItem(name);
     var category = item.category || (preset ? preset.category : '杂货');
+    var isSpecial = fc1isIsSpecialCategory(category);
     var quality = item.quality || (preset ? preset.quality : '良');
-    var qOpts = FC1IS_QUALITIES.map(function(q) {
-        return '<option value="' + q + '"' + (q === quality ? ' selected' : '') + '>' + q + '</option>';
-    }).join('');
+    var ctype = item.type || '';
+    var attrHtml;
+    if (isSpecial) {
+        attrHtml = '<div class="fc1is-row"><span class="fc1is-label">类型</span><select id="fc1is-cg-type">' +
+            FC1IS_TYPES.map(function(t) { return '<option value="' + t + '"' + (t === ctype ? ' selected' : '') + '>' + t + '</option>'; }).join('') +
+            '</select></div>';
+    } else {
+        attrHtml = '<div class="fc1is-row"><span class="fc1is-label">品质</span><select id="fc1is-cg-quality">' +
+            FC1IS_QUALITIES.map(function(q) { return '<option value="' + q + '"' + (q === quality ? ' selected' : '') + '>' + q + '</option>'; }).join('') +
+            '</select></div>';
+    }
     var unitControl;
     if (preset && preset.units && preset.units.length) {
         var units = preset.units.slice();
@@ -1285,11 +1371,19 @@ window.fc1isOpenCargoEditor = function(kind, key, name) {
     fc1isOpenDrawer('货物 · ' + name,
         '<div class="fc1is-col">' +
             '<div class="fc1is-row"><span class="fc1is-label">大类</span><span class="fc1is-readonly">' + mtH(category) + '</span></div>' +
-            '<div class="fc1is-row"><span class="fc1is-label">品质</span><select id="fc1is-cg-quality">' + qOpts + '</select></div>' +
+            attrHtml +
             '<div class="fc1is-row"><span class="fc1is-label">数目</span><input id="fc1is-cg-num" value="' + fc1isAttr(parsed.num) + '" placeholder="数字"></div>' +
             '<div class="fc1is-row"><span class="fc1is-label">量词</span>' + unitControl + '</div>' +
             '<button class="fc1-drawer-confirm" onclick="fc1isCommitCargoEditor()">\u2727 保存 \u2727</button>' +
         '</div>');
+    fc1isShowDrawerBack();
+};
+window.fc1isCargoBack = function() {
+    var e = window.__fc1isCargoEdit;
+    fc1isCloseDrawer();
+    if (e && e.kind === 'ship') {
+        fc1isEditAsset('ship', e.key);
+    }
 };
 window.fc1isCommitCargoEditor = function() {
     var e = window.__fc1isCargoEdit; if (!e) return;
@@ -1302,11 +1396,15 @@ window.fc1isCommitCargoEditor = function() {
     var raw = map[e.name];
     var preset = fc1isFindPresetItem(e.name);
     var oldCategory = (raw && typeof raw === 'object' && raw.category) ? raw.category : (preset ? preset.category : '杂货');
-    map[e.name] = {
-        count: count,
-        quality: document.getElementById('fc1is-cg-quality').value.trim(),
-        category: oldCategory
-    };
+    var isSpecial = fc1isIsSpecialCategory(oldCategory);
+    var newItem = { count: count, category: oldCategory };
+    if (isSpecial) {
+        var typeEl = document.getElementById('fc1is-cg-type');
+        newItem.type = typeEl ? typeEl.value.trim() : '';
+    } else {
+        newItem.quality = document.getElementById('fc1is-cg-quality').value.trim();
+    }
+    map[e.name] = newItem;
     fc1isCloseDrawer();
     if (e.kind === 'ship') fc1isRenderShipSection();
     else fc1isRenderWarehouseSection();
@@ -1325,15 +1423,18 @@ function fc1isRenderWarehouse(v) {
         var raw = wh[item];
         var itemObj = (raw && typeof raw === 'object') ? raw : { count: raw };
         var display = itemObj.count || '';
+        var category = itemObj.category || '';
+        var qualityType = fc1isIsSpecialCategory(category) ? (itemObj.type || '—') : (itemObj.quality || '—');
         rows += '<tr>' +
-            '<td><a class="fc1is-cargo-link" onclick="fc1isOpenCargoEditor(\'warehouse\', ' + fc1isAttrJs(__fc1isContinent) + ', ' + fc1isAttrJs(item) + ')">' + mtH(item) + '</a></td>' +
+            '<td class="fc1is-ware-name-cell"><a class="fc1is-cargo-link" onclick="fc1isOpenCargoEditor(\'warehouse\', ' + fc1isAttrJs(__fc1isContinent) + ', ' + fc1isAttrJs(item) + ')">' + mtH(item) + '</a><span class="fc1is-del fc1is-del-right" onclick="fc1isDelWare(' + fc1isAttrJs(item) + ')">\u2715</span></td>' +
             '<td>' + mtH(display) + '</td>' +
-            '<td><span class="fc1is-del" onclick="fc1isDelWare(' + fc1isAttrJs(item) + ')">\u2715</span></td>' +
+            '<td>' + mtH(qualityType) + '</td>' +
         '</tr>';
     });
-    var table = rows ? '<table class="fc1-cargo-table"><thead><tr><th>物品</th><th>数量</th><th></th></tr></thead><tbody>' + rows + '</tbody></table>' : '<div class="fc1is-empty">该大洲暂无存货</div>';
+    var table = rows ? '<table class="fc1-cargo-table"><thead><tr><th>物品</th><th>数量</th><th>品质/类型</th></tr></thead><tbody>' + rows + '</tbody></table>' : '<div class="fc1is-empty">该大洲暂无存货</div>';
     return fc1isSection('仓库', '<div class="fc1is-warehouse" id="fc1is-warehouse">' +
         '<div class="fc1is-continents">' + tabs + '</div>' +
+        '<div class="fc1is-hint-small">点击货物名称进行修改</div>' +
         table +
         '<button class="fc1is-add-btn" onclick="fc1isOpenCargo(\'warehouse\', ' + fc1isAttrJs(__fc1isContinent) + ')">+ 添加货物</button>' +
     '</div>');
@@ -1361,7 +1462,7 @@ window.fc1isDelWare = function(item) {
     d.id = 'fc1-drawer';
     d.innerHTML = '<div class="fc1-drawer-backdrop" onclick="fc1isCloseDrawer()"></div>' +
         '<div class="fc1-drawer-card">' +
-            '<div class="fc1-drawer-head"><span class="fc1-drawer-title" id="fc1-drawer-title"></span><button class="fc1-drawer-close" onclick="fc1isCloseDrawer()">\u2715</button></div>' +
+            '<div class="fc1-drawer-head"><span class="fc1-drawer-title" id="fc1-drawer-title"></span><button class="fc1-drawer-back-btn" id="fc1-drawer-back" style="display:none;" onclick="fc1isCargoBack()">\u2190 返回</button><button class="fc1-drawer-close" onclick="fc1isCloseDrawer()">\u2715</button></div>' +
             '<div class="fc1-drawer-body" id="fc1-drawer-body"></div>' +
         '</div>';
     document.body.appendChild(d);
@@ -1406,9 +1507,11 @@ window.fc1isOpenDrawer = function(title, html) {
     var d = document.getElementById('fc1-drawer');
     var t = document.getElementById('fc1-drawer-title');
     var b = document.getElementById('fc1-drawer-body');
+    var back = document.getElementById('fc1-drawer-back');
     if (!d || !t || !b) return;
     t.textContent = title;
     b.innerHTML = html;
+    if (back) back.style.display = 'none';
     d.classList.add('open');
 };
 window.fc1isCloseDrawer = function() {
@@ -1417,6 +1520,12 @@ window.fc1isCloseDrawer = function() {
     d.classList.remove('open');
     var b = document.getElementById('fc1-drawer-body');
     if (b) b.innerHTML = '';
+    var back = document.getElementById('fc1-drawer-back');
+    if (back) back.style.display = 'none';
+};
+window.fc1isShowDrawerBack = function() {
+    var back = document.getElementById('fc1-drawer-back');
+    if (back) back.style.display = '';
 };
 
 // ==================== 预设身份组弹窗 ====================
