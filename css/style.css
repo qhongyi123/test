@@ -1257,6 +1257,8 @@ body {
 .tile-staffed { background: rgba(201,162,39,0.5); }
 .tile-neutral { background: rgba(74,111,165,0.45); }
 .tile-derelict { background: rgba(165,74,74,0.5); }
+.fc1is-delete-toggle { display: flex; align-items: center; gap: 6px; margin-top: 8px; font-size: 0.8rem; color: #b33; cursor: pointer; user-select: none; }
+.fc1is-delete-toggle input { cursor: pointer; }
 
 /* 仓库 */
 .fc1is-continents { display: flex; gap: 6px; flex-wrap: wrap; }
@@ -1265,6 +1267,11 @@ body {
 .fc1-cargo-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
 .fc1-cargo-table th, .fc1-cargo-table td { border: 1px solid rgba(184,134,11,0.25); padding: 5px 8px; text-align: left; color: var(--color-text-dark); }
 .fc1-cargo-table th { background: rgba(212,175,55,0.12); color: var(--color-primary-dark); }
+.fc1is-readonly { flex: 1; padding: 6px 10px; border: 1px solid rgba(184,134,11,0.3); border-radius: 6px; background: rgba(253,246,227,0.3); color: var(--color-text-dark); }
+.fc1is-cargo-link { color: var(--color-primary-dark); cursor: pointer; font-weight: bold; text-decoration: underline; }
+.fc1is-cargo-link:hover { color: var(--color-accent); }
+.fc1is-cargo-row { display: flex; align-items: center; gap: 10px; padding: 4px 0; border-bottom: 1px dashed rgba(184,134,11,0.2); }
+.fc1is-cargo-qty { color: #8b5a2b; font-size: 0.85rem; }
 
 /* 抽屉 */
 .fc1-drawer { position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 90000; pointer-events: none; overflow: hidden; }

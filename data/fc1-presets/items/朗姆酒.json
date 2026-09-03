@@ -2,5 +2,5 @@
   "name": "朗姆酒",
   "category": "酒类",
   "quality": "良",
-  "unit": "加仑"
+  "units": ["加仑", "桶", "大桶"]
 }

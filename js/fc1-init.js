@@ -816,12 +816,22 @@ window.fc1isCommitCustomRelation = async function() {
 };
 
 // ==================== 棋盘与家产/船只 ====================
+function fc1isIsMobile() {
+    return window.innerWidth <= 768;
+}
 function fc1isWH(scale) {
-    if (scale === '小型') return { w: 2, h: 1 };
-    if (scale === '中型') return { w: 3, h: 1 };
-    if (scale === '大型') return { w: 4, h: 2 };
+    var mobile = fc1isIsMobile();
+    // 自定义尺寸（如 "4x1"）优先
     var m = String(scale || '').match(/(\d+)\s*[×x*]\s*(\d+)/);
     if (m) return { w: parseInt(m[1], 10) || 1, h: parseInt(m[2], 10) || 1 };
+    if (scale === '大型') return { w: 4, h: 2 };
+    if (mobile) {
+        if (scale === '中型') return { w: 3, h: 1 };
+        if (scale === '小型') return { w: 2, h: 1 };
+    } else {
+        if (scale === '中型') return { w: 2, h: 1 };
+        if (scale === '小型') return { w: 1, h: 1 };
+    }
     return { w: 4, h: 1 };
 }
 var FC1IS_SHIP_SIZE = {
@@ -837,6 +847,33 @@ var FC1IS_SHIP_SIZE = {
 function fc1isShipWH(type) {
     return FC1IS_SHIP_SIZE[type] || { w: 2, h: 1 };
 }
+// 删除模式：勾选后点击地块/船只直接删除
+var __fc1isDeleteMode = { estate: false, ship: false };
+window.fc1isDeleteModeChanged = function(type) {
+    var chk = document.getElementById('fc1is-delete-' + type);
+    __fc1isDeleteMode[type] = !!(chk && chk.checked);
+};
+window.fc1isTileClick = function(type, name) {
+    if (__fc1isDeleteMode[type]) {
+        fc1isDeleteAsset(type, name);
+    } else {
+        fc1isEditAsset(type, name);
+    }
+};
+window.fc1isDeleteAsset = async function(type, name) {
+    var v = fc1isEnsureVar(); if (!v) return;
+    var map = type === 'estate' ? v.estate : v.ships;
+    if (!map[name]) return;
+    var agree = await showCustomConfirm('确认删除「' + name + '」吗？');
+    if (!agree) return;
+    delete map[name];
+    Object.keys(v.employment || {}).forEach(function(person) {
+        if (v.employment[person] && v.employment[person].type === type && v.employment[person].name === name) {
+            delete v.employment[person];
+        }
+    });
+    if (type === 'estate') fc1isRenderEstateSection(); else fc1isRenderShipSection();
+};
 // 地块颜色（与状态栏一致：灰=待分配、黄=已就职、蓝=无需就职、红=荒废/重损）
 function fc1isEstateTileClass(estate, staffed) {
     var needsStaff = estate.type === '商业' || estate.type === '农事' || estate.type === '手工业';
@@ -908,7 +945,7 @@ function fc1isBoard(type, items) {
         var asset = (type === 'estate' ? v.estate : v.ships)[it.name] || {};
         var staffed = fc1isStaffList(type, it.name).length > 0;
         var cls = type === 'estate' ? fc1isEstateTileClass(asset, staffed) : fc1isShipTileClass(asset, staffed);
-        cells += '<div class="fc1-board-tile ' + cls + '" style="grid-column:' + (it.col + 1) + ' / span ' + it.w + '; grid-row:' + (it.row + 1) + ' / span ' + it.h + ';" onclick="fc1isEditAsset(\'' + type + '\', ' + fc1isAttrJs(it.name) + ')">' + mtH(it.name) + '</div>';
+        cells += '<div class="fc1-board-tile ' + cls + '" style="grid-column:' + (it.col + 1) + ' / span ' + it.w + '; grid-row:' + (it.row + 1) + ' / span ' + it.h + ';" onclick="fc1isTileClick(\'' + type + '\', ' + fc1isAttrJs(it.name) + ')">' + mtH(it.name) + '</div>';
     });
     return '<div class="fc1-board"><div class="fc1-board-grid">' + cells + '</div></div>';
 }
@@ -920,6 +957,7 @@ function fc1isRenderEstate(v) {
         return { name: n, w: wh.w, h: wh.h };
     })) : '<div class="fc1is-empty">暂无家产，点击添加</div>';
     body += '<button class="fc1is-add-btn" onclick="fc1isOpenEstateDrawer()">+ 添加家产</button>';
+    body += '<label class="fc1is-delete-toggle"><input type="checkbox" id="fc1is-delete-estate"' + (__fc1isDeleteMode.estate ? ' checked' : '') + ' onchange="fc1isDeleteModeChanged(\'estate\')"> 删除模式（勾选后点击地块删除）</label>';
     return fc1isSection('家产', '<div class="fc1is-asset-wrap" id="fc1is-estate">' + body + '</div>');
 }
 function fc1isRenderShip(v) {
@@ -930,6 +968,7 @@ function fc1isRenderShip(v) {
         return { name: n, w: wh.w, h: wh.h };
     })) : '<div class="fc1is-empty">暂无船只，点击添加</div>';
     body += '<button class="fc1is-add-btn" onclick="fc1isOpenShipDrawer()">+ 添加船只</button>';
+    body += '<label class="fc1is-delete-toggle"><input type="checkbox" id="fc1is-delete-ship"' + (__fc1isDeleteMode.ship ? ' checked' : '') + ' onchange="fc1isDeleteModeChanged(\'ship\')"> 删除模式（勾选后点击船只删除）</label>';
     return fc1isSection('船只', '<div class="fc1is-asset-wrap" id="fc1is-ship">' + body + '</div>');
 }
 function fc1isRenderEstateSection() {
@@ -959,11 +998,15 @@ window.fc1isAddEstate = function(idx) {
     fc1isRenderEstateSection();
 };
 window.fc1isAddEstateCustom = function() {
+    var mobile = fc1isIsMobile();
+    var scaleOpts = mobile
+        ? '<option value="大型">大型（4×2）</option><option value="中型">中型（3×1）</option><option value="小型">小型（2×1）</option>'
+        : '<option value="大型">大型（4×2）</option><option value="中型">中型（2×1）</option><option value="小型">小型（1×1）</option>';
     fc1isOpenDrawer('自定义地块',
         '<div class="fc1is-col">' +
             '<div class="fc1is-row"><span class="fc1is-label">名称</span><input id="fc1is-c-ename"></div>' +
             '<div class="fc1is-row"><span class="fc1is-label">类型</span><input id="fc1is-c-etype" placeholder="居所/商铺/农事/手工业/其它"></div>' +
-            '<div class="fc1is-row"><span class="fc1is-label">大小(宽×高)</span><input id="fc1is-c-esize" placeholder="如 2×3"></div>' +
+            '<div class="fc1is-row"><span class="fc1is-label">大小</span><select id="fc1is-c-esize">' + scaleOpts + '</select></div>' +
             '<div class="fc1is-row-col"><span class="fc1is-label">描述</span><textarea id="fc1is-c-edesc"></textarea></div>' +
             '<button class="fc1-drawer-confirm" onclick="fc1isCommitEstateCustom()">\u2727 确认添加 \u2727</button>' +
         '</div>');
@@ -1081,17 +1124,31 @@ window.fc1isEditAsset = function(type, name) {
             '</div>');
     } else {
         var cargo = asset.status && asset.status.cargo ? asset.status.cargo : {};
+        var cargoListHTML = '';
+        Object.keys(cargo).forEach(function(cn) {
+            var cItem = cargo[cn] || {};
+            var qty = (typeof cItem === 'object') ? (cItem.count || '') : cItem;
+            cargoListHTML += '<div class="fc1is-cargo-row"><a class="fc1is-cargo-link" onclick="fc1isOpenCargoEditor(\'ship\', ' + fc1isAttrJs(name) + ', ' + fc1isAttrJs(cn) + ')">' + mtH(cn) + '</a><span class="fc1is-cargo-qty">' + mtH(qty) + '</span><span class="fc1is-del" onclick="fc1isDelShipCargo(' + fc1isAttrJs(name) + ', ' + fc1isAttrJs(cn) + ')">\u2715</span></div>';
+        });
         fc1isOpenDrawer('船只 · ' + name,
             '<div class="fc1is-col">' +
                 '<div class="fc1is-row"><span class="fc1is-label">类型</span><input id="fc1is-s-type" value="' + fc1isAttr(asset.type) + '"></div>' +
                 '<div class="fc1is-row"><span class="fc1is-label">船员数</span><input id="fc1is-s-crew" value="' + fc1isAttr((asset.crew && asset.crew.count) || 0) + '"></div>' +
                 '<div class="fc1is-row"><span class="fc1is-label">船况</span><input id="fc1is-s-cond" value="' + fc1isAttr((asset.status && asset.status.condition) || '') + '"></div>' +
                 '<div class="fc1is-row"><span class="fc1is-label">造价</span><input id="fc1is-s-cost" value="' + fc1isAttr((asset.value && asset.value.cost) || '') + '"></div>' +
-                '<div class="fc1is-sub"><span class="fc1is-label">货物（' + Object.keys(cargo).length + '）</span><button class="fc1is-add-btn" onclick="fc1isOpenCargo(\'ship\', ' + fc1isAttrJs(name) + ')">+ 添加货物</button></div>' +
+                '<div class="fc1is-sub"><span class="fc1is-label">货物（' + Object.keys(cargo).length + '）</span>' +
+                    (cargoListHTML || '<div class="fc1is-empty">暂无货物</div>') +
+                    '<button class="fc1is-add-btn" onclick="fc1isOpenCargo(\'ship\', ' + fc1isAttrJs(name) + ')">+ 添加货物</button></div>' +
                 fc1isRenderEmploymentHTML('ship', name) +
                 '<button class="fc1-drawer-confirm" onclick="fc1isCommitAssetEdit(\'ship\', ' + fc1isAttrJs(name) + ')">\u2727 保存 \u2727</button>' +
             '</div>');
     }
+};
+window.fc1isDelShipCargo = function(name, item) {
+    var v = fc1isEnsureVar(); if (!v) return;
+    var ship = v.ships[name]; if (!ship) return;
+    if (ship.status && ship.status.cargo) delete ship.status.cargo[item];
+    fc1isEditAsset('ship', name);
 };
 window.fc1isCommitAssetEdit = function(type, name) {
     var v = fc1isEnsureVar(); if (!v) return;
@@ -1117,60 +1174,142 @@ window.fc1isCommitAssetEdit = function(type, name) {
 };
 
 // ==================== 货物（船只 / 仓库共用） ====================
+var FC1IS_CATEGORIES = ['粮食', '酒类', '种植园作物', '纺织品', '军火', '杂货', '香料', '贵重珠宝', '奴隶', '动物'];
+var FC1IS_QUALITIES = ['上好', '优', '良', '中等', '次品'];
+var FC1IS_UNITS = ['磅', '担', '吨', '加仑', '桶', '大桶', '捆', '包', '袋', '箱', '匹', '件', '支', '根', '名', '头', '只'];
+
+function fc1isParseCount(countStr) {
+    if (countStr === undefined || countStr === null) return { num: '', unit: '' };
+    if (typeof countStr === 'number') return { num: String(countStr), unit: '' };
+    var s = String(countStr).trim();
+    var m = s.match(/^(\d+(?:\.\d+)?)\s*(.*)$/);
+    return { num: m ? m[1] : '', unit: m ? (m[2] || '') : '' };
+}
+
+function fc1isGetCargoMap(kind, key) {
+    var v = fc1isEnsureVar(); if (!v) return null;
+    if (kind === 'ship') {
+        var ship = v.ships[key]; if (!ship) return null;
+        ship.status = ship.status || { condition: 90, damage: '', speed: '停泊', cargo: {} };
+        ship.status.cargo = ship.status.cargo || {};
+        return ship.status.cargo;
+    }
+    v.warehouse[key] = v.warehouse[key] || {};
+    return v.warehouse[key];
+}
+
+function fc1isFindPresetItem(name) {
+    return (FC1_PRESETS.items || []).find(function(it) { return it.name === name; }) || null;
+}
+
+function fc1isUnitSelect(selected, units) {
+    var opts = units.map(function(u) {
+        return '<option value="' + fc1isAttr(u) + '"' + (u === selected ? ' selected' : '') + '>' + fc1isAttr(u) + '</option>';
+    }).join('');
+    return '<select id="fc1is-cg-unit">' + opts + '</select>';
+}
+
 window.fc1isOpenCargo = function(kind, key) {
     window.__fc1isCargoKind = kind;
     window.__fc1isCargoKey = key;
     var cards = FC1_PRESETS.items.map(function(it, i) {
-        return '<div class="fc1-drawer-item" onclick="fc1isAddCargoItem(' + i + ')"><b>' + mtH(it.name) + '</b><span>' + mtH(it.category) + ' · ' + mtH(it.quality) + '</span></div>';
+        var units = (it.units && it.units.length) ? it.units.join('/') : '件';
+        return '<div class="fc1-drawer-item" onclick="fc1isAddCargoItem(' + i + ')"><b>' + mtH(it.name) + '</b><span>' + mtH(it.category) + ' · ' + mtH(units) + '</span></div>';
     }).join('');
-    cards += '<div class="fc1-drawer-item custom" onclick="fc1isAddCargoCustom()"><b>+ 自定义货物</b><span>自定义名称/数量</span></div>';
+    cards += '<div class="fc1-drawer-item custom" onclick="fc1isAddCargoCustom()"><b>+ 自定义货物</b><span>自定义名称/数目/量词/品质/大类</span></div>';
     fc1isOpenDrawer('添加货物', cards);
 };
 window.fc1isAddCargoItem = function(idx) {
     var it = FC1_PRESETS.items[idx]; if (!it) return;
-    var v = fc1isEnsureVar(); if (!v) return;
-    if (window.__fc1isCargoKind === 'ship') {
-        var ship = v.ships[window.__fc1isCargoKey]; if (!ship) return;
-        ship.status = ship.status || { condition: 90, damage: '', speed: '停泊', cargo: {} };
-        ship.status.cargo = ship.status.cargo || {};
-        ship.status.cargo[it.name] = { count: '1 ' + (it.unit || '件'), quality: it.quality || '良', category: it.category || '杂货' };
-        fc1isCloseDrawer();
-        fc1isRenderShipSection();
-    } else {
-        var wh = v.warehouse[window.__fc1isCargoKey] = v.warehouse[window.__fc1isCargoKey] || {};
-        wh[it.name] = '1 ' + (it.unit || '件');
-        fc1isCloseDrawer();
-        fc1isRenderWarehouseSection();
-    }
+    var map = fc1isGetCargoMap(window.__fc1isCargoKind, window.__fc1isCargoKey);
+    if (!map) return;
+    var unit = (it.units && it.units[0]) || '件';
+    map[it.name] = { count: '1 ' + unit, quality: it.quality || '良', category: it.category || '杂货' };
+    fc1isCloseDrawer();
+    if (window.__fc1isCargoKind === 'ship') fc1isRenderShipSection();
+    else fc1isRenderWarehouseSection();
 };
 window.fc1isAddCargoCustom = function() {
+    var catOpts = FC1IS_CATEGORIES.map(function(c) { return '<option value="' + c + '">' + c + '</option>'; }).join('');
+    var qOpts = FC1IS_QUALITIES.map(function(q) { return '<option value="' + q + '">' + q + '</option>'; }).join('');
     fc1isOpenDrawer('自定义货物',
         '<div class="fc1is-col">' +
             '<div class="fc1is-row"><span class="fc1is-label">名称</span><input id="fc1is-cg-name"></div>' +
-            '<div class="fc1is-row"><span class="fc1is-label">数量</span><input id="fc1is-cg-count" placeholder="如 20桶 / 300加仑"></div>' +
-            '<div class="fc1is-row"><span class="fc1is-label">品质</span><input id="fc1is-cg-quality" placeholder="良"></div>' +
-            '<div class="fc1is-row"><span class="fc1is-label">类别</span><input id="fc1is-cg-category" placeholder="军火"></div>' +
+            '<div class="fc1is-row"><span class="fc1is-label">数目</span><input id="fc1is-cg-num" placeholder="数字"></div>' +
+            '<div class="fc1is-row"><span class="fc1is-label">量词</span><input id="fc1is-cg-unit" placeholder="如 桶 / 加仑 / 磅"></div>' +
+            '<div class="fc1is-row"><span class="fc1is-label">品质</span><select id="fc1is-cg-quality">' + qOpts + '</select></div>' +
+            '<div class="fc1is-row"><span class="fc1is-label">大类</span><select id="fc1is-cg-category">' + catOpts + '</select></div>' +
             '<button class="fc1-drawer-confirm" onclick="fc1isCommitCargoCustom()">\u2727 确认添加 \u2727</button>' +
         '</div>');
 };
 window.fc1isCommitCargoCustom = function() {
-    var v = fc1isEnsureVar(); if (!v) return;
     var name = document.getElementById('fc1is-cg-name').value.trim();
     if (!name) { showCustomAlert('请填写货物名称'); return; }
-    var count = document.getElementById('fc1is-cg-count').value.trim();
-    if (window.__fc1isCargoKind === 'ship') {
-        var ship = v.ships[window.__fc1isCargoKey]; if (!ship) return;
-        ship.status = ship.status || { condition: 90, damage: '', speed: '停泊', cargo: {} };
-        ship.status.cargo = ship.status.cargo || {};
-        ship.status.cargo[name] = { count: count, quality: document.getElementById('fc1is-cg-quality').value.trim(), category: document.getElementById('fc1is-cg-category').value.trim() };
-        fc1isCloseDrawer();
-        fc1isRenderShipSection();
+    var num = document.getElementById('fc1is-cg-num').value.trim();
+    var unit = document.getElementById('fc1is-cg-unit').value.trim();
+    var count = (num && unit) ? (num + ' ' + unit) : (num || '');
+    var map = fc1isGetCargoMap(window.__fc1isCargoKind, window.__fc1isCargoKey);
+    if (!map) return;
+    map[name] = {
+        count: count,
+        quality: document.getElementById('fc1is-cg-quality').value.trim(),
+        category: document.getElementById('fc1is-cg-category').value.trim()
+    };
+    fc1isCloseDrawer();
+    if (window.__fc1isCargoKind === 'ship') fc1isRenderShipSection();
+    else fc1isRenderWarehouseSection();
+};
+
+// 点击已存在货物 → 编辑抽屉（展示大类，编辑品质/数目/量词）
+window.fc1isOpenCargoEditor = function(kind, key, name) {
+    var map = fc1isGetCargoMap(kind, key);
+    if (!map) return;
+    var raw = map[name];
+    var item = (raw && typeof raw === 'object') ? raw : { count: raw };
+    var parsed = fc1isParseCount(item.count);
+    var preset = fc1isFindPresetItem(name);
+    var category = item.category || (preset ? preset.category : '杂货');
+    var quality = item.quality || (preset ? preset.quality : '良');
+    var qOpts = FC1IS_QUALITIES.map(function(q) {
+        return '<option value="' + q + '"' + (q === quality ? ' selected' : '') + '>' + q + '</option>';
+    }).join('');
+    var unitControl;
+    if (preset && preset.units && preset.units.length) {
+        var units = preset.units.slice();
+        if (parsed.unit && units.indexOf(parsed.unit) === -1) units.push(parsed.unit);
+        unitControl = fc1isUnitSelect(parsed.unit, units);
     } else {
-        v.warehouse[window.__fc1isCargoKey] = v.warehouse[window.__fc1isCargoKey] || {};
-        v.warehouse[window.__fc1isCargoKey][name] = count;
-        fc1isCloseDrawer();
-        fc1isRenderWarehouseSection();
+        unitControl = '<input id="fc1is-cg-unit" value="' + fc1isAttr(parsed.unit) + '" placeholder="量词">';
     }
+    window.__fc1isCargoEdit = { kind: kind, key: key, name: name };
+    fc1isOpenDrawer('货物 · ' + name,
+        '<div class="fc1is-col">' +
+            '<div class="fc1is-row"><span class="fc1is-label">大类</span><span class="fc1is-readonly">' + mtH(category) + '</span></div>' +
+            '<div class="fc1is-row"><span class="fc1is-label">品质</span><select id="fc1is-cg-quality">' + qOpts + '</select></div>' +
+            '<div class="fc1is-row"><span class="fc1is-label">数目</span><input id="fc1is-cg-num" value="' + fc1isAttr(parsed.num) + '" placeholder="数字"></div>' +
+            '<div class="fc1is-row"><span class="fc1is-label">量词</span>' + unitControl + '</div>' +
+            '<button class="fc1-drawer-confirm" onclick="fc1isCommitCargoEditor()">\u2727 保存 \u2727</button>' +
+        '</div>');
+};
+window.fc1isCommitCargoEditor = function() {
+    var e = window.__fc1isCargoEdit; if (!e) return;
+    var map = fc1isGetCargoMap(e.kind, e.key);
+    if (!map) return;
+    var num = document.getElementById('fc1is-cg-num').value.trim();
+    var unitEl = document.getElementById('fc1is-cg-unit');
+    var unit = unitEl ? unitEl.value.trim() : '';
+    var count = (num && unit) ? (num + ' ' + unit) : (num || '');
+    var raw = map[e.name];
+    var preset = fc1isFindPresetItem(e.name);
+    var oldCategory = (raw && typeof raw === 'object' && raw.category) ? raw.category : (preset ? preset.category : '杂货');
+    map[e.name] = {
+        count: count,
+        quality: document.getElementById('fc1is-cg-quality').value.trim(),
+        category: oldCategory
+    };
+    fc1isCloseDrawer();
+    if (e.kind === 'ship') fc1isRenderShipSection();
+    else fc1isRenderWarehouseSection();
 };
 
 // ==================== ⑦ 仓库 ====================
@@ -1183,7 +1322,14 @@ function fc1isRenderWarehouse(v) {
     var wh = v.warehouse[__fc1isContinent] || {};
     var rows = '';
     Object.keys(wh).forEach(function(item) {
-        rows += '<tr><td>' + mtH(item) + '</td><td>' + mtH(wh[item]) + '</td><td><span class="fc1is-del" onclick="fc1isDelWare(' + fc1isAttrJs(item) + ')">\u2715</span></td></tr>';
+        var raw = wh[item];
+        var itemObj = (raw && typeof raw === 'object') ? raw : { count: raw };
+        var display = itemObj.count || '';
+        rows += '<tr>' +
+            '<td><a class="fc1is-cargo-link" onclick="fc1isOpenCargoEditor(\'warehouse\', ' + fc1isAttrJs(__fc1isContinent) + ', ' + fc1isAttrJs(item) + ')">' + mtH(item) + '</a></td>' +
+            '<td>' + mtH(display) + '</td>' +
+            '<td><span class="fc1is-del" onclick="fc1isDelWare(' + fc1isAttrJs(item) + ')">\u2715</span></td>' +
+        '</tr>';
     });
     var table = rows ? '<table class="fc1-cargo-table"><thead><tr><th>物品</th><th>数量</th><th></th></tr></thead><tbody>' + rows + '</tbody></table>' : '<div class="fc1is-empty">该大洲暂无存货</div>';
     return fc1isSection('仓库', '<div class="fc1is-warehouse" id="fc1is-warehouse">' +

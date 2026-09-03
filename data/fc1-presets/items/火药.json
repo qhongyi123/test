@@ -2,5 +2,5 @@
   "name": "火药",
   "category": "军火",
   "quality": "良",
-  "unit": "桶"
+  "units": ["桶"]
 }

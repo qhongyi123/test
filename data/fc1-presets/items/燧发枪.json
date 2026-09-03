@@ -2,5 +2,5 @@
   "name": "燧发枪",
   "category": "军火",
   "quality": "良",
-  "unit": "支"
+  "units": ["支"]
 }
