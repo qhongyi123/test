@@ -211,10 +211,10 @@ async function initDynamicTabs() {
                 contentStr = '<div class="fc1-start-wrap">' +
                     '<div class="fc1-region-title">\u2756 开始剧情 \u2756</div>' +
                     '<div class="fc1-start-mode">' +
-                        '<button id="fc1-start-auto-btn" class="fc1-start-mode-btn active" onclick="fc1SelectStartMode(\'auto\')">方式一：自动生成开场白</button>' +
+                        '<button id="fc1-start-auto-btn" class="fc1-start-mode-btn" onclick="fc1SelectStartMode(\'auto\')">方式一：自动生成开场白</button>' +
                         '<button id="fc1-start-manual-btn" class="fc1-start-mode-btn" onclick="fc1SelectStartMode(\'manual\')">方式二：自定义开局</button>' +
                     '</div>' +
-                    '<div class="fc1-start-panel" id="fc1-start-auto-panel">' +
+                    '<div class="fc1-start-panel" id="fc1-start-auto-panel" style="display:none;">' +
                         '<div class="fc1-start-label">将发送的提示词：</div>' +
                         '<div class="fc1-start-preview" id="fc1-start-preview"></div>' +
                     '</div>' +
@@ -229,7 +229,7 @@ async function initDynamicTabs() {
                 contentStr = '<div class="fc1-overview">' +
                     '<div class="fc1-overview-title">\u2727 开拓新大陆与殖民贸易 \u2727</div>' +
                     '<div class="fc1-overview-text">' +
-                        '<p>十七世纪末至十八世纪初，大西洋上的三角贸易如日中天：欧洲母国的制成品、军火与朗姆酒运往西非，换取深色奴横渡大西洋运往美洲，再以糖、烟草、棉花满载而归。</p>' +
+                        '<p>十七世纪至十八世纪（1600—1800），大西洋上的三角贸易如日中天：欧洲母国的制成品、军火与朗姆酒运往西非，换取深色奴横渡大西洋运往美洲，再以糖、烟草、棉花满载而归。</p>' +
                         '<p>这是一片由风帆、火器、银元与胆识主宰的海域。你将以自由之身，或逐利海上、或经营种植园、或穿行于奴隶市场，凭一己之力在这殖民时代立足。</p>' +
                     '</div>' +
                     '<div class="fc1-music-row">' +

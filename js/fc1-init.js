@@ -257,7 +257,7 @@ window.fc1isOnWeekday = function() {
 };
 window.fc1isRandomDate = function() {
     var v = fc1isEnsureVar(); if (!v) return;
-    var y = 1600 + Math.floor(Math.random() * 101);
+    var y = 1600 + Math.floor(Math.random() * 201);
     var mo = 1 + Math.floor(Math.random() * 12);
     var days = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][mo - 1];
     var dd = 1 + Math.floor(Math.random() * days);
@@ -380,6 +380,26 @@ window.fc1isCollectInventory = function() {
     });
     v.user.inventory = inv;
     fc1isUpdateNav();
+};
+
+// 清除已选：清空所有已填写内容（保留性别与世界信息）
+window.fc1isClearSelection = function() {
+    var v = fc1isEnsureVar(); if (!v) return;
+    var keepWorld = v.world ? JSON.parse(JSON.stringify(v.world)) : {};
+    var keepGender = (v.user && v.user.gender) ? v.user.gender : '';
+    v.user = { gender: keepGender };
+    v['背景信息'] = { '地区': {} };
+    v.relationship = {};
+    v.estate = {};
+    v.ships = {};
+    v.warehouse = {};
+    v.employment = {};
+    v.world = keepWorld;
+    __fc1Identity = '';
+    __fc1isRegion = null;
+    __fc1isRegionCustom = false;
+    if (typeof window.__fc1Variables !== 'undefined') window.__fc1Variables = null;
+    fc1InitRender();
 };
 
 // ==================== ③ 地区信息（重点） ====================
@@ -1470,6 +1490,12 @@ function fc1isDoSkip() {
     if (typeof goToSubTab === 'function') goToSubTab('FC1', 'FC1-sub4');
 }
 
+// 完整编辑器填写完毕，进入开始剧情
+window.fc1isFinishAndNext = function() {
+    if (typeof fc1RenderStartPreview === 'function') fc1RenderStartPreview();
+    if (typeof goToSubTab === 'function') goToSubTab('FC1', 'FC1-sub4');
+};
+
 // ==================== 补全未填写变量弹窗 ====================
 var __fc1isFillGroups = [];
 var __fc1isFillFields = [];
@@ -1569,7 +1595,10 @@ function fc1isGenderRow(v) {
 function fc1isIdentityRows(v) {
     var u = v.user;
     return '<div class="fc1is-row"><span class="fc1is-label">用户身份</span><input id="fc1is-identity" value="' + fc1isAttr(u.identity) + '" oninput="fc1isOnUser(\'identity\')"></div>' +
-        '<div class="fc1is-row"><span class="fc1is-label"></span><button class="fc1is-idp-btn" onclick="fc1isOpenIdentityPicker()">\u2756 预设身份组 \u2756</button></div>';
+        '<div class="fc1is-row"><span class="fc1is-label"></span>' +
+            '<button class="fc1is-idp-btn" onclick="fc1isOpenIdentityPicker()">\u2756 预设身份组 \u2756</button>' +
+            '<button class="fc1is-idp-btn" style="margin-left:8px;" onclick="fc1isClearSelection()">清除已选</button>' +
+        '</div>';
 }
 
 function fc1isBodyRow(v) {
@@ -1614,6 +1643,7 @@ function fc1isRenderStep() {
             fc1isRenderEstate(v) +
             fc1isRenderShip(v) +
             fc1isRenderWarehouse(v);
+        content += '<div class="fc1is-finish-row"><button class="fc1is-nav-btn fc1is-nav-continue" onclick="fc1isFinishAndNext()">填写完毕，进入下一页</button></div>';
     }
 
     var nav = '';

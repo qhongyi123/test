@@ -1141,6 +1141,10 @@ body {
     background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
     color: #1a0f2e; box-shadow: 0 2px 8px rgba(212,175,55,0.4);
 }
+.fc1-start-mode-btn.disabled {
+    opacity: 0.4; cursor: not-allowed; pointer-events: none;
+    background: rgba(0,0,0,0.05); color: #999;
+}
 .fc1-start-panel { display: flex; flex-direction: column; gap: 6px; }
 .fc1-start-label { font-weight: bold; color: #5d4037; font-size: 0.9rem; }
 .fc1-start-preview {
@@ -1306,6 +1310,7 @@ body {
 .fc1is-nav-skip:hover { background: rgba(184,134,11,0.12); border-color: var(--color-primary-dark); }
 .fc1is-nav-continue { border: none; background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%); color: #1a0f2e; box-shadow: 0 2px 6px rgba(0,0,0,0.2); }
 .fc1is-nav-continue:hover { filter: brightness(1.08); }
+.fc1is-finish-row { display: flex; justify-content: flex-end; margin-top: 14px; }
 
 /* 地区信息头部（预设地区/自定义地区按钮） */
 .fc1is-region-head { display: flex; justify-content: space-between; gap: 6px; margin-bottom: 6px; }

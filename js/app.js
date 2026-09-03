@@ -232,6 +232,7 @@ function switchSubTab(btnElement, subTabId) {
     mainPanelContainer.querySelectorAll('.sub-panel').forEach(function(panel) { panel.classList.remove('active'); });
     mainPanelContainer.querySelector('#' + subTabId).classList.add('active');
     if (subTabId === 'FC1-sub3' && typeof fc1InitRender === 'function') { fc1InitRender(); }
+    if (subTabId === 'FC1-sub4' && typeof fc1InitStartMode === 'function') { fc1InitStartMode(); }
 }
 
 window.goToSubTab = function(tabId, subTabId) {
@@ -769,7 +770,14 @@ window.fc1SaveVariables = function() {
 };
 
 // ===== FC1 开始剧情 =====
-var __fc1StartMode = "auto";
+var __fc1StartMode = "";
+
+window.fc1HasPresetIdentity = function() {
+    if (typeof __fc1Identity !== 'string' || !__fc1Identity) return false;
+    var it = (typeof FC1_PRESETS !== 'undefined' && FC1_PRESETS.identities ? FC1_PRESETS.identities.find(function(x) { return x.id === __fc1Identity; }) : null)
+        || (FC1_IDENTITIES || []).find(function(x) { return x.id === __fc1Identity; });
+    return !!it;
+};
 
 window.fc1BuildAutoPrompt = function() {
     var it = (typeof FC1_PRESETS !== 'undefined' && FC1_PRESETS.identities ? FC1_PRESETS.identities.find(function(x) { return x.id === __fc1Identity; }) : null)
@@ -788,7 +796,32 @@ window.fc1RenderStartPreview = function() {
     el.textContent = prompt !== null ? prompt : '请先在「初始设定」中选择预设身份组（方式一）';
 };
 
+// 进入「开始剧情」页时初始化：默认两方式均未选，方式一无预设身份组时变灰
+window.fc1InitStartMode = function() {
+    __fc1StartMode = "";
+    var autoBtn = document.getElementById('fc1-start-auto-btn');
+    var manualBtn = document.getElementById('fc1-start-manual-btn');
+    var autoPanel = document.getElementById('fc1-start-auto-panel');
+    var manualPanel = document.getElementById('fc1-start-manual-panel');
+    var hasPreset = fc1HasPresetIdentity();
+    if (autoBtn) {
+        autoBtn.className = 'fc1-start-mode-btn' + (hasPreset ? '' : ' disabled');
+        autoBtn.disabled = !hasPreset;
+    }
+    if (manualBtn) {
+        manualBtn.className = 'fc1-start-mode-btn';
+        manualBtn.disabled = false;
+    }
+    if (autoPanel) autoPanel.style.display = 'none';
+    if (manualPanel) manualPanel.style.display = 'none';
+    fc1RenderStartPreview();
+};
+
 window.fc1SelectStartMode = function(mode) {
+    if (mode === 'auto' && !fc1HasPresetIdentity()) {
+        showCustomAlert("方式一需要先在「初始设定」中选择预设身份组");
+        return;
+    }
     __fc1StartMode = mode;
     var autoBtn = document.getElementById('fc1-start-auto-btn');
     var manualBtn = document.getElementById('fc1-start-manual-btn');
@@ -802,6 +835,8 @@ window.fc1SelectStartMode = function(mode) {
 };
 
 window.fc1StartGame = async function() {
+    if (!__fc1StartMode) { showCustomAlert("请先选择开局方式（方式一或方式二）"); return; }
+
     var v;
     try {
         v = (typeof fc1CollectInitialVars === 'function') ? fc1CollectInitialVars() : fc1CollectVariable();
