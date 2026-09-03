@@ -626,8 +626,7 @@ function fc1isRenderRel(v) {
             '<div class="fc1is-rel-body">' + (rows || '<div class="fc1is-empty">暂无</div>') + '</div>' +
         '</div>';
     });
-    html += '<div class="fc1is-hint-small">点击人物名称进行修改</div>';
-    return fc1isSection('关系', '<div class="fc1is-rel-wrap" id="fc1is-rel">' + html + '</div>',
+    return fc1isSection('关系', '<div class="fc1is-hint-small">点击人物名称进行修改</div>' + '<div class="fc1is-rel-wrap" id="fc1is-rel">' + html + '</div>',
         '<button class="fc1is-rel-custom-add" onclick="fc1isAddCustomRelation()">+ 自定义添加角色</button>');
 }
 function fc1isRenderRelSection() {
@@ -1010,8 +1009,7 @@ function fc1isRenderEstate(v) {
     })) : '<div class="fc1is-empty">暂无家产，点击添加</div>';
     body += '<button class="fc1is-add-btn" onclick="fc1isOpenEstateDrawer()">+ 添加家产</button>';
     body += '<label class="fc1is-delete-toggle"><input type="checkbox" id="fc1is-delete-estate"' + (__fc1isDeleteMode.estate ? ' checked' : '') + ' onchange="fc1isDeleteModeChanged(\'estate\')"> 删除模式（勾选后点击地块删除）</label>';
-    body += '<div class="fc1is-hint-small">点击地块名称进行修改</div>';
-    return fc1isSection('家产', '<div class="fc1is-asset-wrap" id="fc1is-estate">' + body + '</div>');
+    return fc1isSection('家产', '<div class="fc1is-hint-small">点击地块名称进行修改</div>' + '<div class="fc1is-asset-wrap" id="fc1is-estate">' + body + '</div>');
 }
 function fc1isRenderShip(v) {
     var names = Object.keys(v.ships);
@@ -1022,8 +1020,7 @@ function fc1isRenderShip(v) {
     })) : '<div class="fc1is-empty">暂无船只，点击添加</div>';
     body += '<button class="fc1is-add-btn" onclick="fc1isOpenShipDrawer()">+ 添加船只</button>';
     body += '<label class="fc1is-delete-toggle"><input type="checkbox" id="fc1is-delete-ship"' + (__fc1isDeleteMode.ship ? ' checked' : '') + ' onchange="fc1isDeleteModeChanged(\'ship\')"> 删除模式（勾选后点击船只删除）</label>';
-    body += '<div class="fc1is-hint-small">点击船只名称进行修改</div>';
-    return fc1isSection('船只', '<div class="fc1is-asset-wrap" id="fc1is-ship">' + body + '</div>');
+    return fc1isSection('船只', '<div class="fc1is-hint-small">点击船只名称进行修改</div>' + '<div class="fc1is-asset-wrap" id="fc1is-ship">' + body + '</div>');
 }
 function fc1isRenderEstateSection() {
     var v = fc1isEnsureVar(); if (!v) return;
