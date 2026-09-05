@@ -900,6 +900,8 @@ function fc1isShipWH(type) {
 }
 // 删除模式：勾选后点击地块/船只直接删除
 var __fc1isDeleteMode = { estate: false, ship: false };
+// 家产棋盘下钻路径（面包屑栈，空数组 = 顶层）
+var __fc1isEstatePath = [];
 window.fc1isDeleteModeChanged = function(type) {
     var chk = document.getElementById('fc1is-delete-' + type);
     __fc1isDeleteMode[type] = !!(chk && chk.checked);
@@ -915,21 +917,25 @@ window.fc1isDeleteAsset = async function(type, name) {
     var v = fc1isEnsureVar(); if (!v) return;
     var map = type === 'estate' ? v.estate : v.ships;
     if (!map[name]) return;
-    var agree = await showCustomConfirm('确认删除「' + name + '」吗？');
+    var namesToDelete = type === 'estate' ? fc1isCollectTree(name, v.estate) : [name];
+    var agree = await showCustomConfirm('确认删除「' + name + '」' + (namesToDelete.length > 1 ? '及其 ' + (namesToDelete.length - 1) + ' 个内部地块' : '') + '吗？');
     if (!agree) return;
-    delete map[name];
+    namesToDelete.forEach(function(n) { delete map[n]; });
     Object.keys(v.employment || {}).forEach(function(person) {
-        if (v.employment[person] && v.employment[person].type === type && v.employment[person].name === name) {
+        if (v.employment[person] && v.employment[person].type === type && namesToDelete.indexOf(v.employment[person].name) !== -1) {
             delete v.employment[person];
         }
     });
+    if (type === 'estate' && __fc1isEstatePath.length && namesToDelete.indexOf(__fc1isEstatePath[__fc1isEstatePath.length - 1]) !== -1) {
+        __fc1isEstatePath.pop();
+    }
     if (type === 'estate') fc1isRenderEstateSection(); else fc1isRenderShipSection();
 };
 // 地块颜色（与状态栏一致：灰=待分配、黄=已就职、蓝=无需就职、红=荒废/重损）
 function fc1isEstateTileClass(estate, staffed) {
     var needsStaff = estate.type === '商业' || estate.type === '农事' || estate.type === '手工业';
     if (!needsStaff) return 'tile-neutral';
-    if (estate.status === '荒废' || estate.status === '歇业') return 'tile-derelict';
+    if (estate.status === '荒废') return 'tile-derelict';
     return staffed ? 'tile-staffed' : 'tile-vacant';
 }
 function fc1isShipTileClass(ship, staffed) {
@@ -937,6 +943,137 @@ function fc1isShipTileClass(ship, staffed) {
     if (cond !== undefined && cond !== null && cond !== '' && cond <= 30) return 'tile-derelict';
     return staffed ? 'tile-staffed' : 'tile-vacant';
 }
+// ===== 家产层级（belong）辅助 =====
+function fc1isBelong(estate) {
+    var b = estate && estate.belong;
+    return (b === undefined || b === null) ? '' : String(b);
+}
+function fc1isChildrenOf(name, estate) {
+    var out = [];
+    Object.keys(estate || {}).forEach(function(k) {
+        if (fc1isBelong(estate[k]) === name) out.push(k);
+    });
+    return out;
+}
+function fc1isCollectTree(name, estate, out) {
+    out = out || [name];
+    fc1isChildrenOf(name, estate).forEach(function(c) {
+        out.push(c);
+        fc1isCollectTree(c, estate, out);
+    });
+    return out;
+}
+function fc1isDescendantOf(name, ancestor, estate, seen) {
+    seen = seen || {};
+    if (seen[name]) return false;
+    seen[name] = true;
+    var parent = fc1isBelong(estate[name]);
+    if (!parent || !estate[parent]) return false;
+    if (parent === ancestor) return true;
+    return fc1isDescendantOf(parent, ancestor, estate, seen);
+}
+function fc1isCollectNeedyLeaves(name, estate, out, visiting) {
+    out = out || [];
+    visiting = visiting || {};
+    if (visiting[name]) return out;
+    visiting[name] = true;
+    var children = fc1isChildrenOf(name, estate);
+    if (!children.length) {
+        var e = estate[name] || {};
+        if (e.type === '商业' || e.type === '农事' || e.type === '手工业') out.push(name);
+    } else {
+        children.forEach(function(c) { fc1isCollectNeedyLeaves(c, estate, out, visiting); });
+    }
+    return out;
+}
+function fc1isPlotTreeSize(name, estate, cache, visiting) {
+    cache = cache || {};
+    visiting = visiting || {};
+    if (cache[name]) return cache[name];
+    if (visiting[name]) { cache[name] = fc1isWH((estate[name] || {}).scale); return cache[name]; }
+    visiting[name] = true;
+    var children = fc1isChildrenOf(name, estate);
+    var size;
+    if (!children.length) {
+        size = fc1isWH((estate[name] || {}).scale);
+    } else {
+        var items = children.map(function(c) {
+            var s = fc1isPlotTreeSize(c, estate, cache, visiting);
+            return { name: c, w: s.w, h: s.h };
+        });
+        var layout = fc1isLayoutTiles(items);
+        var rows = 0;
+        layout.forEach(function(it) { if (it.row + it.h > rows) rows = it.row + it.h; });
+        size = { w: 4, h: rows || 1 };
+    }
+    delete visiting[name];
+    cache[name] = size;
+    return size;
+}
+function fc1isEstateTileClassNested(name, estate, estateMap) {
+    var children = fc1isChildrenOf(name, estateMap);
+    if (!children.length) {
+        return fc1isEstateTileClass(estate, fc1isStaffList('estate', name).length > 0);
+    }
+    if (estate && estate.status === '荒废') return 'tile-derelict';
+    var needy = fc1isCollectNeedyLeaves(name, estateMap);
+    if (!needy.length) return 'tile-neutral';
+    for (var i = 0; i < needy.length; i++) {
+        if (!fc1isStaffList('estate', needy[i]).length) return 'tile-vacant';
+    }
+    return 'tile-staffed';
+}
+function fc1isCurrentParent() {
+    return __fc1isEstatePath.length ? __fc1isEstatePath[__fc1isEstatePath.length - 1] : '';
+}
+function fc1isCurrentEstateNames() {
+    var v = fc1isEnsureVar();
+    if (!v) return [];
+    var parent = fc1isCurrentParent();
+    var keys = Object.keys(v.estate || {});
+    return keys.filter(function(n) {
+        var b = fc1isBelong(v.estate[n]);
+        if (parent) return b === parent;
+        return b === '' || keys.indexOf(b) === -1;
+    });
+}
+function fc1isEstateBreadcrumb() {
+    var html = '<div class="fc1-board-breadcrumb">';
+    html += '<button type="button" class="fc1-board-crumb" onclick="fc1isEstateGoto(0)">顶层</button>';
+    __fc1isEstatePath.forEach(function(name, i) {
+        html += '<span class="fc1-board-crumb-sep"> / </span>';
+        html += '<button type="button" class="fc1-board-crumb" onclick="fc1isEstateGoto(' + (i + 1) + ')">' + mtH(name) + '</button>';
+    });
+    html += '</div>';
+    return html;
+}
+window.fc1isEstateGoto = function(level) {
+    __fc1isEstatePath = __fc1isEstatePath.slice(0, level);
+    fc1isRenderEstateSection();
+};
+window.fc1isEstateDrill = function(name) {
+    __fc1isEstatePath.push(name);
+    fc1isRenderEstateSection();
+};
+function fc1isEstateFromPreset(e, belong) {
+    var o = { type: e.type, location: '', scale: e.scale, status: e.status || '营业中', product: e.product || '', belong: belong || '' };
+    if (e.output) o.output = e.output;
+    if (e.business) o.business = e.business;
+    if (e.revenue) o.revenue = e.revenue;
+    o.description = e.desc || '';
+    return o;
+}
+function fc1isEstateBelongOptions(selfName, currentBelong) {
+    var v = fc1isEnsureVar(); if (!v) return '';
+    var opts = '<option value=""' + (!currentBelong ? ' selected' : '') + '>顶层</option>';
+    Object.keys(v.estate || {}).forEach(function(n) {
+        if (n === selfName) return;
+        if (fc1isDescendantOf(n, selfName, v.estate)) return;
+        opts += '<option value="' + fc1isAttr(n) + '"' + (n === currentBelong ? ' selected' : '') + '>' + mtH(n) + '</option>';
+    });
+    return opts;
+}
+
 // 就职：employment 独立变量 { 人名: { type:'estate'|'ship', name:目标名 } }
 function fc1isAllPersons() {
     var v = fc1isEnsureVar();
@@ -988,36 +1125,38 @@ function fc1isLayoutTiles(items) {
     });
     return result;
 }
-function fc1isBoard(type, items) {
-    var layout = fc1isLayoutTiles(items);
+function fc1isBoard(type, names) {
     var v = fc1isEnsureVar();
+    var sizeCache = {};
+    var items = names.map(function(n) {
+        var a = (type === 'estate' ? v.estate : v.ships)[n] || {};
+        var wh = type === 'estate' ? fc1isPlotTreeSize(n, v.estate, sizeCache) : fc1isShipWH(a.type);
+        return { name: n, w: wh.w, h: wh.h, asset: a };
+    });
+    var layout = fc1isLayoutTiles(items);
     var cells = '';
     layout.forEach(function(it) {
-        var asset = (type === 'estate' ? v.estate : v.ships)[it.name] || {};
         var staffed = fc1isStaffList(type, it.name).length > 0;
-        var cls = type === 'estate' ? fc1isEstateTileClass(asset, staffed) : fc1isShipTileClass(asset, staffed);
-        cells += '<div class="fc1-board-tile ' + cls + '" style="grid-column:' + (it.col + 1) + ' / span ' + it.w + '; grid-row:' + (it.row + 1) + ' / span ' + it.h + ';" onclick="fc1isTileClick(\'' + type + '\', ' + fc1isAttrJs(it.name) + ')">' + mtH(it.name) + '</div>';
+        var cls = type === 'estate' ? fc1isEstateTileClassNested(it.name, it.asset, v.estate) : fc1isShipTileClass(it.asset, staffed);
+        var expandHtml = (type === 'estate' && fc1isChildrenOf(it.name, v.estate).length)
+            ? '<button type="button" class="fc1-board-expand" title="展开内部地块" aria-label="展开内部地块" onclick="event.stopPropagation(); fc1isEstateDrill(' + fc1isAttrJs(it.name) + ')"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="3" y="3" width="12" height="12" rx="1"/><rect x="9" y="9" width="12" height="12" rx="1"/></svg></button>'
+            : '';
+        cells += '<div class="fc1-board-tile ' + cls + '" style="grid-column:' + (it.col + 1) + ' / span ' + it.w + '; grid-row:' + (it.row + 1) + ' / span ' + it.h + ';" onclick="fc1isTileClick(\'' + type + '\', ' + fc1isAttrJs(it.name) + ')">' +
+            '<span class="fc1-board-tile-name">' + mtH(it.name) + '</span>' + expandHtml + '</div>';
     });
     return '<div class="fc1-board"><div class="fc1-board-grid">' + cells + '</div></div>';
 }
 function fc1isRenderEstate(v) {
-    var names = Object.keys(v.estate);
-    var body = names.length ? fc1isBoard('estate', names.map(function(n) {
-        var e = v.estate[n] || {};
-        var wh = fc1isWH(e.scale);
-        return { name: n, w: wh.w, h: wh.h };
-    })) : '<div class="fc1is-empty">暂无家产，点击添加</div>';
+    var names = fc1isCurrentEstateNames();
+    var body = __fc1isEstatePath.length ? fc1isEstateBreadcrumb() : '';
+    body += names.length ? fc1isBoard('estate', names) : '<div class="fc1is-empty">' + (__fc1isEstatePath.length ? '暂无内部地块' : '暂无家产，点击添加') + '</div>';
     body += '<button class="fc1is-add-btn" onclick="fc1isOpenEstateDrawer()">+ 添加家产</button>';
     body += '<label class="fc1is-delete-toggle"><input type="checkbox" id="fc1is-delete-estate"' + (__fc1isDeleteMode.estate ? ' checked' : '') + ' onchange="fc1isDeleteModeChanged(\'estate\')"> 删除模式（勾选后点击地块删除）</label>';
-    return fc1isSection('家产', '<div class="fc1is-hint-small">点击地块名称进行修改</div>' + '<div class="fc1is-asset-wrap" id="fc1is-estate">' + body + '</div>');
+    return fc1isSection('家产', '<div class="fc1is-hint-small">点击地块名称进行修改' + (__fc1isEstatePath.length ? '；点击「展开」进入内部地块' : '') + '</div>' + '<div class="fc1is-asset-wrap" id="fc1is-estate">' + body + '</div>');
 }
 function fc1isRenderShip(v) {
     var names = Object.keys(v.ships);
-    var body = names.length ? fc1isBoard('ship', names.map(function(n) {
-        var s = v.ships[n] || {};
-        var wh = fc1isShipWH(s.type);
-        return { name: n, w: wh.w, h: wh.h };
-    })) : '<div class="fc1is-empty">暂无船只，点击添加</div>';
+    var body = names.length ? fc1isBoard('ship', names) : '<div class="fc1is-empty">暂无船只，点击添加</div>';
     body += '<button class="fc1is-add-btn" onclick="fc1isOpenShipDrawer()">+ 添加船只</button>';
     body += '<label class="fc1is-delete-toggle"><input type="checkbox" id="fc1is-delete-ship"' + (__fc1isDeleteMode.ship ? ' checked' : '') + ' onchange="fc1isDeleteModeChanged(\'ship\')"> 删除模式（勾选后点击船只删除）</label>';
     return fc1isSection('船只', '<div class="fc1is-hint-small">点击船只名称进行修改</div>' + '<div class="fc1is-asset-wrap" id="fc1is-ship">' + body + '</div>');
@@ -1042,9 +1181,15 @@ window.fc1isOpenEstateDrawer = function() {
 window.fc1isAddEstate = function(idx) {
     var e = FC1_PRESETS.estates[idx]; if (!e) return;
     var v = fc1isEnsureVar(); if (!v) return;
+    var parent = fc1isCurrentParent();
     var key = e.name, n = 2;
     while (v.estate[key]) { key = e.name + n; n++; }
-    v.estate[key] = { type: e.type, location: '', scale: e.scale, status: e.status || '营业中', product: e.product || '', description: e.desc || '' };
+    v.estate[key] = fc1isEstateFromPreset(e, parent);
+    (e.children || []).forEach(function(c) {
+        var ck = c.name, m = 2;
+        while (v.estate[ck]) { ck = c.name + m; m++; }
+        v.estate[ck] = fc1isEstateFromPreset(c, key);
+    });
     fc1isCloseDrawer();
     fc1isRenderEstateSection();
 };
@@ -1072,7 +1217,8 @@ window.fc1isCommitEstateCustom = function() {
         scale: document.getElementById('fc1is-c-esize').value.trim(),
         status: '营业中',
         product: '',
-        description: document.getElementById('fc1is-c-edesc').value
+        description: document.getElementById('fc1is-c-edesc').value,
+        belong: fc1isCurrentParent()
     };
     fc1isCloseDrawer();
     fc1isRenderEstateSection();
@@ -1166,6 +1312,7 @@ window.fc1isEditAsset = function(type, name) {
         fc1isOpenDrawer('家产 · ' + name,
             '<div class="fc1is-col">' +
                 '<div class="fc1is-row"><span class="fc1is-label">类型</span><input id="fc1is-e-type" value="' + fc1isAttr(asset.type) + '"></div>' +
+                '<div class="fc1is-row"><span class="fc1is-label">所属</span><select id="fc1is-e-belong">' + fc1isEstateBelongOptions(name, fc1isBelong(asset)) + '</select></div>' +
                 '<div class="fc1is-row"><span class="fc1is-label">大小</span><input id="fc1is-e-scale" value="' + fc1isAttr(asset.scale) + '"></div>' +
                 '<div class="fc1is-row"><span class="fc1is-label">状态</span><input id="fc1is-e-status" value="' + fc1isAttr(asset.status) + '"></div>' +
                 '<div class="fc1is-row"><span class="fc1is-label">产物</span><input id="fc1is-e-product" value="' + fc1isAttr(asset.product) + '"></div>' +
@@ -1207,6 +1354,7 @@ window.fc1isCommitAssetEdit = function(type, name) {
     if (!asset) return;
     if (type === 'estate') {
         asset.type = document.getElementById('fc1is-e-type').value.trim();
+        asset.belong = document.getElementById('fc1is-e-belong').value.trim();
         asset.scale = document.getElementById('fc1is-e-scale').value.trim();
         asset.status = document.getElementById('fc1is-e-status').value.trim();
         asset.product = document.getElementById('fc1is-e-product').value.trim();

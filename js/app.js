@@ -431,7 +431,7 @@ window.fetchFc1SettingEntries = async function() {
     try {
         if (typeof getLorebookEntries === 'function') {
             var entries = await getLorebookEntries(LOREBOOK_NAME, {fields:['uid','comment','content','enabled','order']});
-            return entries.filter(function(e) { return e.order >= 101 && e.order <= 123; });
+            return entries.filter(function(e) { return e.order >= 126 && e.order <= 148; });
         }
     } catch(e) { console.warn("读取角色设定条目失败：", e); }
     return [];
@@ -646,7 +646,10 @@ window.fc1BuildVariablePreset = function(identityId, regionId) {
             break;
         case "noble_scion":
             base.wealth = "银币 3000 枚";
-            addEstate("大型庄园", "居所", pos);
+            addEstate("大型庄园", "居所", pos, { belong: "", scale: "大型", status: "营业中", description: "一座带花园与田产的殖民大庄园" });
+            addEstate("庄园宅邸", "居所", pos, { belong: "大型庄园", scale: "中型", status: "石柱木宅，仆役往来" });
+            addEstate("庄园田地", "农事", pos, { belong: "大型庄园", scale: "大型", product: "甘蔗", output: "500担/月" });
+            addEstate("庄园制糖坊", "手工业", pos, { belong: "大型庄园", scale: "小型", product: ["糖", "糖蜜"] });
             addHand("管家", "男性", "40 银币/月");
             break;
         case "pirate":
@@ -1362,7 +1365,7 @@ async function fetchCharEntries() {
     try {
         if(typeof getLorebookEntries === 'function') {
             var entries = await getLorebookEntries(LOREBOOK_NAME, {fields:['uid','comment','content','enabled','order']});
-            return entries.filter(function(e) { return e.order >= 100 && e.order <= 124; });
+            return entries.filter(function(e) { return e.order >= 125 && e.order <= 149; });
         }
     } catch(e) { console.warn("未能读取世界书记录：", e); }
     return [];

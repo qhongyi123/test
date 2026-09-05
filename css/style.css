@@ -1253,8 +1253,15 @@ body {
 /* 棋盘 */
 .fc1is-asset-wrap { display: flex; flex-direction: column; }
 .fc1-board-grid { display: grid; grid-template-columns: repeat(4, 1fr); grid-auto-rows: 52px; gap: 6px; }
-.fc1-board-tile { display: flex; align-items: center; justify-content: center; background: rgba(107,107,107,0.45); border: 1px solid rgba(184,134,11,0.4); border-radius: 6px; color: #2a1608; font-weight: bold; font-size: 0.85rem; cursor: pointer; overflow: hidden; text-align: center; transition: border-color 0.2s, box-shadow 0.2s; line-height: 1.15; padding: 0 4px; }
+.fc1-board-tile { position: relative; display: flex; align-items: center; justify-content: center; background: rgba(107,107,107,0.45); border: 1px solid rgba(184,134,11,0.4); border-radius: 6px; color: #2a1608; font-weight: bold; font-size: 0.85rem; cursor: pointer; overflow: hidden; text-align: center; transition: border-color 0.2s, box-shadow 0.2s; line-height: 1.15; padding: 0 4px; }
 .fc1-board-tile:hover { border-color: #fff; box-shadow: 0 0 8px rgba(212,175,55,0.5); }
+.fc1-board-tile-name { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fc1-board-expand { position: absolute; right: 0; bottom: 0; display: flex; align-items: center; justify-content: center; width: calc((100% - 18px) / 4); height: 52px; padding: 0; color: #f5e6c8; background: rgba(0,0,0,0.4); border: 1px solid rgba(184,134,11,0.5); border-radius: 4px; cursor: pointer; font-family: inherit; line-height: 0; }
+.fc1-board-expand:hover { border-color: #fff; color: #fff; }
+.fc1-board-breadcrumb { display: flex; align-items: center; flex-wrap: wrap; gap: 4px; margin-bottom: 8px; font-size: 0.8rem; color: #5d4037; }
+.fc1-board-crumb { background: none; border: none; padding: 2px 4px; color: #8a6d1a; cursor: pointer; font-size: 0.8rem; font-weight: bold; font-family: inherit; }
+.fc1-board-crumb:hover { color: #5d4037; text-decoration: underline; }
+.fc1-board-crumb-sep { color: rgba(184,134,11,0.5); }
 .tile-vacant { background: rgba(107,107,107,0.45); }
 .tile-staffed { background: rgba(201,162,39,0.5); }
 .tile-neutral { background: rgba(74,111,165,0.45); }
@@ -1389,6 +1396,7 @@ body {
     .fc1-drawer-backdrop { width: 12%; }
     .fc1-drawer-card { width: 88%; max-width: none; }
     .fc1-board-grid { grid-auto-rows: 40px; }
+    .fc1-board-expand { height: 40px; }
     .fc1-modal-box { width: 94vw; max-height: 86vh; }
 }
 
