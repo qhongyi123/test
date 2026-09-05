@@ -1116,7 +1116,7 @@ function fc1isLayoutTiles(items) {
             for (var col = 0; col < 4; col++) {
                 if (fits(row, col, it.w, it.h)) {
                     mark(row, col, it.w, it.h, it.name);
-                    result.push({ name: it.name, w: it.w, h: it.h, row: row, col: col });
+                    result.push({ name: it.name, w: it.w, h: it.h, row: row, col: col, asset: it.asset });
                     placed = true;
                     break;
                 }
