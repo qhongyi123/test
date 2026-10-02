@@ -1500,16 +1500,17 @@ textarea.fc1is-desc { min-height: 108px; width: 100%; }
     line-height: 1.6;
     color: #8a8a8a;
 }
-/* 展开后的选中卡 */
-.fh1-wv-card-open {
-    cursor: default;
-    border-color: var(--color-primary-dark);
-    background: linear-gradient(180deg, rgba(253, 246, 227, 0.72), rgba(253, 246, 227, 0.5));
-    box-shadow: 0 3px 14px rgba(0, 0, 0, 0.08);
-    max-height: 60vh;
-    overflow-y: auto;
+/* 展开态：不再是一张卡——无边框、无底色、无圆角、无内部滚动，内容直接铺在界面里 */
+.fh1-wv-detail {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 0 2px 8px 2px;
 }
-.fh1-wv-card-open:hover { transform: none; }
+.fh1-wv-detail-head {
+    padding-bottom: 10px;
+    margin-bottom: 12px;
+    border-bottom: 1px dashed rgba(184, 134, 11, 0.45);
+}
 .fh1-wv-era-full {
     margin-top: 3px;
     font-size: 0.76rem;
@@ -1583,14 +1584,13 @@ textarea.fc1is-desc { min-height: 108px; width: 100%; }
 .fh1-hint code { color: #8b5a2b; }
 @media (max-width: 768px) {
     .fh1-wv-list, .fh1-empty { max-width: 100%; }
-    .fh1-wv-card-open { max-height: none; }
 }
 
 /* ===== FH1 · 铺满 + 编辑模式（覆盖上面的窄卡样式；隐藏/重选已改为书签） ===== */
 .fh1-wv-wrap { position: relative; width: 100%; }
 .fh1-wv-list { max-width: none; width: 100%; margin: 0; }
 .fh1-wv-card { width: 100%; box-sizing: border-box; padding: 14px 16px; }
-.fh1-wv-card-open { max-height: 58vh; }
+/* 展开态由 .fh1-wv-detail 接管，不再限高（滚动交给 .sub-panels-wrapper） */
 
 /* 新增的两个书签：样式与原有书签一致，六色各不相同
    目录·金 #b8860b ｜ 封面·蓝 #0f4c81 ｜ 翻页·红 #800020 ｜ 角色·绿 #005f40

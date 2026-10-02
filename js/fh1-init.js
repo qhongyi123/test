@@ -286,13 +286,15 @@ window.fh1RenderOpenCard = function () {
     if (bgHTML) bgHTML = '<div class="fh1-wv-seg"><div class="fh1-wv-seg-title">背景设定</div>' + bgHTML + '</div>';
 
     box.innerHTML =
-        '<div class="fh1-wv-card fh1-wv-card-open' + (FH1_EDITING ? ' fh1-editing' : '') + '">' +
-            '<div class="fh1-wv-card-top">' +
-                '<span class="fh1-wv-name">' + fh1Esc(d.name) + '</span>' +
-                '<span class="fh1-wv-era-tag">' + fh1Esc(d.eraShort || '') + '</span>' +
+        '<div class="fh1-wv-detail' + (FH1_EDITING ? ' fh1-editing' : '') + '">' +
+            '<div class="fh1-wv-detail-head">' +
+                '<div class="fh1-wv-card-top">' +
+                    '<span class="fh1-wv-name">' + fh1Esc(d.name) + '</span>' +
+                    '<span class="fh1-wv-era-tag">' + fh1Esc(d.eraShort || '') + '</span>' +
+                '</div>' +
+                '<div class="fh1-wv-era-full">' + fh1Esc(d.era || '') + '</div>' +
+                '<div class="fh1-wv-sum">' + fh1Esc(d.summary || '') + '</div>' +
             '</div>' +
-            '<div class="fh1-wv-era-full">' + fh1Esc(d.era || '') + '</div>' +
-            '<div class="fh1-wv-sum">' + fh1Esc(d.summary || '') + '</div>' +
             '<div class="fh1-wv-body">' + segHTML + bgHTML + '</div>' +
             '<button class="fh1-apply-btn" onclick="fh1EnableAndContinue()">\u25B6 启用并继续</button>' +
         '</div>';
