@@ -277,7 +277,7 @@ window.fh1RenderOpenCard = function () {
         }).join('');
         if (!rows) return '';
         var plus = (FH1_APPENDIX_SEGS.indexOf(s.key) !== -1)
-            ? '<button class="fh1-seg-plus" title="打开附录，从这里挑几条加进来" onclick="fh1OpenAppendix(this.getAttribute(\'data-seg\'))" data-seg="' + fh1Esc(s.key) + '">\uFF0B 附录</button>'
+            ? '<button class="fh1-seg-plus" title="打开附录，从这里挑几条加进来" onclick="fh1OpenAppendix(this.getAttribute(\'data-seg\'))" data-seg="' + fh1Esc(s.key) + '">\uFF0B 添加</button>'
             : '';
         return '<div class="fh1-wv-seg"><div class="fh1-wv-seg-title"><span>' + fh1Esc(s.key) + '</span>' + plus + '</div>' + rows + '</div>';
     }).join('');
@@ -363,8 +363,50 @@ window.fh1OpenAppendix = function (segKey) {
         '</div>';
     });
 
+    // ③ 自定义项：点「＋ 自定义」展开输入行
+    html += '<div class="fh1-ap-custom">' +
+        '<button class="fh1-ap-custom-btn" onclick="fh1ApCustomToggle()">\uFF0B 自定义</button>' +
+        '<div class="fh1-ap-custom-row" id="fh1-ap-custom-row" style="display:none;">' +
+            '<input type="text" id="fh1-ap-custom-input" class="fh1-ap-custom-input" placeholder="输入要添加的内容，回车即可添加">' +
+            '<button class="fh1-ap-custom-add" onclick="fh1ApCustomAdd()">添加</button>' +
+        '</div>' +
+        '<div class="fh1-ap-custom-tip" id="fh1-ap-custom-tip"></div>' +
+    '</div>';
+
     html += '<button class="fh1-ap-add" onclick="fh1AppendixAdd()">点击添加</button>';
     fc1isOpenDrawer('附录 \u00B7 ' + segKey, html);
+};
+
+// 「＋ 自定义」：展开输入行并聚焦
+window.fh1ApCustomToggle = function () {
+    var row = document.getElementById('fh1-ap-custom-row');
+    if (!row) return;
+    var show = (row.style.display === 'none' || !row.style.display);
+    row.style.display = show ? 'flex' : 'none';
+    if (show) {
+        var inp = document.getElementById('fh1-ap-custom-input');
+        if (inp) { try { inp.focus(); } catch (e) {} }
+    }
+};
+
+// 把自定义输入的内容追加进当前世界观的对应段落（草稿），抽屉保持打开可连续添加
+window.fh1ApCustomAdd = function () {
+    if (!FH1_DRAFT || !FH1_AP_SEG) return;
+    var inp = document.getElementById('fh1-ap-custom-input');
+    var tip = document.getElementById('fh1-ap-custom-tip');
+    if (!inp) return;
+    var text = String(inp.value || '').trim();
+    if (!text) { if (tip) tip.textContent = '还没输入内容'; return; }
+
+    var seg = null;
+    (FH1_DRAFT.segments || []).forEach(function (s) { if (s.key === FH1_AP_SEG) seg = s; });
+    if (!seg) { if (tip) tip.textContent = '没找到对应段落：' + FH1_AP_SEG; return; }
+
+    seg.items = (seg.items || []).concat([fh1NormItem(text)]);
+    inp.value = '';
+    if (tip) tip.textContent = '已添加：' + text;
+    fh1RenderOpenCard();          // 背后的展开页同步刷新（抽屉不动）
+    try { inp.focus(); } catch (e) {}
 };
 
 window.fh1ApToggle = function (headEl) {

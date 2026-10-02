@@ -1787,3 +1787,50 @@ textarea.fc1is-desc { min-height: 108px; width: 100%; }
     cursor: pointer;
 }
 .fh1-ap-add:hover { background: linear-gradient(135deg, #d4af37 0%, #a17f00 100%); }
+
+/* 附录里的「＋ 自定义」（同样按深底浅字配色） */
+.fh1-ap-custom { margin-top: 10px; }
+.fh1-ap-custom-btn {
+    display: block;
+    width: 100%;
+    padding: 8px;
+    font-family: inherit;
+    font-size: 0.9rem;
+    font-weight: bold;
+    letter-spacing: 1px;
+    color: var(--color-primary);
+    background: rgba(212, 175, 55, 0.10);
+    border: 1px dashed rgba(212, 175, 55, 0.55);
+    border-radius: 8px;
+    cursor: pointer;
+}
+.fh1-ap-custom-btn:hover { background: rgba(212, 175, 55, 0.22); }
+.fh1-ap-custom-row { display: flex; gap: 6px; margin-top: 8px; }
+.fh1-ap-custom-input {
+    flex: 1;
+    min-width: 0;
+    padding: 7px 9px;
+    font-family: inherit;
+    font-size: 0.86rem;
+    color: var(--color-text-light);
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(212, 175, 55, 0.5);
+    border-radius: 6px;
+    outline: none;
+}
+.fh1-ap-custom-input::placeholder { color: rgba(253, 246, 227, 0.4); }
+.fh1-ap-custom-input:focus { border-color: var(--color-primary); }
+.fh1-ap-custom-add {
+    flex-shrink: 0;
+    padding: 0 14px;
+    font-family: inherit;
+    font-size: 0.86rem;
+    font-weight: bold;
+    color: #fff;
+    background: linear-gradient(135deg, #b8860b 0%, #8b6b00 100%);
+    border: 1px solid var(--color-primary-dark);
+    border-radius: 6px;
+    cursor: pointer;
+}
+.fh1-ap-custom-add:hover { background: linear-gradient(135deg, #d4af37 0%, #a17f00 100%); }
+.fh1-ap-custom-tip { margin-top: 6px; font-size: 0.76rem; color: #b9a98c; min-height: 1em; }
