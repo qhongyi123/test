@@ -8,15 +8,16 @@ var __selectionConfirmed = false;
 var FC1_MUSIC_URL = "";
 
 // 已有内容的「模式+世界观」组合；其余组合在对应模式下列为「敬请期待」
-var AVAILABLE_COMBOS = [["script", "medieval"], ["free", "colony"]];
+var AVAILABLE_COMBOS = [["script", "medieval"], ["free", "colony"], ["free", "hentai"]];
 
 function isWorldviewComingSoon(mode, worldview) {
     if (!mode || !worldview) return true;
     return !AVAILABLE_COMBOS.some(function(c) { return c[0] === mode && c[1] === worldview; });
 }
 
-var WORLDVIEW_IDS = ["medieval", "colony", "western", "xianxia", "magic"];
-var WORLDVIEW_NAMES = ["中世纪童话", "开拓新大陆与殖民贸易", "西部拓荒", "东方修仙", "西方魔法"];
+// 注意：hentai = 本子世界。2026-10-02 由旧「西部拓荒 / western」改名而来，uid 序号 W=2 不变。
+var WORLDVIEW_IDS = ["medieval", "colony", "hentai", "xianxia", "magic"];
+var WORLDVIEW_NAMES = ["中世纪童话", "开拓新大陆与殖民贸易", "本子世界", "东方修仙", "西方魔法"];
 
 // 世界观槽位公式（世界书重排后）
 // 六槽：内化协议 3+W / 世界观设定 52+W / 种族·势力 57+W / 伊菈称呼 62+W / 社会生态 67+W / 文风 72+W

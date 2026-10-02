@@ -993,9 +993,10 @@ function fc1isPlotTreeSize(name, estate, cache, visiting) {
     if (visiting[name]) { cache[name] = fc1isWH((estate[name] || {}).scale); return cache[name]; }
     visiting[name] = true;
     var children = fc1isChildrenOf(name, estate);
+    var selfSize = fc1isWH((estate[name] || {}).scale);
     var size;
     if (!children.length) {
-        size = fc1isWH((estate[name] || {}).scale);
+        size = selfSize;
     } else {
         var items = children.map(function(c) {
             var s = fc1isPlotTreeSize(c, estate, cache, visiting);
@@ -1004,7 +1005,8 @@ function fc1isPlotTreeSize(name, estate, cache, visiting) {
         var layout = fc1isLayoutTiles(items);
         var rows = 0;
         layout.forEach(function(it) { if (it.row + it.h > rows) rows = it.row + it.h; });
-        size = { w: 4, h: rows || 1 };
+        var innerH = rows || 1;
+        size = { w: Math.max(selfSize.w, 4), h: Math.max(selfSize.h, innerH) };
     }
     delete visiting[name];
     cache[name] = size;
