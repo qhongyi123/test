@@ -277,7 +277,7 @@ window.fh1RenderOpenCard = function () {
         }).join('');
         if (!rows) return '';
         var plus = (FH1_APPENDIX_SEGS.indexOf(s.key) !== -1)
-            ? '<button class="fh1-seg-plus" title="打开附录，从这里挑几条加进来" onclick="fh1OpenAppendix(this.getAttribute(\'data-seg\'))" data-seg="' + fh1Esc(s.key) + '">\uFF0B</button>'
+            ? '<button class="fh1-seg-plus" title="打开附录，从这里挑几条加进来" onclick="fh1OpenAppendix(this.getAttribute(\'data-seg\'))" data-seg="' + fh1Esc(s.key) + '">\uFF0B 附录</button>'
             : '';
         return '<div class="fh1-wv-seg"><div class="fh1-wv-seg-title"><span>' + fh1Esc(s.key) + '</span>' + plus + '</div>' + rows + '</div>';
     }).join('');

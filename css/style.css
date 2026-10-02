@@ -1674,44 +1674,55 @@ textarea.fc1is-desc { min-height: 108px; width: 100%; }
     .bookmark-reselect { bottom: 140px; }
 }
 
-/* ===== FH1 · 段落标题行的「＋」与附录抽屉内容 ===== */
+/* ===== FH1 · 段落标题行的「＋ 附录」与附录抽屉内容 ===== */
+/* 标题行：左标题、右胶囊按钮（用 margin-left:auto 顶到最右，避免错位） */
 .fh1-wv-seg-title {
     display: flex;
     align-items: center;
-    justify-content: space-between;
     gap: 8px;
 }
 .fh1-seg-plus {
-    flex-shrink: 0;
-    width: 22px;
-    height: 22px;
-    line-height: 1;
+    margin-left: auto;
+    align-self: center;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 21px;
+    padding: 0 10px;
     font-family: inherit;
-    font-size: 0.95rem;
-    font-weight: bold;
-    color: #8b5a2b;
-    background: rgba(253, 246, 227, 0.6);
-    border: 1px solid rgba(184, 134, 11, 0.55);
-    border-radius: 5px;
+    font-size: 0.72rem;
+    font-weight: normal;
+    line-height: 1;
+    letter-spacing: 0;
+    white-space: nowrap;
+    color: #6b4b1f;
+    background: #fdf6e3;
+    border: 1px solid rgba(184, 134, 11, 0.6);
+    border-radius: 999px;
     cursor: pointer;
-    transition: background 0.2s, color 0.2s;
+    transition: background 0.2s, color 0.2s, border-color 0.2s;
 }
-.fh1-seg-plus:hover { background: var(--color-primary-dark); color: #fff; }
+.fh1-seg-plus:hover {
+    background: var(--color-primary-dark);
+    border-color: var(--color-primary-dark);
+    color: #fff;
+}
 
-/* 附录抽屉（复用 .fc1-drawer 外壳，这里是内容样式） */
+/* 附录抽屉：外壳是深紫底（.fc1-drawer-card），所以文字一律用浅色系，
+   不要用 --color-text-dark（那是给浅色纸面用的深棕，在这里看不清） */
 .fh1-ap-note {
-    font-size: 0.8rem;
-    line-height: 1.65;
-    color: #8a8a8a;
-    padding: 8px 10px;
+    font-size: 0.82rem;
+    line-height: 1.7;
+    color: #e7dcc4;
+    padding: 9px 11px;
     margin-bottom: 10px;
-    border: 1px dashed rgba(184, 134, 11, 0.4);
+    border: 1px dashed rgba(212, 175, 55, 0.4);
     border-radius: 6px;
-    background: rgba(253, 246, 227, 0.35);
+    background: rgba(212, 175, 55, 0.10);
 }
 .fh1-ap-sec {
     margin-bottom: 8px;
-    border: 1px solid rgba(184, 134, 11, 0.3);
+    border: 1px solid rgba(212, 175, 55, 0.35);
     border-radius: 6px;
     overflow: hidden;
 }
@@ -1722,40 +1733,44 @@ textarea.fc1is-desc { min-height: 108px; width: 100%; }
     gap: 8px;
     padding: 8px 10px;
     cursor: pointer;
-    background: rgba(212, 175, 55, 0.12);
+    background: rgba(212, 175, 55, 0.18);
     font-weight: bold;
     font-size: 0.9rem;
-    color: var(--color-primary-dark);
+    color: var(--color-primary);
     letter-spacing: 1px;
 }
-.fh1-ap-sec-head:hover { background: rgba(212, 175, 55, 0.22); }
+.fh1-ap-sec-head:hover { background: rgba(212, 175, 55, 0.30); }
 .fh1-ap-sec-body { display: none; padding: 6px 10px 8px 10px; }
 .fh1-ap-sec.open .fh1-ap-sec-body { display: block; }
 .fh1-ap-item {
     display: flex;
     align-items: flex-start;
     gap: 8px;
-    padding: 6px 0;
+    padding: 7px 0;
     font-size: 0.86rem;
-    line-height: 1.6;
-    color: var(--color-text-dark);
+    line-height: 1.65;
+    color: var(--color-text-light);
     cursor: pointer;
-    border-bottom: 1px dashed rgba(184, 134, 11, 0.18);
+    border-bottom: 1px dashed rgba(212, 175, 55, 0.22);
 }
 .fh1-ap-item:last-child { border-bottom: none; }
-.fh1-ap-item input { flex-shrink: 0; margin-top: 3px; }
-.fh1-ap-item.added { color: #a0a0a0; }
+.fh1-ap-item input {
+    flex-shrink: 0;
+    margin-top: 3px;
+    accent-color: var(--color-primary);
+}
+.fh1-ap-item.added { color: rgba(253, 246, 227, 0.5); }
 .fh1-ap-tag {
     flex-shrink: 0;
     margin-left: auto;
     font-style: normal;
     font-size: 0.7rem;
-    color: #8b5a2b;
-    border: 1px solid rgba(184, 134, 11, 0.4);
+    color: var(--color-primary);
+    border: 1px solid rgba(212, 175, 55, 0.55);
     border-radius: 999px;
     padding: 0 6px;
 }
-.fh1-ap-empty { font-size: 0.8rem; color: #aaa; padding: 4px 0; }
+.fh1-ap-empty { font-size: 0.82rem; color: #b9a98c; padding: 4px 0; }
 .fh1-ap-add {
     display: block;
     width: 100%;
