@@ -394,7 +394,8 @@ window.fh1EnableAndContinue = async function () {
 
 var FH1_BOOKMARK_SEL = '.bookmark-menu, .bookmark-back, .bookmark-next, .bookmark-role, .bookmark-hide, .bookmark-reselect';
 
-function fh1ShowEl(el, on) { if (el) el.style.display = on ? '' : 'none'; }
+// 两个新书签的 CSS 默认是 display:none，显示时必须显式设成 flex
+function fh1ShowEl(el, on) { if (el) el.style.display = on ? 'flex' : 'none'; }
 
 // 只同步「隐藏 / 重选」两个书签的显隐（要求：主选项卡停在 FH1 ＋ 子页是「世界观」＋ 已选中一套）
 window.fh1SyncSideBookmarks = function () {

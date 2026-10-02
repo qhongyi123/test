@@ -1603,7 +1603,7 @@ textarea.fc1is-desc { min-height: 108px; width: 100%; }
     border: 2px solid var(--color-primary);
     border-right: none;
     border-radius: 5px 0 0 5px;
-    display: flex;
+    display: none;              /* 默认隐藏：只有 fh1SyncSideBookmarks() 显式设为 flex 才出现 */
     justify-content: flex-start;
     align-items: center;
     padding-left: 12px;
