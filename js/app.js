@@ -222,6 +222,8 @@ function switchTab(tabId, btnElement) {
         if (returnBtn) returnBtn.style.display = 'none';
     }
     if (tabId === 'FC1') tryAutoPlayMusic();
+    // 切换主选项卡时恢复被「隐藏」的书签（FH1 世界观页）
+    if (typeof fh1RestoreBookmarks === 'function') fh1RestoreBookmarks();
 }
 
 function switchSubTab(btnElement, subTabId) {
@@ -235,6 +237,10 @@ function switchSubTab(btnElement, subTabId) {
     if (subTabId === 'FC1-sub4' && typeof fc1InitStartMode === 'function') { fc1InitStartMode(); }
     if (subTabId === 'FH1-sub1' && typeof fh1InitOverview === 'function') { fh1InitOverview(); }
     if (subTabId === 'FH1-sub2' && typeof fh1InitWorldviewPage === 'function') { fh1InitWorldviewPage(); }
+    if (subTabId.indexOf('FH1-') === 0) {
+        if (typeof fh1RestoreBookmarks === 'function') fh1RestoreBookmarks();
+        if (typeof fh1OnSubTabChange === 'function') fh1OnSubTabChange(subTabId);
+    }
 }
 
 window.goToSubTab = function(tabId, subTabId) {

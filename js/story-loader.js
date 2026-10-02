@@ -141,6 +141,10 @@ async function initDynamicTabs() {
         if (tabId !== 'tab5' && tabId !== 'tab6' && tabId !== 'FC1' && tabId !== 'FH1') {
             headerHTML += '<div class="edit-switch-container"><span>修改模式</span><label class="switch-ui"><input type="checkbox" onchange="toggleEditMode(this, \'' + tabId + '\')"><span class="slider"></span></label></div>';
         }
+        if (tabId === 'FH1') {
+            // 编辑模式开关：只有「世界观」子页显示（由 fh1OnSubTabChange 控制显隐）
+            headerHTML += '<div class="edit-switch-container" id="fh1-edit-switch" style="display:none;"><span>编辑模式</span><label class="switch-ui"><input type="checkbox" id="fh1-edit-chk" onchange="fh1ToggleEditMode(this)"><span class="slider"></span></label></div>';
+        }
         headerHTML += '</div>';
 
         var sd = cfg.data.story;
