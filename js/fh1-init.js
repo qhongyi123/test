@@ -24,6 +24,10 @@ var FH1_WORLDVIEW_UID = 54;    // 本子世界「世界观设定」条目 uid
 var FH1_DRAFT = null;          // 当前世界观的可编辑草稿（含玩家的改与删）
 var FH1_EDITING = false;       // 编辑模式开关状态
 var FH1_SUBTAB = '';           // 当前 FH1 子页 id（如 FH1-sub2）
+var FH1_AP_SEG = '';           // 附录抽屉当前对应的段落（世界风格 / 社会与法治 / 民俗风情）
+
+// 哪几段的标题右侧挂「＋」附录（时代锚点与背景设定不挂）
+var FH1_APPENDIX_SEGS = ['世界风格', '社会与法治', '民俗风情'];
 
 /* ------------------------------ 小工具 ------------------------------ */
 
@@ -272,7 +276,10 @@ window.fh1RenderOpenCard = function () {
             return fh1ItemRow(fh1ItemText(it), 'data-kind="seg" data-si="' + si + '" data-ii="' + ii + '"');
         }).join('');
         if (!rows) return '';
-        return '<div class="fh1-wv-seg"><div class="fh1-wv-seg-title">' + fh1Esc(s.key) + '</div>' + rows + '</div>';
+        var plus = (FH1_APPENDIX_SEGS.indexOf(s.key) !== -1)
+            ? '<button class="fh1-seg-plus" title="打开附录，从这里挑几条加进来" onclick="fh1OpenAppendix(this.getAttribute(\'data-seg\'))" data-seg="' + fh1Esc(s.key) + '">\uFF0B</button>'
+            : '';
+        return '<div class="fh1-wv-seg"><div class="fh1-wv-seg-title"><span>' + fh1Esc(s.key) + '</span>' + plus + '</div>' + rows + '</div>';
     }).join('');
 
     var bgHTML = '';
@@ -298,6 +305,93 @@ window.fh1RenderOpenCard = function () {
             '<div class="fh1-wv-body">' + segHTML + bgHTML + '</div>' +
             '<button class="fh1-apply-btn" onclick="fh1EnableAndContinue()">\u25B6 启用并继续</button>' +
         '</div>';
+};
+
+/* ---------------------- 附录（＋ 抽屉：挑几条加进来） ---------------------- */
+
+// 附录里的一行：勾选框 + 内容；已在正文里的标「已添加」并禁用
+function fh1ApItems(items, hasMap) {
+    if (!items || !items.length) return '<div class="fh1-ap-empty">（这一段还没有附录内容）</div>';
+    return items.map(function (t) {
+        var text = fh1ItemText(t).trim();
+        var added = !!hasMap[text];
+        return '<label class="fh1-ap-item' + (added ? ' added' : '') + '">' +
+            '<input type="checkbox" value="' + fh1Esc(text) + '"' + (added ? ' disabled checked' : '') + '>' +
+            '<span>' + fh1Esc(text) + '</span>' +
+            (added ? '<em class="fh1-ap-tag">已添加</em>' : '') +
+        '</label>';
+    }).join('');
+}
+
+window.fh1OpenAppendix = function (segKey) {
+    if (!segKey) return;
+    if (!FH1_DRAFT || !FH1_PRESETS) { showCustomAlert('世界观数据还没准备好'); return; }
+    if (typeof fc1isOpenDrawer !== 'function') { showCustomAlert('抽屉组件不可用（fc1isOpenDrawer 缺失）'); return; }
+
+    FH1_AP_SEG = segKey;
+
+    // 正文里已有的条目（用于标「已添加」）
+    var hasMap = {};
+    (FH1_DRAFT.segments || []).forEach(function (s) {
+        if (s.key !== segKey) return;
+        (s.items || []).forEach(function (t) { hasMap[fh1ItemText(t).trim()] = true; });
+    });
+
+    var html = '';
+    var note = (FH1_DRAFT.appendix && FH1_DRAFT.appendix.note) || '';
+    if (note) { html += '<div class="fh1-ap-note">' + fh1Esc(note) + '</div>'; }
+
+    // ① 当前世界观的这一段（默认展开）
+    var curItems = (FH1_DRAFT.appendix && FH1_DRAFT.appendix.sections && FH1_DRAFT.appendix.sections[segKey]) || [];
+    html += '<div class="fh1-ap-sec open">' +
+        '<div class="fh1-ap-sec-head" onclick="fh1ApToggle(this)">' +
+            '<span class="fh1-ap-sec-title">' + fh1Esc(segKey) + '</span><span class="fh1-ap-caret">\u25BE</span>' +
+        '</div>' +
+        '<div class="fh1-ap-sec-body">' + fh1ApItems(curItems, hasMap) + '</div>' +
+    '</div>';
+
+    // ② 其他世界观的同段落（默认折叠）
+    (FH1_PRESETS.order || []).forEach(function (n) {
+        if (n === FH1_DRAFT.name) return;
+        var o = fh1GetPreset(n) || {};
+        var items = (o.appendix && o.appendix.sections && o.appendix.sections[segKey]) || [];
+        html += '<div class="fh1-ap-sec">' +
+            '<div class="fh1-ap-sec-head" onclick="fh1ApToggle(this)">' +
+                '<span class="fh1-ap-sec-title">' + fh1Esc(n) + '-' + fh1Esc(segKey) + '</span><span class="fh1-ap-caret">\u25B8</span>' +
+            '</div>' +
+            '<div class="fh1-ap-sec-body">' + fh1ApItems(items, hasMap) + '</div>' +
+        '</div>';
+    });
+
+    html += '<button class="fh1-ap-add" onclick="fh1AppendixAdd()">点击添加</button>';
+    fc1isOpenDrawer('附录 \u00B7 ' + segKey, html);
+};
+
+window.fh1ApToggle = function (headEl) {
+    var sec = headEl && headEl.parentElement;
+    if (!sec) return;
+    var open = sec.classList.toggle('open');
+    var caret = sec.querySelector('.fh1-ap-caret');
+    if (caret) caret.textContent = open ? '\u25BE' : '\u25B8';
+};
+
+// 把勾选的附录项追加进当前世界观的对应段落（草稿），再重画展开页
+window.fh1AppendixAdd = function () {
+    if (!FH1_DRAFT || !FH1_AP_SEG) return;
+    var drawer = document.getElementById('fc1-drawer');
+    var boxes = drawer ? drawer.querySelectorAll('.fh1-ap-item input[type="checkbox"]:checked:not(:disabled)') : [];
+    if (!boxes.length) { showCustomAlert('还没勾选要添加的条目'); return; }
+
+    var seg = null;
+    (FH1_DRAFT.segments || []).forEach(function (s) { if (s.key === FH1_AP_SEG) seg = s; });
+    if (!seg) { showCustomAlert('没找到对应段落：' + FH1_AP_SEG); return; }
+
+    var texts = [];
+    boxes.forEach(function (b) { texts.push(fh1NormItem(b.value)); });
+    seg.items = (seg.items || []).concat(texts);
+
+    if (typeof fc1isCloseDrawer === 'function') { fc1isCloseDrawer(); }
+    fh1RenderOpenCard();
 };
 
 /* ---------------------- 编辑模式（改／删） ---------------------- */
@@ -373,7 +467,7 @@ window.fh1EnableAndContinue = async function () {
     fh1SyncDraftFromDOM();
 
     var name = FH1_DRAFT.name;
-    var agree = await showCustomConfirm('启用「' + name + '」并把当前内容写入世界书（uid ' + FH1_WORLDVIEW_UID + '）吗？\n（已包含你在编辑模式里的改动与删除）');
+    var agree = await showCustomConfirm('启用「' + name + '」并把当前内容写入世界书吗？\n（已包含你在编辑模式里的改动与删除）');
     if (!agree) return;
 
     var text = fh1Assemble(FH1_DRAFT);
