@@ -6,7 +6,7 @@ var STORY_MANIFEST = [
     { id: "SM4", name: "小裁缝一次干七个！", file: "data/stories/小裁缝一次干七个！.json", mode: "script", worldview: "medieval", headers: ["背景信息", "剧情线", "参数调整", "开始剧情"] },
     { id: "SM5", name: "白雪公主（制作中）", file: "data/stories/白雪公主.json", mode: "script", worldview: "medieval", headers: ["背景信息", "剧情线", "参数调整", "开始剧情"] },
     { id: "FC1", name: "自由模式-贩奴贸易",  file: null, mode: "free", worldview: "colony", headers: ["世界观概览", "区域选择", "初始设定", "开始剧情"] },
-    { id: "FH1", name: "自由模式-本子世界",  file: null, mode: "free", worldview: "hentai", headers: ["世界观概览", "开始剧情"] },
+    { id: "FH1", name: "自由模式-本子世界",  file: null, mode: "free", worldview: "hentai", headers: ["世界观概览", "世界观", "特殊规则", "开局选择"] },
     { id: "tab5", name: "自定义开局",        file: null, headers: ["背景信息", "人物信息", "参数调整", "开始剧情"] },
     { id: "tab6", name: "自定义剧本",        file: null, headers: ["背景信息", "剧情线", "人物信息", "参数调整", "开始剧情"] }
 ];
@@ -207,25 +207,6 @@ async function initDynamicTabs() {
                     '<div style="margin-top:12px;"><span class="param-label" style="display:block;">\uD83C\uDF03 周围环境:</span> <div class="editable-field editable-textarea" data-path="variable.user.surroundings">' + mtH(vd.user && vd.user.surroundings || '') + '</div></div>' +
                     '<div style="margin-top:12px;"><span class="param-label" style="display:block;">\uD83E\uDDE0 心理描写:</span> <div class="editable-field editable-textarea" data-path="variable.user.psychological_description">' + mtH(vd.user && vd.user.psychological_description || '') + '</div></div></div>';
             }
-            else if (h === "开始剧情" && tabId === 'FH1') {
-                contentStr = '<div class="fc1-start-wrap">' +
-                    '<div class="fc1-region-title">\u2756 开始剧情 \u2756</div>' +
-                    '<div id="fh1-start-summary"></div>' +
-                    '<div class="fc1-start-mode">' +
-                        '<button id="fh1-start-auto-btn" class="fc1-start-mode-btn" onclick="fh1SelectStartMode(\'auto\')">方式一：自动生成开场白</button>' +
-                        '<button id="fh1-start-manual-btn" class="fc1-start-mode-btn" onclick="fh1SelectStartMode(\'manual\')">方式二：自定义开局</button>' +
-                    '</div>' +
-                    '<div class="fc1-start-panel" id="fh1-start-auto-panel" style="display:none;">' +
-                        '<div class="fc1-start-label">将发送的提示词：</div>' +
-                        '<div class="fc1-start-preview" id="fh1-start-preview"></div>' +
-                    '</div>' +
-                    '<div class="fc1-start-panel" id="fh1-start-manual-panel" style="display:none;">' +
-                        '<div class="fc1-start-label">填写你的开局内容：</div>' +
-                        '<textarea class="fc1-start-manual" id="fh1-start-manual-text" placeholder="在此填写自定义开局，发送时仍会附带变量"></textarea>' +
-                    '</div>' +
-                    '<button class="start-game-btn" onclick="fh1StartGame()">\u2728 开始自由模式 \u2728</button>' +
-                '</div>';
-            }
             else if (h === "开始剧情" && tabId !== 'FC1') {
                 contentStr = '<div class="data-block" style="border-bottom:none;"><div class="data-field-title">\u2728 幕启词刻</div><button class="start-game-btn" data-tid="' + tabId + '" style="margin-top:10px; margin-bottom:10px;">开启童话物语</button><div class="editable-field editable-textarea data-story-text" data-path="story.startContent" style="min-height:100px;">' + mtH(sd.startContent) + '</div></div>';
             }
@@ -251,13 +232,20 @@ async function initDynamicTabs() {
                 contentStr = '<div class="fc1-overview">' +
                     '<div class="fc1-overview-title">\u2727 本子世界 \u2727</div>' +
                     '<div class="fc1-overview-text">' +
-                        '<p>现代都市，科技与社会水准与现世同步。这一世界的规则由你挑选的「世界观」决定：伊菈优待、少子化、大小之争，各自是一套彼此独立的社会设定。</p>' +
-                        '<p>选定一套后点「继续」进入开始剧情。开始时会把这套设定整段写入世界书（uid 54），游玩中还可以在状态栏里调整。</p>' +
+                        '<p>这是一个由各种色情化的世界观与规则组成的世界。你可以随心所欲地游玩——挑一套世界观、改几条规则，世界便随之改变。</p>' +
+                        '<p>开局前先在「世界观」里挑一套；游玩中还可以在状态栏里继续调整。</p>' +
                     '</div>' +
-                    '<div class="fh1-wv-grid" id="fh1-wv-grid"></div>' +
-                    '<div class="fh1-wv-preview" id="fh1-wv-preview"></div>' +
-                    '<button class="fc1-continue-btn" id="fh1-continue-btn" style="display:none;" onclick="goToSubTab(\'FH1\',\'FH1-sub2\')">\u25B6 继 续</button>' +
+                    '<button class="fc1-continue-btn" onclick="goToSubTab(\'FH1\',\'FH1-sub2\')">\u25B6 进入本子世界</button>' +
                 '</div>';
+            }
+            else if (h === "世界观" && tabId === 'FH1') {
+                contentStr = '<div class="fh1-wv-wrap"><div class="fh1-wv-list" id="fh1-wv-list"></div></div>';
+            }
+            else if (h === "特殊规则" && tabId === 'FH1') {
+                contentStr = '<div class="fh1-empty">特殊规则 · 待编写</div>';
+            }
+            else if (h === "开局选择" && tabId === 'FH1') {
+                contentStr = '<div class="fh1-empty">开局选择 · 待编写</div>';
             }
             else if (h === "世界观概览") {
                 contentStr = '<div class="fc1-overview">' +

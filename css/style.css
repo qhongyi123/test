@@ -1451,45 +1451,127 @@ textarea.fc1is-desc { min-height: 108px; width: 100%; }
     .fc1-music-btn { width: 39px; height: 39px; font-size: 1.05rem; }
 }
 
-/* ===== FH1 · 本子世界自由模式（世界观选择卡 + 预览） ===== */
-.fh1-wv-grid {
+/* ===== FH1 · 本子世界自由模式（世界观卡片列表 + 展开） ===== */
+.fh1-wv-wrap { padding: 6px 0 10px 0; }
+.fh1-wv-list {
+    max-width: 520px;
+    margin: 0 auto;
     display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    margin: 14px 0 10px 0;
+    flex-direction: column;
+    gap: 12px;
 }
 .fh1-wv-card {
-    flex: 1 1 30%;
-    min-width: 130px;
-    padding: 10px 12px;
+    padding: 12px 14px;
     border: 1px solid rgba(184, 134, 11, 0.4);
-    border-radius: 8px;
+    border-radius: 10px;
     background: rgba(253, 246, 227, 0.5);
     cursor: pointer;
-    text-align: center;
-    transition: transform 0.15s, border-color 0.2s, background 0.2s;
+    transition: transform 0.15s, border-color 0.2s, background 0.2s, box-shadow 0.2s;
 }
-.fh1-wv-card:hover { transform: translateY(-2px); }
-.fh1-wv-card.active {
+.fh1-wv-card:hover {
+    transform: translateY(-2px);
     border-color: var(--color-primary-dark);
-    background: linear-gradient(135deg, rgba(212, 175, 55, 0.35), rgba(253, 246, 227, 0.75));
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
 }
-.fh1-wv-name { font-weight: bold; color: var(--color-text-dark); font-size: 1.05rem; letter-spacing: 1px; }
-.fh1-wv-era { font-size: 0.78rem; color: #8b5a2b; margin-top: 4px; }
-.fh1-wv-count { font-size: 0.75rem; color: #999; margin-top: 2px; }
-.fh1-wv-preview {
-    margin: 8px 0 4px 0;
-    padding: 10px 12px;
-    border: 1px dashed rgba(184, 134, 11, 0.4);
-    border-radius: 6px;
-    background: rgba(255, 255, 255, 0.35);
+.fh1-wv-card-top {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px;
+}
+.fh1-wv-name {
+    font-weight: bold;
     color: var(--color-text-dark);
-    font-size: 0.88rem;
-    line-height: 1.65;
-    white-space: pre-wrap;
-    word-break: break-word;
-    max-height: 320px;
+    font-size: 1.12rem;
+    letter-spacing: 2px;
+}
+.fh1-wv-era-tag {
+    flex-shrink: 0;
+    font-size: 0.72rem;
+    color: #8b5a2b;
+    border: 1px solid rgba(184, 134, 11, 0.5);
+    border-radius: 999px;
+    padding: 1px 9px;
+    background: rgba(212, 175, 55, 0.12);
+}
+.fh1-wv-sum {
+    margin-top: 6px;
+    font-size: 0.86rem;
+    line-height: 1.6;
+    color: #8a8a8a;
+}
+/* 展开后的选中卡 */
+.fh1-wv-card-open {
+    cursor: default;
+    border-color: var(--color-primary-dark);
+    background: linear-gradient(180deg, rgba(253, 246, 227, 0.72), rgba(253, 246, 227, 0.5));
+    box-shadow: 0 3px 14px rgba(0, 0, 0, 0.08);
+    max-height: 60vh;
     overflow-y: auto;
+}
+.fh1-wv-card-open:hover { transform: none; }
+.fh1-wv-era-full {
+    margin-top: 3px;
+    font-size: 0.76rem;
+    color: #a08a6a;
+    letter-spacing: 0.5px;
+}
+.fh1-wv-body { margin-top: 12px; }
+.fh1-wv-seg { margin-bottom: 14px; }
+.fh1-wv-seg-title {
+    font-size: 0.98rem;
+    font-weight: bold;
+    color: var(--color-primary-dark);
+    letter-spacing: 2px;
+    padding-bottom: 4px;
+    margin-bottom: 7px;
+    border-bottom: 1px dashed rgba(184, 134, 11, 0.45);
+}
+.fh1-wv-sub {
+    font-size: 0.88rem;
+    font-weight: bold;
+    color: #8b5a2b;
+    margin: 9px 0 5px 0;
+    letter-spacing: 1px;
+}
+.fh1-wv-item {
+    font-size: 0.88rem;
+    line-height: 1.75;
+    color: var(--color-text-dark);
+    padding-left: 14px;
+    position: relative;
+    word-break: break-word;
+}
+.fh1-wv-item::before {
+    content: '·';
+    position: absolute;
+    left: 3px;
+    color: var(--color-primary-dark);
+    font-weight: bold;
+}
+.fh1-wv-reselect {
+    display: block;
+    margin: 14px auto 2px auto;
+    padding: 5px 16px;
+    font-family: inherit;
+    font-size: 0.82rem;
+    color: #8b5a2b;
+    background: rgba(253, 246, 227, 0.6);
+    border: 1px dashed rgba(184, 134, 11, 0.55);
+    border-radius: 6px;
+    cursor: pointer;
+}
+.fh1-wv-reselect:hover { border-color: var(--color-primary-dark); color: var(--color-primary-dark); }
+.fh1-empty {
+    max-width: 520px;
+    margin: 30px auto;
+    padding: 26px 14px;
+    text-align: center;
+    font-size: 0.86rem;
+    color: #a0a0a0;
+    border: 1px dashed rgba(184, 134, 11, 0.35);
+    border-radius: 10px;
+    background: rgba(253, 246, 227, 0.28);
 }
 .fh1-hint {
     font-size: 0.8rem;
@@ -1500,6 +1582,6 @@ textarea.fc1is-desc { min-height: 108px; width: 100%; }
 }
 .fh1-hint code { color: #8b5a2b; }
 @media (max-width: 768px) {
-    .fh1-wv-card { flex: 1 1 100%; }
-    .fh1-wv-preview { max-height: 240px; }
+    .fh1-wv-list, .fh1-empty { max-width: 100%; }
+    .fh1-wv-card-open { max-height: none; }
 }

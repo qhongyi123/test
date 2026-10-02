@@ -234,7 +234,7 @@ function switchSubTab(btnElement, subTabId) {
     if (subTabId === 'FC1-sub3' && typeof fc1InitRender === 'function') { fc1InitRender(); }
     if (subTabId === 'FC1-sub4' && typeof fc1InitStartMode === 'function') { fc1InitStartMode(); }
     if (subTabId === 'FH1-sub1' && typeof fh1InitOverview === 'function') { fh1InitOverview(); }
-    if (subTabId === 'FH1-sub2' && typeof fh1InitStartPanel === 'function') { fh1InitStartPanel(); }
+    if (subTabId === 'FH1-sub2' && typeof fh1InitWorldviewPage === 'function') { fh1InitWorldviewPage(); }
 }
 
 window.goToSubTab = function(tabId, subTabId) {

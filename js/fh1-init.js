@@ -5,9 +5,11 @@
  *   1. index.html 引入顺序：core → presets → app → fc1-init → fh1-init → story-loader
  *   2. 预置数据：data/fh1-presets/worldviews.json
  *      （由 工具\生成世界观预置.ps1 从 状态栏\content\本子世界\世界观\ 生成，勿手改）
- *   3. 界面骨架由 story-loader.js 按 STORY_MANIFEST 的 headers 生成：
- *        FH1-sub1「世界观概览」 → 本文件 fh1InitOverview()
- *        FH1-sub2「开始剧情」   → 本文件 fh1InitStartPanel()
+ *   3. 界面骨架由 story-loader.js 按 STORY_MANIFEST 的 headers 生成（四页）：
+ *        FH1-sub1「世界观概览」 → 介绍 + 「进入本子世界」（HTML 在 story-loader）
+ *        FH1-sub2「世界观」     → fh1InitWorldviewPage()：卡片列表 → 点击后展开
+ *        FH1-sub3「特殊规则」   → 占位（待编写）
+ *        FH1-sub4「开局选择」   → 占位（待编写；开始逻辑 fh1StartGame() 已就绪，接上按钮即可）
  *
  * 点「开始自由模式」时依次做三件事
  *   ① 把选中世界观的整套文本写入世界书 uid 54（<本子>…</本子> + <背景设定>…</背景设定>）
@@ -139,53 +141,94 @@ window.loadFh1Presets = async function () {
 
 /* --------------------- sub1：世界观概览 --------------------- */
 
+// 概览页＝世界介绍 + 「进入本子世界」按钮（HTML 在 story-loader 里），这里只重置选择状态
 window.fh1InitOverview = function () {
-    var grid = document.getElementById('fh1-wv-grid');
-    if (!grid) return;
+    FH1_SELECTED = '';
+    FH1_START_MODE = '';
+};
+
+// 世界观页：一列卡片（名称 + 现代/古代 + 一句话介绍）；点一张 → 其余消失、选中卡完全展开
+window.fh1InitWorldviewPage = function () {
+    var box = document.getElementById('fh1-wv-list');
+    if (!box) return;
 
     var render = function () {
         if (!FH1_PRESETS || !FH1_PRESETS.order || !FH1_PRESETS.order.length) {
-            grid.innerHTML = '<div class="fh1-hint">世界观数据加载失败：请确认 <code>data/fh1-presets/worldviews.json</code> 可访问（改完记得 Ctrl+Shift+R 强刷）</div>';
+            box.innerHTML = '<div class="fh1-hint">世界观数据加载失败：请确认 <code>data/fh1-presets/worldviews.json</code> 可访问（改完记得 Ctrl+Shift+R 强刷）</div>';
             return;
         }
-        grid.innerHTML = FH1_PRESETS.order.map(function (n) {
+        if (FH1_SELECTED) { fh1SelectWorldview(FH1_SELECTED); return; }
+        box.innerHTML = FH1_PRESETS.order.map(function (n) {
             var p = fh1GetPreset(n) || {};
-            return '<div class="fh1-wv-card' + (n === FH1_SELECTED ? ' active' : '') + '" data-wv="' + fh1Esc(n) + '" onclick="fh1SelectWorldview(this.getAttribute(\'data-wv\'))">' +
-                '<div class="fh1-wv-name">' + fh1Esc(n) + '</div>' +
-                '<div class="fh1-wv-era">' + fh1Esc(p.era || '') + '</div>' +
-                '<div class="fh1-wv-count">' + fh1CountItems(p) + ' 条设定</div>' +
-                '</div>';
+            return '<div class="fh1-wv-card" data-wv="' + fh1Esc(n) + '" onclick="fh1SelectWorldview(this.getAttribute(\'data-wv\'))">' +
+                '<div class="fh1-wv-card-top">' +
+                    '<span class="fh1-wv-name">' + fh1Esc(n) + '</span>' +
+                    '<span class="fh1-wv-era-tag">' + fh1Esc(p.eraShort || '') + '</span>' +
+                '</div>' +
+                '<div class="fh1-wv-sum">' + fh1Esc(p.summary || '') + '</div>' +
+            '</div>';
         }).join('');
-        if (FH1_SELECTED) fh1SelectWorldview(FH1_SELECTED);
     };
 
     if (FH1_PRESETS) {
         render();
     } else {
-        grid.innerHTML = '<div class="fh1-hint">正在加载世界观…</div>';
+        box.innerHTML = '<div class="fh1-hint">正在加载世界观…</div>';
         loadFh1Presets().then(render);
     }
 };
 
+// 条目文本去掉开头的「- 」
+function fh1ItemText(line) {
+    return String(line === undefined || line === null ? '' : line).replace(/^-\s*/, '');
+}
+
+// 选中世界观：只留这张卡，并完全展开（标题分层：段落 → 小标题 → 条目）
 window.fh1SelectWorldview = function (name) {
-    if (!name) return;
+    var p = fh1GetPreset(name);
+    if (!p) return;
     FH1_SELECTED = name;
 
-    var grid = document.getElementById('fh1-wv-grid');
-    if (grid) {
-        grid.querySelectorAll('.fh1-wv-card').forEach(function (el) {
-            el.classList.toggle('active', el.getAttribute('data-wv') === name);
-        });
+    var box = document.getElementById('fh1-wv-list');
+    if (!box) return;
+
+    var segHTML = (p.segments || []).map(function (s) {
+        var items = (s.items || []).map(function (it) {
+            return '<div class="fh1-wv-item">' + fh1Esc(fh1ItemText(it)) + '</div>';
+        }).join('');
+        if (!items) return '';
+        return '<div class="fh1-wv-seg"><div class="fh1-wv-seg-title">' + fh1Esc(s.key) + '</div>' + items + '</div>';
+    }).join('');
+
+    var bgHTML = (p.background || []).map(function (g) {
+        var items = (g.items || []).map(function (it) {
+            return '<div class="fh1-wv-item">' + fh1Esc(fh1ItemText(it)) + '</div>';
+        }).join('');
+        return '<div class="fh1-wv-sub">' + fh1Esc(g.title) + '</div>' + items;
+    }).join('');
+    if (bgHTML) {
+        bgHTML = '<div class="fh1-wv-seg"><div class="fh1-wv-seg-title">背景设定</div>' + bgHTML + '</div>';
     }
 
-    var p = fh1GetPreset(name);
-    var pre = document.getElementById('fh1-wv-preview');
-    if (pre) {
-        pre.textContent = p ? p.assembled : '（未找到「' + name + '」的数据）';
-        pre.scrollTop = 0;
-    }
-    var btn = document.getElementById('fh1-continue-btn');
-    if (btn) btn.style.display = p ? '' : 'none';
+    box.innerHTML =
+        '<div class="fh1-wv-card fh1-wv-card-open">' +
+            '<div class="fh1-wv-card-top">' +
+                '<span class="fh1-wv-name">' + fh1Esc(p.name) + '</span>' +
+                '<span class="fh1-wv-era-tag">' + fh1Esc(p.eraShort || '') + '</span>' +
+            '</div>' +
+            '<div class="fh1-wv-era-full">' + fh1Esc(p.era || '') + '</div>' +
+            '<div class="fh1-wv-sum">' + fh1Esc(p.summary || '') + '</div>' +
+            '<div class="fh1-wv-body">' + segHTML + bgHTML + '</div>' +
+            '<button class="fh1-wv-reselect" onclick="fh1ReselectWorldview()">↺ 换一套世界观</button>' +
+        '</div>';
+};
+
+// 换一套：清掉选择，回到卡片列表
+window.fh1ReselectWorldview = function () {
+    FH1_SELECTED = '';
+    var box = document.getElementById('fh1-wv-list');
+    if (box) box.innerHTML = '';
+    fh1InitWorldviewPage();
 };
 
 /* --------------------- sub2：开始剧情 --------------------- */
