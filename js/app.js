@@ -107,7 +107,7 @@ window.selectWorldview = function(worldviewId) {
     renderTocModeWorldview();
     refreshTocGallery();
     if (typeof refreshConditionalStoryTabs === 'function') refreshConditionalStoryTabs();
-    applyWorldviewLorebook(worldviewId, __currentMode);
+    syncWorldviewLorebook(true);   // 点选世界观后立刻按新组合开关条目
 };
 
 window.selectMode = function(mode) {
@@ -117,11 +117,36 @@ window.selectMode = function(mode) {
     renderTocModeWorldview();
     refreshTocGallery();
     if (typeof refreshConditionalStoryTabs === 'function') refreshConditionalStoryTabs();
-    applyWorldviewLorebook(__currentWorldviewId, mode);
+    syncWorldviewLorebook(true);   // 点选模式后立刻按新组合开关条目
 };
 
 window.__updateSelectionConfirmed = function() {
     __selectionConfirmed = (__currentMode !== "" && __currentWorldviewId !== "");
+};
+
+// ===== 世界书条目与当前「模式 + 世界观」保持同步 =====
+// 原先只在点选模式/世界观那一刻开关条目；但玩家可能直接翻页、或从目录点卡片进入某个界面，
+// 那之后条目就跟当前选择脱节了。这里统一提供 syncWorldviewLorebook()：
+//   · 切页（翻页 / 目录卡片 / 角色 / 返回）时调用（带缓存，不重复写）
+//   · 点选模式或世界观时用 force=true 强制同步一次
+var __appliedCombo = "";              // 已应用过的组合缓存，形如 "free|hentai"
+var __lorebookChain = Promise.resolve();  // 串行队列：保证多次切换按顺序写，不交错
+
+window.syncWorldviewLorebook = function(force) {
+    if (!__currentMode || !__currentWorldviewId) return __lorebookChain;   // 还没选完，不动条目
+    var combo = __currentMode + '|' + __currentWorldviewId;
+    if (!force && combo === __appliedCombo) return __lorebookChain;        // 组合没变，跳过重复写
+    __appliedCombo = combo;
+
+    // 取值当下立刻定格，入队后即使玩家又改了选择也不会串味
+    var mode = __currentMode, wv = __currentWorldviewId;
+    __lorebookChain = __lorebookChain.then(function() {
+        if (typeof applyWorldviewLorebook === 'function') return applyWorldviewLorebook(wv, mode);
+    }).catch(function(e) {
+        console.warn('同步世界书条目失败：', e);
+        __appliedCombo = "";                                            // 失败就当没应用过，下次切页再试
+    });
+    return __lorebookChain;
 };
 
 window.refreshTocGallery = function() {
@@ -213,6 +238,8 @@ function goBackCover() {
 }
 
 function switchTab(tabId, btnElement) {
+    // 每次切页（翻页 / 目录卡片 / 角色 / 返回）都按当前「模式 + 世界观」对一次世界书条目
+    if (typeof syncWorldviewLorebook === 'function') syncWorldviewLorebook();
     // 空值保护：动态界面（故事/FC1/FH1/tab5/tab6）要等资源加载完才创建，
     // 但故事选项卡按钮与目录卡片在那之前就已经可点。原先直接操作 null 会抛错，
     // 而那时已经把全部面板的 active 摘掉了 → 内容区一片空白（表现为"卡死"）。
