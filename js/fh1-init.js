@@ -21,6 +21,7 @@ var FH1_PRESETS = null;        // worldviews.json 内容
 var FH1_SELECTED = '';         // 当前选中的世界观名
 var FH1_START_MODE = '';       // '' | 'auto' | 'manual'（开局页将来用）
 var FH1_WORLDVIEW_UID = 54;    // 本子世界「世界观设定」条目 uid
+var FH1_ECOLOGY_UID = 69;      // 本子世界「社会生态」条目 uid（与世界观同一次写入）
 var FH1_DRAFT = null;          // 当前世界观的可编辑草稿（含玩家的改与删）
 var FH1_EDITING = false;       // 编辑模式开关状态
 var FH1_SUBTAB = '';           // 当前 FH1 子页 id（如 FH1-sub2）
@@ -186,6 +187,24 @@ function fh1Assemble(d) {
     return L.join('\n');
 }
 
+/* -------------------- 拼装：草稿 → uid 69 正文（社会生态） -------------------- */
+/* 与 工具\生成世界观预置.ps1 的组装规则逐字一致：
+   <社会生态> ＋ 每个块前一个空行 ＋ 【块标题】 ＋ 条目 ＋ </社会生态>
+   没有任何块时返回空串——表示该世界观没有生态，写入时应清空 uid 69。 */
+function fh1EcologyAssemble(d) {
+    var blocks = (d && d.ecology && d.ecology.blocks) ? d.ecology.blocks : [];
+    if (!blocks.length) return '';
+    var L = ['<社会生态>'];
+    blocks.forEach(function (b) {
+        var items = (b.items || []).filter(function (t) { return !fh1IsBlankItem(t); });
+        L.push('');
+        L.push('【' + b.label + '】');
+        items.forEach(function (t) { L.push(fh1NormItem(t)); });
+    });
+    L.push('</社会生态>');
+    return L.join('\n');
+}
+
 /* ------------------------- 预置数据加载 ------------------------- */
 
 window.loadFh1Presets = async function () {
@@ -293,6 +312,19 @@ window.fh1RenderOpenCard = function () {
     });
     if (bgHTML) bgHTML = '<div class="fh1-wv-seg"><div class="fh1-wv-seg-title">背景设定</div>' + bgHTML + '</div>';
 
+    // 社会生态（对应世界书 uid 69）
+    var ecoHTML = '';
+    if (d.ecology && d.ecology.blocks) {
+        d.ecology.blocks.forEach(function (b, bi) {
+            var rows = (b.items || []).map(function (it, ii) {
+                return fh1ItemRow(fh1ItemText(it), 'data-kind="eco" data-bi="' + bi + '" data-ii="' + ii + '"');
+            }).join('');
+            if (!rows) return;
+            ecoHTML += '<div class="fh1-wv-sub">' + fh1Esc(b.label) + '</div>' + rows;
+        });
+    }
+    if (ecoHTML) ecoHTML = '<div class="fh1-wv-seg"><div class="fh1-wv-seg-title"><span>社会生态</span></div>' + ecoHTML + '</div>';
+
     box.innerHTML =
         '<div class="fh1-wv-detail' + (FH1_EDITING ? ' fh1-editing' : '') + '">' +
             '<div class="fh1-wv-detail-head">' +
@@ -303,7 +335,7 @@ window.fh1RenderOpenCard = function () {
                 '<div class="fh1-wv-era-full">' + fh1Esc(d.era || '') + '</div>' +
                 '<div class="fh1-wv-sum">' + fh1Esc(d.summary || '') + '</div>' +
             '</div>' +
-            '<div class="fh1-wv-body">' + segHTML + bgHTML + '</div>' +
+            '<div class="fh1-wv-body">' + segHTML + bgHTML + ecoHTML + '</div>' +
             '<button class="fh1-apply-btn" onclick="fh1EnableAndContinue()">\u25B6 启用并继续</button>' +
         '</div>';
 };
@@ -451,14 +483,19 @@ window.fh1SyncDraftFromDOM = function () {
     if (!FH1_DRAFT) return;
     var box = document.getElementById('fh1-wv-list');
     if (!box) return;
-    var segMap = {}, bgMap = {};
+    var segMap = {}, bgMap = {}, ecoMap = {};
     box.querySelectorAll('.fh1-wv-item-row').forEach(function (row) {
         var txt = row.querySelector('.fh1-wv-item');
         var text = txt ? fh1NormItem(txt.textContent) : '- ';
-        if (row.getAttribute('data-kind') === 'seg') {
+        var kind = row.getAttribute('data-kind');
+        if (kind === 'seg') {
             var si = parseInt(row.getAttribute('data-si'), 10);
             if (!segMap[si]) segMap[si] = [];
             segMap[si].push(text);
+        } else if (kind === 'eco') {
+            var bi = parseInt(row.getAttribute('data-bi'), 10);
+            if (!ecoMap[bi]) ecoMap[bi] = [];
+            ecoMap[bi].push(text);
         } else {
             var gi = parseInt(row.getAttribute('data-gi'), 10);
             if (!bgMap[gi]) bgMap[gi] = [];
@@ -472,6 +509,9 @@ window.fh1SyncDraftFromDOM = function () {
     Object.keys(bgMap).forEach(function (k) {
         if (FH1_DRAFT.background[k]) FH1_DRAFT.background[k].items = bgMap[k];
     });
+    Object.keys(ecoMap).forEach(function (k) {
+        if (FH1_DRAFT.ecology && FH1_DRAFT.ecology.blocks[k]) FH1_DRAFT.ecology.blocks[k].items = ecoMap[k];
+    });
 };
 
 // 删去一项（先同步其余编辑，再按索引删）
@@ -484,6 +524,9 @@ window.fh1DeleteItem = function (btn) {
     if (kind === 'seg') {
         var si = parseInt(row.getAttribute('data-si'), 10);
         if (FH1_DRAFT.segments[si]) FH1_DRAFT.segments[si].items.splice(ii, 1);
+    } else if (kind === 'eco') {
+        var bi = parseInt(row.getAttribute('data-bi'), 10);
+        if (FH1_DRAFT.ecology && FH1_DRAFT.ecology.blocks[bi]) FH1_DRAFT.ecology.blocks[bi].items.splice(ii, 1);
     } else {
         var gi = parseInt(row.getAttribute('data-gi'), 10);
         if (FH1_DRAFT.background[gi]) FH1_DRAFT.background[gi].items.splice(ii, 1);
@@ -510,7 +553,7 @@ window.fh1EnableAndContinue = async function () {
     fh1SyncDraftFromDOM();
 
     var name = FH1_DRAFT.name;
-    var agree = await showCustomConfirm('启用「' + name + '」并把当前内容写入世界书吗？\n（已包含你在编辑模式里的改动与删除）');
+    var agree = await showCustomConfirm('启用「' + name + '」并把当前内容写入世界书吗？\n（世界观与社会生态都会写入，含你在编辑模式里的改动与删除）');
     if (!agree) return;
 
     var text = fh1Assemble(FH1_DRAFT);
@@ -519,7 +562,15 @@ window.fh1EnableAndContinue = async function () {
         showCustomAlert('写入世界书失败：' + res.msg + '\n（请确认本环境加载了 Tavern Helper 或兼容脚本）');
         return;
     }
-    console.log('FH1: 世界观已写入 uid ' + FH1_WORLDVIEW_UID + '（' + res.msg + '，' + text.length + ' 字）');
+    // 社会生态写进 uid 69；这套世界观没有生态时写空串，清掉上一套留下的生态
+    var ecoText = fh1EcologyAssemble(FH1_DRAFT);
+    var resEco = await fh1WriteWorldbookEntry(FH1_ECOLOGY_UID, ecoText);
+    if (!resEco.ok) {
+        showCustomAlert('世界观已写入，但社会生态写入失败：' + resEco.msg + '\n（可再点一次「启用并继续」重试）');
+        return;
+    }
+    console.log('FH1: 已写入 uid ' + FH1_WORLDVIEW_UID + '（' + text.length + ' 字）与 uid ' + FH1_ECOLOGY_UID +
+        '（' + ecoText.length + ' 字，' + (FH1_DRAFT.ecology && FH1_DRAFT.ecology.blocks ? FH1_DRAFT.ecology.blocks.length : 0) + ' 块）｜' + res.msg);
 
     // 切换选项卡 → 隐藏的书签由 switchSubTab 恢复；标记「已启用过世界观」
     FH1_APPLIED = true;
