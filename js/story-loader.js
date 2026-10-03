@@ -246,7 +246,12 @@ async function initDynamicTabs() {
                 contentStr = '<div class="fh1-wv-wrap"><div class="fh1-wv-list" id="fh1-wv-list"></div></div>';
             }
             else if (h === "特殊规则" && tabId === 'FH1') {
-                contentStr = '<div class="fh1-empty">特殊规则 · 待编写</div>';
+                contentStr = '<div class="fh1-rules-wrap">' +
+                    '<div class="fh1-rules-gate" id="fh1-rules-gate"></div>' +
+                    '<div class="fh1-rules-body" id="fh1-rules-body" style="display:none;">' +
+                        '<div class="fh1-empty">特殊规则 · 待编写</div>' +
+                    '</div>' +
+                '</div>';
             }
             else if (h === "开局选择" && tabId === 'FH1') {
                 contentStr = '<div class="fh1-empty">开局选择 · 待编写</div>';

@@ -25,6 +25,7 @@ var FH1_DRAFT = null;          // 当前世界观的可编辑草稿（含玩家�
 var FH1_EDITING = false;       // 编辑模式开关状态
 var FH1_SUBTAB = '';           // 当前 FH1 子页 id（如 FH1-sub2）
 var FH1_AP_SEG = '';           // 附录抽屉当前对应的段落（世界风格 / 社会与法治 / 民俗风情）
+var FH1_APPLIED = false;       // 是否已启用过世界观：启用过后再进「特殊规则」就不再叫玩家回去选
 
 // 哪几段的标题右侧挂「＋」附录（时代锚点与背景设定不挂）
 var FH1_APPENDIX_SEGS = ['世界风格', '社会与法治', '民俗风情'];
@@ -520,7 +521,8 @@ window.fh1EnableAndContinue = async function () {
     }
     console.log('FH1: 世界观已写入 uid ' + FH1_WORLDVIEW_UID + '（' + res.msg + '，' + text.length + ' 字）');
 
-    // 切换选项卡 → 隐藏的书签由 switchSubTab 恢复
+    // 切换选项卡 → 隐藏的书签由 switchSubTab 恢复；标记「已启用过世界观」
+    FH1_APPLIED = true;
     fh1RestoreBookmarks();
     if (typeof goToSubTab === 'function') { goToSubTab('FH1', 'FH1-sub3'); }
 };
@@ -566,7 +568,58 @@ window.fh1OnSubTabChange = function (subTabId) {
         if (chk) chk.checked = false;
         fh1SyncDraftFromDOM();
     }
+    // 「特殊规则」页：只要还没启用过世界观，就提示先去选；启用过就直接给「跳过 / 选择」
+    if (subTabId === 'FH1-sub3') {
+        fh1RenderRulesGate();
+    }
     fh1SyncSideBookmarks();
+};
+
+/* ---------------------- 特殊规则页：两种进入方式的提示 ---------------------- */
+
+window.fh1RenderRulesGate = function () {
+    var gate = document.getElementById('fh1-rules-gate');
+    var body = document.getElementById('fh1-rules-body');
+    if (!gate) return;
+
+    // 只要启用过一次世界观，就不再要求玩家回去选
+    if (FH1_APPLIED) {
+        // ① 已启用过世界观：推荐跳过（之后可用状态栏加规则）
+        gate.innerHTML =
+            '<div class="fh1-gate-note">刚开始游玩时，为保证游玩体验，<b>推荐跳过特殊规则的选择</b>；' +
+            '之后也可以在<b>状态栏</b>里随时增加特殊规则。</div>' +
+            '<div class="fh1-gate-btns">' +
+                '<button class="fh1-gate-btn primary" onclick="fh1RulesSkip()">确认跳过</button>' +
+                '<button class="fh1-gate-btn" onclick="fh1RulesChoose()">选择特殊规则</button>' +
+            '</div>';
+    } else {
+        // ② 还没启用过任何世界观：先回去选
+        gate.innerHTML =
+            '<div class="fh1-gate-note">请先到「<b>世界观</b>」页挑选一套世界观；选好后点该页卡片下方的' +
+            '「<b>启用并继续</b>」，再回到这里选择特殊规则。</div>' +
+            '<div class="fh1-gate-btns">' +
+                '<button class="fh1-gate-btn primary" onclick="fh1GotoWorldview()">前往世界观</button>' +
+            '</div>';
+    }
+    gate.style.display = '';
+    if (body) body.style.display = 'none';
+};
+
+// 确认跳过 → 进入下一站「开局选择」
+window.fh1RulesSkip = function () {
+    if (typeof goToSubTab === 'function') { goToSubTab('FH1', 'FH1-sub4'); }
+};
+
+// 选择特殊规则 → 收起提示，露出规则区（规则本体待编写）
+window.fh1RulesChoose = function () {
+    var gate = document.getElementById('fh1-rules-gate');
+    var body = document.getElementById('fh1-rules-body');
+    if (gate) gate.style.display = 'none';
+    if (body) body.style.display = '';
+};
+
+window.fh1GotoWorldview = function () {
+    if (typeof goToSubTab === 'function') { goToSubTab('FH1', 'FH1-sub2'); }
 };
 
 /* --------------------- 开局（开局选择页将来用） --------------------- */
