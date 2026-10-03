@@ -19,7 +19,6 @@
 
 var FH1_PRESETS = null;        // worldviews.json 内容
 var FH1_SELECTED = '';         // 当前选中的世界观名
-var FH1_START_MODE = '';       // '' | 'auto' | 'manual'（开局页将来用）
 var FH1_WORLDVIEW_UID = 54;    // 本子世界「世界观设定」条目 uid
 var FH1_ECOLOGY_UID = 69;      // 本子世界「社会生态」条目 uid（与世界观同一次写入）
 var FH1_DRAFT = null;          // 当前世界观的可编辑草稿（含玩家的改与删）
@@ -30,6 +29,9 @@ var FH1_APPLIED = false;       // 是否已启用过世界观：启用过后再�
 var FH1_ECO_BLOCK = 0;         // 社会生态当前显示第几块（选中谁显示谁）
 var FH1_BG_GROUP = 0;          // 背景设定当前显示第几个小标题（选中谁显示谁）
 var FH1_FOCUS_LAST = '';       // 形如 "bg:2"：重画后把光标停在该组最后一条上
+var FH1_SUB_SCROLL = { bg: 0, eco: 0 };   // 小标题带的横向位置：重画后要还原，否则每次都跳回开头
+var FH1_START_OPEN = '';       // 开局页当前展开：'' | 'custom' | 'preset:<序号>'
+var FH1_START_CUSTOM_TEXT = '';// 自定义开局正文（重画不丢）
 
 // 平铺段落：条目直接挂在标题下，标题右侧挂「＋ 添加」
 var FH1_FLAT_SEGS = ['时代锚点', '世界风格', '社会与法治', '民俗风情'];
@@ -98,7 +100,7 @@ function fh1SubStrip(kind, titles, sel) {
         return '<span class="fh1-sub-chip' + (i === sel ? ' active' : '') + '" ' +
             'onclick="fh1SelectSub(\'' + kind + '\',' + i + ')">' + fh1Esc(t) + '</span>';
     }).join('');
-    return '<div class="fh1-sub-strip">' +
+    return '<div class="fh1-sub-strip" data-kind="' + kind + '">' +
         '<span class="fh1-sub-arrow" onclick="fh1SubScroll(this,-1)" title="向左看">\u2039</span>' +
         '<div class="fh1-sub-track">' + chips + '</div>' +
         '<span class="fh1-sub-arrow" onclick="fh1SubScroll(this,1)" title="向右看">\u203A</span>' +
@@ -140,8 +142,7 @@ window.fh1DeleteGroup = async function (kind, idx) {
 };
 
 // 标题带支持鼠标拖动滑动（拖动后不触发 chip 的选中）
-function fh1BindSubTracks(box) {
-    box.querySelectorAll('.fh1-sub-track').forEach(function (track) {
+function fh1BindSubTracks(box) {    box.querySelectorAll('.fh1-sub-track').forEach(function (track) {
         if (track.getAttribute('data-dragbound')) return;
         track.setAttribute('data-dragbound', '1');
         var down = false, startX = 0, startLeft = 0, moved = false;
@@ -161,6 +162,30 @@ function fh1BindSubTracks(box) {
         track.addEventListener('click', function (e) {
             if (moved) { e.stopPropagation(); e.preventDefault(); moved = false; }
         }, true);
+    });
+}
+
+// 重画前：记住每条标题带滚到哪儿了
+function fh1CaptureSubScroll(box) {
+    box.querySelectorAll('.fh1-sub-strip').forEach(function (strip) {
+        var k = strip.getAttribute('data-kind');
+        var track = strip.querySelector('.fh1-sub-track');
+        if (k && track) FH1_SUB_SCROLL[k] = track.scrollLeft;
+    });
+}
+
+// 重画后：还原横向位置；若选中的标题被挤出可视区，把它滚回来（这样连点后面的标题不用每次重新翻）
+function fh1RestoreSubScroll(box) {
+    box.querySelectorAll('.fh1-sub-strip').forEach(function (strip) {
+        var k = strip.getAttribute('data-kind');
+        var track = strip.querySelector('.fh1-sub-track');
+        if (!k || !track) return;
+        if (FH1_SUB_SCROLL[k]) track.scrollLeft = FH1_SUB_SCROLL[k];
+        var chip = track.querySelector('.fh1-sub-chip.active');
+        if (!chip) return;
+        var l = chip.offsetLeft, r = l + chip.offsetWidth;
+        if (l < track.scrollLeft) track.scrollLeft = Math.max(0, l - 6);
+        else if (r > track.scrollLeft + track.clientWidth) track.scrollLeft = r - track.clientWidth + 6;
     });
 }
 
@@ -358,7 +383,6 @@ window.fh1InitOverview = function () {
     FH1_SELECTED = '';
     FH1_DRAFT = null;
     FH1_EDITING = false;
-    FH1_START_MODE = '';
     var chk = document.getElementById('fh1-edit-chk');
     if (chk) chk.checked = false;
 };
@@ -422,6 +446,7 @@ function fh1ItemRow(text, attrs) {
 window.fh1RenderOpenCard = function () {
     var box = document.getElementById('fh1-wv-list');
     if (!box || !FH1_DRAFT) return;
+    fh1CaptureSubScroll(box);   // 记住标题带当前位置，重画后还原（不然每次点标题都跳回开头）
     var d = FH1_DRAFT;
 
     // 平铺段落：标题 + 条目，标题右侧一律挂「＋ 添加」（含「时代锚点」）
@@ -481,6 +506,7 @@ window.fh1RenderOpenCard = function () {
             '<button class="fh1-apply-btn" onclick="fh1EnableAndContinue()">\u25B6 启用并继续</button>' +
         '</div>';
 
+    fh1RestoreSubScroll(box);  // 还原标题带横向位置 + 保证选中项可见
     fh1BindSubTracks(box);     // 小标题带：支持鼠标拖动滑动
     fh1FocusPendingRow(box);   // 刚加了「＋ 子项」的话，把光标停到新行
 };
@@ -952,6 +978,10 @@ window.fh1OnSubTabChange = function (subTabId) {
     if (subTabId === 'FH1-sub3') {
         fh1RenderRulesGate();
     }
+    // 「开局选择」页：渲染开局卡片
+    if (subTabId === 'FH1-sub4' && typeof fh1InitStartPanel === 'function') {
+        fh1InitStartPanel();
+    }
     fh1SyncSideBookmarks();
 };
 
@@ -1002,43 +1032,123 @@ window.fh1GotoWorldview = function () {
     if (typeof goToSubTab === 'function') { goToSubTab('FH1', 'FH1-sub2'); }
 };
 
-/* --------------------- 开局（开局选择页将来用） --------------------- */
+/* --------------------- 开局（「开局选择」页） --------------------- */
+/* 卡片列表：这套世界观的预置开局（内容源 世界观\{名}\开局\*.txt）＋ 一张「自定义开局」
+   点卡片 → 展开：不受卡片限制、完整展示；下方「▶ 开始剧情」直接发送正文＋变量 */
 
 window.fh1InitStartPanel = function () {
-    var sum = document.getElementById('fh1-start-summary');
+    var box = document.getElementById('fh1-start-list');
+    if (!box) return;
+    if (!FH1_PRESETS) {
+        box.innerHTML = '<div class="fh1-hint">正在加载开局数据…</div>';
+        loadFh1Presets().then(function () { fh1RenderStartPanel(); });
+        return;
+    }
+    fh1RenderStartPanel();
+};
+
+function fh1StartOpenings() {
     var p = fh1GetPreset(FH1_SELECTED);
-    if (sum) {
-        if (FH1_SELECTED && p) {
-            sum.innerHTML = '<div class="fh1-hint">已选世界观：<b>' + fh1Esc(FH1_SELECTED) + '</b>｜' +
-                fh1CountItems(p) + ' 条设定</div>';
-        } else {
-            sum.innerHTML = '<div class="fh1-hint">还没有选择世界观：请回到「世界观」页选一套</div>';
+    return (p && p.openings) ? p.openings : [];
+}
+
+window.fh1RenderStartPanel = function () {
+    var box = document.getElementById('fh1-start-list');
+    if (!box) return;
+
+    if (!FH1_SELECTED) {
+        box.innerHTML = '<div class="fh1-start-gate">' +
+            '<div class="fh1-gate-note">请先到「<b>世界观</b>」页挑选一套世界观，选好后点卡片下方的「<b>启用并继续</b>」，' +
+            '再回到这里选开局。</div>' +
+            '<div class="fh1-gate-btns">' +
+                '<button class="fh1-gate-btn primary" onclick="fh1GotoWorldview()">前往世界观</button>' +
+            '</div>' +
+        '</div>';
+        return;
+    }
+
+    var opens = fh1StartOpenings();
+    var html = '';
+
+    if (!FH1_START_OPEN) {
+        // ① 卡片列表
+        html += opens.map(function (o, i) {
+            return '<div class="fh1-st-card" onclick="fh1SelectStart(\'preset\',' + i + ')">' +
+                '<div class="fh1-st-card-top">' +
+                    '<span class="fh1-st-name">' + fh1Esc(o.title || ('开局' + (i + 1))) + '</span>' +
+                    '<span class="fh1-st-tag">' + fh1Esc(FH1_SELECTED) + '</span>' +
+                '</div>' +
+                '<div class="fh1-st-sum">' + fh1Esc(o.summary || '') + '</div>' +
+            '</div>';
+        }).join('');
+        html += '<div class="fh1-st-card fh1-st-card-custom" onclick="fh1SelectStart(\'custom\')">' +
+            '<div class="fh1-st-card-top">' +
+                '<span class="fh1-st-name">自定义开局</span><span class="fh1-st-tag">自己写</span>' +
+            '</div>' +
+            '<div class="fh1-st-sum">自己写一段开局（可含 {{user}} 宏），写完点「开始剧情」发送。</div>' +
+        '</div>';
+        if (!opens.length) {
+            html = '<div class="fh1-hint">「' + fh1Esc(FH1_SELECTED) + '」还没有预置开局，可以直接用下面的「自定义开局」。</div>' + html;
         }
+    } else if (FH1_START_OPEN === 'custom') {
+        // ② 自定义开局：全宽输入区，不受卡片限制
+        html += '<div class="fh1-st-detail">' +
+            '<div class="fh1-st-detail-head">' +
+                '<span class="fh1-st-name">自定义开局</span>' +
+                '<button class="fh1-st-back" onclick="fh1BackStartList()">\u2039 返回列表</button>' +
+            '</div>' +
+            '<textarea id="fh1-st-custom" class="fh1-st-custom" oninput="FH1_START_CUSTOM_TEXT=this.value" ' +
+                'placeholder="在这里写你的开局（可含 {{user}} 宏），写完点下方「开始剧情」。">' + fh1Esc(FH1_START_CUSTOM_TEXT) + '</textarea>' +
+            '<button class="fh1-apply-btn" onclick="fh1StartStory()">\u25B6 开始剧情</button>' +
+        '</div>';
+    } else {
+        // ③ 预置开局：全宽展示，不受卡片限制
+        var idx = parseInt(String(FH1_START_OPEN).split(':')[1], 10) || 0;
+        var o = opens[idx];
+        if (!o) { FH1_START_OPEN = ''; fh1RenderStartPanel(); return; }
+        html += '<div class="fh1-st-detail">' +
+            '<div class="fh1-st-detail-head">' +
+                '<span class="fh1-st-name">' + fh1Esc(o.title || '开局') + '</span>' +
+                '<button class="fh1-st-back" onclick="fh1BackStartList()">\u2039 返回列表</button>' +
+            '</div>' +
+            '<div class="fh1-st-text">' + fh1Esc(o.text || '') + '</div>' +
+            '<button class="fh1-apply-btn" onclick="fh1StartStory()">\u25B6 开始剧情</button>' +
+        '</div>';
     }
-    fh1SelectStartMode(FH1_START_MODE || '');
+    box.innerHTML = html;
 };
 
-window.fh1SelectStartMode = function (mode) {
-    FH1_START_MODE = mode || '';
-    var autoBtn = document.getElementById('fh1-start-auto-btn');
-    var manBtn = document.getElementById('fh1-start-manual-btn');
-    var autoPanel = document.getElementById('fh1-start-auto-panel');
-    var manPanel = document.getElementById('fh1-start-manual-panel');
-    if (autoBtn) autoBtn.classList.toggle('active', mode === 'auto');
-    if (manBtn) manBtn.classList.toggle('active', mode === 'manual');
-    if (autoPanel) autoPanel.style.display = (mode === 'auto') ? '' : 'none';
-    if (manPanel) manPanel.style.display = (mode === 'manual') ? '' : 'none';
-    if (mode === 'auto') {
-        var pre = document.getElementById('fh1-start-preview');
-        if (pre) pre.textContent = fh1BuildAutoPrompt(fh1GetPreset(FH1_SELECTED));
-    }
+window.fh1SelectStart = function (kind, i) {
+    FH1_START_OPEN = (kind === 'custom') ? 'custom' : ('preset:' + (i | 0));
+    fh1RenderStartPanel();
 };
 
-window.fh1BuildAutoPrompt = function (preset) {
-    if (!preset) return '';
-    return '【自由模式 · 本子世界｜世界观：' + preset.name + '】\n' +
-        '请依据世界书中的世界观设定开场：先自然交代时间、地点与我的身份，随后进入场景。\n' +
-        '不要把设定条目当成说明文复述出来，让设定随情节自然流露。';
+window.fh1BackStartList = function () {
+    var ta = document.getElementById('fh1-st-custom');
+    if (ta) FH1_START_CUSTOM_TEXT = ta.value;
+    FH1_START_OPEN = '';
+    fh1RenderStartPanel();
+};
+
+// 「开始剧情」：直接把开局正文 ＋ 变量发出去
+window.fh1StartStory = function () {
+    if (!FH1_SELECTED) { showCustomAlert('请先到「世界观」页选一套世界观并点「启用并继续」'); return; }
+
+    var text = '';
+    if (FH1_START_OPEN === 'custom') {
+        var ta = document.getElementById('fh1-st-custom');
+        text = ta ? String(ta.value || '') : String(FH1_START_CUSTOM_TEXT || '');
+    } else {
+        var idx = parseInt(String(FH1_START_OPEN).split(':')[1], 10) || 0;
+        var o = fh1StartOpenings()[idx];
+        text = o ? String(o.text || '') : '';
+    }
+    text = text.trim();
+    if (!text) { showCustomAlert('开局内容是空的：先选一个开局，或把自定义内容写上'); return; }
+    if (typeof triggerSTSlashSend !== 'function') { showCustomAlert('发送接口不可用（triggerSTSlashSend 缺失）'); return; }
+
+    triggerSTSlashSend(text, fh1CollectVars());
+    console.log('FH1: 已发送开局（' + FH1_SELECTED + '｜' + (FH1_START_OPEN === 'custom' ? '自定义' : '预置') + '｜' + text.length + ' 字）');
 };
 
 window.fh1CollectVars = function () {
@@ -1057,25 +1167,4 @@ window.fh1CollectVars = function () {
         delete v['背景信息'];
     }
     return v;
-};
-
-// 开局只负责投递指令（世界书在「启用并继续」时已经写好）
-window.fh1StartGame = async function () {
-    if (!FH1_SELECTED) { showCustomAlert('请先在「世界观」页选择一套世界观并启用'); return; }
-    if (!FH1_START_MODE) { showCustomAlert('请先选择开局方式：方式一（自动生成开场白）或方式二（自定义开局）'); return; }
-
-    var preset = fh1GetPreset(FH1_SELECTED);
-    var prompt = '';
-    if (FH1_START_MODE === 'auto') {
-        prompt = fh1BuildAutoPrompt(preset);
-    } else {
-        var ta = document.getElementById('fh1-start-manual-text');
-        prompt = ta ? String(ta.value || '') : '';
-    }
-    prompt = prompt.trim();
-    if (!prompt) { showCustomAlert('开局内容为空：请在方式二里填写，或改用方式一'); return; }
-
-    var agree = await showCustomConfirm('将以「' + FH1_SELECTED + '」的世界观开始自由模式，并发送开局指令吗？');
-    if (!agree) return;
-    triggerSTSlashSend(prompt, fh1CollectVars());
 };

@@ -254,7 +254,7 @@ async function initDynamicTabs() {
                 '</div>';
             }
             else if (h === "开局选择" && tabId === 'FH1') {
-                contentStr = '<div class="fh1-empty">开局选择 · 待编写</div>';
+                contentStr = '<div class="fh1-start-wrap"><div class="fh1-start-list" id="fh1-start-list"></div></div>';
             }
             else if (h === "世界观概览") {
                 contentStr = '<div class="fc1-overview">' +
