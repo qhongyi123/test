@@ -2052,18 +2052,6 @@ textarea.fc1is-desc { min-height: 108px; width: 100%; }
     margin-bottom: 12px;
     border-bottom: 1px dashed rgba(184, 134, 11, 0.45);
 }
-.fh1-st-back {
-    flex-shrink: 0;
-    padding: 2px 12px;
-    font-family: inherit;
-    font-size: 0.78rem;
-    color: #6b4b1f;
-    background: #fdf6e3;
-    border: 1px solid rgba(184, 134, 11, 0.6);
-    border-radius: 999px;
-    cursor: pointer;
-}
-.fh1-st-back:hover { background: var(--color-primary-dark); border-color: var(--color-primary-dark); color: #fff; }
 .fh1-st-text {
     font-size: 0.9rem;
     line-height: 1.9;

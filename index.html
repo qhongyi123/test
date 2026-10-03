@@ -214,10 +214,11 @@
             <div class="bookmark-back bookmark-shake" onclick="goBackCover()" title="回到封面">封面</div>
             <div class="bookmark-next bookmark-shake" onclick="nextPage()" title="点击向后翻看">翻页</div>
             <div class="bookmark-role bookmark-shake" onclick="goToRoleTab()" title="进入角色管理">角色</div>
-            <!-- FH1「世界观」页专用书签：默认隐藏，只有「自由模式 + 本子世界」的「世界观」子页且选中一套后才出现
-                 （由 css 的 .bookmark-hide/.bookmark-reselect { display:none } 兜底 + fh1SyncSideBookmarks() 控制显隐） -->
-            <div class="bookmark-hide bookmark-shake" id="fh1-bookmark-hide" onclick="fh1HideBookmarks()" title="隐藏右侧书签（切换选项卡后恢复）">隐藏</div>
-            <div class="bookmark-reselect bookmark-shake" id="fh1-bookmark-reselect" onclick="fh1ReselectWorldview()" title="回到世界观列表">重选</div>
+            <!-- FH1「世界观」/「开局选择」页专用书签：默认隐藏，选中卡片后才出现
+                 （由 css 的 .bookmark-hide/.bookmark-reselect { display:none } 兜底 + fh1SyncSideBookmarks() 控制显隐）
+                 「隐藏」只藏别的书签，「重选」始终留着 -->
+            <div class="bookmark-hide bookmark-shake" id="fh1-bookmark-hide" onclick="fh1HideBookmarks()" title="隐藏右侧书签（重选会留着；切换选项卡后全部恢复）">隐藏</div>
+            <div class="bookmark-reselect bookmark-shake" id="fh1-bookmark-reselect" onclick="fh1Reselect()" title="回到上一个列表（世界观卡片 / 开局卡片）">重选</div>
         </div>
     </div>
 </div>

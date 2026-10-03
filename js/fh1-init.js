@@ -378,10 +378,9 @@ window.loadFh1Presets = async function () {
 
 /* --------------------- sub1：世界观概览 --------------------- */
 
-// 概览页＝世界介绍 + 「进入本子世界」按钮（HTML 在 story-loader），这里只重置选择状态
+// 概览页＝世界介绍 + 「进入本子世界」按钮（HTML 在 story-loader）
+// 注意：**不要清空已选世界观**——否则从概览切到「开局选择」就看不到那套世界观的开局了。
 window.fh1InitOverview = function () {
-    FH1_SELECTED = '';
-    FH1_DRAFT = null;
     FH1_EDITING = false;
     var chk = document.getElementById('fh1-edit-chk');
     if (chk) chk.checked = false;
@@ -936,30 +935,42 @@ window.fh1EnableAndContinue = async function () {
 /* ------------- 右侧书签：目录 / 封面 / 翻页 / 角色 / 隐藏 / 重选 ------------- */
 /* 六个书签颜色各不相同（不含「返回」，它只在角色管理页出现）：
    目录·金 ｜ 封面·蓝 ｜ 翻页·红 ｜ 角色·绿 ｜ 隐藏·灰蓝 ｜ 重选·褐
-   「隐藏」「重选」只在 FH1「世界观」子页、且已选中一套世界观时出现。 */
+   「隐藏」「重选」在「世界观」页选中一套、或「开局选择」页展开一张卡时出现；
+   点「隐藏」只藏别的书签，「重选」始终留着。 */
 
-var FH1_BOOKMARK_SEL = '.bookmark-menu, .bookmark-back, .bookmark-next, .bookmark-role, .bookmark-hide, .bookmark-reselect';
+var FH1_BOOKMARK_SEL = '.bookmark-menu, .bookmark-back, .bookmark-next, .bookmark-role, .bookmark-hide';
+var FH1_BOOKMARK_ALL = FH1_BOOKMARK_SEL + ', .bookmark-reselect';
+var FH1_BOOKMARK_KEEP = '.bookmark-reselect';   // 点「隐藏」时唯一留下来的
 
 // 两个新书签的 CSS 默认是 display:none，显示时必须显式设成 flex
 function fh1ShowEl(el, on) { if (el) el.style.display = on ? 'flex' : 'none'; }
 
-// 只同步「隐藏 / 重选」两个书签的显隐（要求：主选项卡停在 FH1 ＋ 子页是「世界观」＋ 已选中一套）
+// 只同步「隐藏 / 重选」两个书签的显隐
+//   世界观页：选中了一套（FH1_SELECTED）｜开局页：展开了一张卡（FH1_START_OPEN）
 window.fh1SyncSideBookmarks = function () {
     var panel = document.getElementById('FH1');
     var onMainTab = !!(panel && panel.classList.contains('active'));
-    var on = !!(FH1_SELECTED && FH1_SUBTAB === 'FH1-sub2' && onMainTab);
+    var wvOpen = !!(FH1_SELECTED && FH1_SUBTAB === 'FH1-sub2');
+    var stOpen = !!(FH1_SELECTED && FH1_SUBTAB === 'FH1-sub4' && FH1_START_OPEN);
+    var on = onMainTab && (wvOpen || stOpen);
     fh1ShowEl(document.getElementById('fh1-bookmark-hide'), on);
     fh1ShowEl(document.getElementById('fh1-bookmark-reselect'), on);
 };
 
-// 「隐藏」：右侧书签全部消失（含它自己），直到切换选项卡
+// 「隐藏」：除了「重选」，其它书签全藏起来，直到切换选项卡
 window.fh1HideBookmarks = function () {
     document.querySelectorAll(FH1_BOOKMARK_SEL).forEach(function (el) { el.style.display = 'none'; });
 };
 
-// 恢复：原有四个一律恢复；「隐藏 / 重选」只在世界观页且已选中时恢复
+// 「重选」：按当前子页决定回哪个列表（世界观卡片 / 开局卡片）
+window.fh1Reselect = function () {
+    if (FH1_SUBTAB === 'FH1-sub4') { fh1BackStartList(); return; }
+    fh1ReselectWorldview();
+};
+
+// 恢复：全部恢复，再按当前页面把「隐藏 / 重选」调回应有状态
 window.fh1RestoreBookmarks = function () {
-    document.querySelectorAll(FH1_BOOKMARK_SEL).forEach(function (el) { el.style.display = ''; });
+    document.querySelectorAll(FH1_BOOKMARK_ALL).forEach(function (el) { el.style.display = ''; });
     fh1SyncSideBookmarks();
 };
 
@@ -1064,6 +1075,7 @@ window.fh1RenderStartPanel = function () {
                 '<button class="fh1-gate-btn primary" onclick="fh1GotoWorldview()">前往世界观</button>' +
             '</div>' +
         '</div>';
+        fh1SyncSideBookmarks();
         return;
     }
 
@@ -1091,31 +1103,32 @@ window.fh1RenderStartPanel = function () {
             html = '<div class="fh1-hint">「' + fh1Esc(FH1_SELECTED) + '」还没有预置开局，可以直接用下面的「自定义开局」。</div>' + html;
         }
     } else if (FH1_START_OPEN === 'custom') {
-        // ② 自定义开局：全宽输入区，不受卡片限制
+        // ② 自定义开局：全宽输入区，不受卡片限制（返回列表走右侧「重选」书签）
         html += '<div class="fh1-st-detail">' +
             '<div class="fh1-st-detail-head">' +
                 '<span class="fh1-st-name">自定义开局</span>' +
-                '<button class="fh1-st-back" onclick="fh1BackStartList()">\u2039 返回列表</button>' +
+                '<span class="fh1-st-tag">自己写</span>' +
             '</div>' +
             '<textarea id="fh1-st-custom" class="fh1-st-custom" oninput="FH1_START_CUSTOM_TEXT=this.value" ' +
                 'placeholder="在这里写你的开局（可含 {{user}} 宏），写完点下方「开始剧情」。">' + fh1Esc(FH1_START_CUSTOM_TEXT) + '</textarea>' +
             '<button class="fh1-apply-btn" onclick="fh1StartStory()">\u25B6 开始剧情</button>' +
         '</div>';
     } else {
-        // ③ 预置开局：全宽展示，不受卡片限制
+        // ③ 预置开局：全宽展示，不受卡片限制（返回列表走右侧「重选」书签）
         var idx = parseInt(String(FH1_START_OPEN).split(':')[1], 10) || 0;
         var o = opens[idx];
         if (!o) { FH1_START_OPEN = ''; fh1RenderStartPanel(); return; }
         html += '<div class="fh1-st-detail">' +
             '<div class="fh1-st-detail-head">' +
                 '<span class="fh1-st-name">' + fh1Esc(o.title || '开局') + '</span>' +
-                '<button class="fh1-st-back" onclick="fh1BackStartList()">\u2039 返回列表</button>' +
+                '<span class="fh1-st-tag">' + fh1Esc(FH1_SELECTED) + '</span>' +
             '</div>' +
             '<div class="fh1-st-text">' + fh1Esc(o.text || '') + '</div>' +
             '<button class="fh1-apply-btn" onclick="fh1StartStory()">\u25B6 开始剧情</button>' +
         '</div>';
     }
     box.innerHTML = html;
+    fh1SyncSideBookmarks();   // 展开卡片 → 右侧「隐藏 / 重选」跟着出现
 };
 
 window.fh1SelectStart = function (kind, i) {
