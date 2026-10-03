@@ -25,11 +25,16 @@ var FH1_ECOLOGY_UID = 69;      // 本子世界「社会生态」条目 uid（与
 var FH1_DRAFT = null;          // 当前世界观的可编辑草稿（含玩家的改与删）
 var FH1_EDITING = false;       // 编辑模式开关状态
 var FH1_SUBTAB = '';           // 当前 FH1 子页 id（如 FH1-sub2）
-var FH1_AP_SEG = '';           // 附录抽屉当前对应的段落（世界风格 / 社会与法治 / 民俗风情）
+var FH1_AP_SEG = '';           // 附录抽屉当前对应的段落（世界风格 / 社会与法治 / 民俗风情 / 背景设定 / 社会生态 / 时代锚点）
 var FH1_APPLIED = false;       // 是否已启用过世界观：启用过后再进「特殊规则」就不再叫玩家回去选
+var FH1_ECO_BLOCK = 0;         // 社会生态当前显示第几块（选中谁显示谁）
 
-// 哪几段的标题右侧挂「＋」附录（时代锚点与背景设定不挂）
-var FH1_APPENDIX_SEGS = ['世界风格', '社会与法治', '民俗风情'];
+// 平铺段落：条目直接挂在标题下，标题右侧挂「＋ 添加」
+var FH1_FLAT_SEGS = ['时代锚点', '世界风格', '社会与法治', '民俗风情'];
+// 分组段落：大标题 → 小标题 → 子项。「＋ 添加」挂在大标题上；自定义要填「小标题 ＋ 子项」
+var FH1_GROUP_SEGS = ['背景设定', '社会生态'];
+
+function fh1IsGroupSeg(key) { return FH1_GROUP_SEGS.indexOf(key) !== -1; }
 
 /* ------------------------------ 小工具 ------------------------------ */
 
@@ -67,6 +72,40 @@ function fh1NormItem(t) {
 
 function fh1IsBlankItem(t) {
     return String(t === undefined || t === null ? '' : t).replace(/^-\s*/, '').trim() === '';
+}
+
+// 段落标题右侧的「＋ 添加」按钮（哪怕这一段没有附录，抽屉里也有「自定义」可用）
+function fh1PlusBtn(key) {
+    return '<button class="fh1-seg-plus" title="打开附录：可勾选现成条目，也可自定义添加" ' +
+        'onclick="fh1OpenAppendix(this.getAttribute(\'data-seg\'))" data-seg="' + fh1Esc(key) + '">\uFF0B 添加</button>';
+}
+
+// 按小标题找到（或新建）一个分组容器：
+//   背景设定 → draft.background[]        社会生态 → draft.ecology.blocks[]（label 按【世界观名-小标题】补全）
+//   平铺段落 → 直接返回该段落本身（整段算一组）
+function fh1EnsureGroup(d, segKey, title) {
+    if (!d) return null;
+    if (segKey === '背景设定') {
+        d.background = d.background || [];
+        var g = null;
+        d.background.forEach(function (x) { if (x.title === title) g = x; });
+        if (!g) { g = { title: title, items: [] }; d.background.push(g); }
+        return g;
+    }
+    if (segKey === '社会生态') {
+        d.ecology = d.ecology || { blocks: [] };
+        d.ecology.blocks = d.ecology.blocks || [];
+        var b = null;
+        d.ecology.blocks.forEach(function (x) { if ((x.title || x.label) === title) b = x; });
+        if (!b) {
+            b = { label: String(d.name || '') + '-' + title, title: title, items: [] };
+            d.ecology.blocks.push(b);
+        }
+        return b;
+    }
+    var seg = null;
+    (d.segments || []).forEach(function (s) { if (s.key === segKey) seg = s; });
+    return seg;
 }
 
 // 在「本窗口 → 父窗口 → 顶层窗口」里找可用的世界书接口
@@ -272,6 +311,7 @@ window.fh1SelectWorldview = function (name) {
     FH1_SELECTED = name;
     FH1_DRAFT = fh1DeepCopy(p);
     FH1_EDITING = false;
+    FH1_ECO_BLOCK = 0;         // 社会生态回到第一块
     var chk = document.getElementById('fh1-edit-chk');
     if (chk) chk.checked = false;
     fh1RenderOpenCard();
@@ -291,39 +331,44 @@ window.fh1RenderOpenCard = function () {
     if (!box || !FH1_DRAFT) return;
     var d = FH1_DRAFT;
 
+    // 平铺段落：标题 + 条目，标题右侧一律挂「＋ 添加」（含「时代锚点」）
     var segHTML = (d.segments || []).map(function (s, si) {
         var rows = (s.items || []).map(function (it, ii) {
             return fh1ItemRow(fh1ItemText(it), 'data-kind="seg" data-si="' + si + '" data-ii="' + ii + '"');
         }).join('');
-        if (!rows) return '';
-        var plus = (FH1_APPENDIX_SEGS.indexOf(s.key) !== -1)
-            ? '<button class="fh1-seg-plus" title="打开附录，从这里挑几条加进来" onclick="fh1OpenAppendix(this.getAttribute(\'data-seg\'))" data-seg="' + fh1Esc(s.key) + '">\uFF0B 添加</button>'
-            : '';
-        return '<div class="fh1-wv-seg"><div class="fh1-wv-seg-title"><span>' + fh1Esc(s.key) + '</span>' + plus + '</div>' + rows + '</div>';
+        return '<div class="fh1-wv-seg"><div class="fh1-wv-seg-title"><span>' + fh1Esc(s.key) + '</span>' + fh1PlusBtn(s.key) + '</div>' +
+            (rows || '<div class="fh1-hint">（这一段还没有条目）</div>') + '</div>';
     }).join('');
 
+    // 背景设定（分组）：「＋ 添加」挂在大标题上；大标题下才是各小标题与子项
     var bgHTML = '';
     (d.background || []).forEach(function (g, gi) {
         var rows = (g.items || []).map(function (it, ii) {
             return fh1ItemRow(fh1ItemText(it), 'data-kind="bg" data-gi="' + gi + '" data-ii="' + ii + '"');
         }).join('');
-        if (!rows) return;
-        bgHTML += '<div class="fh1-wv-sub">' + fh1Esc(g.title) + '</div>' + rows;
+        bgHTML += '<div class="fh1-wv-sub">' + fh1Esc(g.title) + '</div>' + (rows || '<div class="fh1-hint">（这个小标题下还没有条目）</div>');
     });
-    if (bgHTML) bgHTML = '<div class="fh1-wv-seg"><div class="fh1-wv-seg-title">背景设定</div>' + bgHTML + '</div>';
+    bgHTML = '<div class="fh1-wv-seg"><div class="fh1-wv-seg-title"><span>背景设定</span>' + fh1PlusBtn('背景设定') + '</div>' +
+        (bgHTML || '<div class="fh1-hint">（还没有小标题，可点右上「＋ 添加」自己写）</div>') + '</div>';
 
-    // 社会生态（对应世界书 uid 69）
-    var ecoHTML = '';
-    if (d.ecology && d.ecology.blocks) {
-        d.ecology.blocks.forEach(function (b, bi) {
-            var rows = (b.items || []).map(function (it, ii) {
-                return fh1ItemRow(fh1ItemText(it), 'data-kind="eco" data-bi="' + bi + '" data-ii="' + ii + '"');
-            }).join('');
-            if (!rows) return;
-            ecoHTML += '<div class="fh1-wv-sub">' + fh1Esc(b.label) + '</div>' + rows;
-        });
+    // 社会生态（对应世界书 uid 69）：大标题 + 块选择器，选中谁就显示谁
+    var blocks = (d.ecology && d.ecology.blocks) ? d.ecology.blocks : [];
+    var ecoHTML = '<div class="fh1-wv-seg"><div class="fh1-wv-seg-title"><span>社会生态</span>' + fh1PlusBtn('社会生态') + '</div>';
+    if (blocks.length) {
+        var sel = Math.min(Math.max(FH1_ECO_BLOCK | 0, 0), blocks.length - 1);
+        FH1_ECO_BLOCK = sel;
+        var chips = blocks.map(function (b, bi) {
+            var t = b.title || b.label || ('生态' + (bi + 1));
+            return '<span class="fh1-eco-chip' + (bi === sel ? ' active' : '') + '" onclick="fh1SelectEcoBlock(' + bi + ')">' + fh1Esc(t) + '</span>';
+        }).join('');
+        var ecoRows = (blocks[sel].items || []).map(function (it, ii) {
+            return fh1ItemRow(fh1ItemText(it), 'data-kind="eco" data-bi="' + sel + '" data-ii="' + ii + '"');
+        }).join('');
+        ecoHTML += '<div class="fh1-eco-chips">' + chips + '</div>' + (ecoRows || '<div class="fh1-hint">（这一块还没有条目）</div>');
+    } else {
+        ecoHTML += '<div class="fh1-hint">这套世界观还没有生态内容，可点右上「＋ 添加」自己写一个小标题。</div>';
     }
-    if (ecoHTML) ecoHTML = '<div class="fh1-wv-seg"><div class="fh1-wv-seg-title"><span>社会生态</span></div>' + ecoHTML + '</div>';
+    ecoHTML += '</div>';
 
     box.innerHTML =
         '<div class="fh1-wv-detail' + (FH1_EDITING ? ' fh1-editing' : '') + '">' +
@@ -342,9 +387,9 @@ window.fh1RenderOpenCard = function () {
 
 /* ---------------------- 附录（＋ 抽屉：挑几条加进来） ---------------------- */
 
-// 附录里的一行：勾选框 + 内容；已在正文里的标「已添加」并禁用
+// 平铺段落：一行 = 勾选框 + 内容；正文里已有的标「已添加」并禁用
 function fh1ApItems(items, hasMap) {
-    if (!items || !items.length) return '<div class="fh1-ap-empty">（这一段还没有附录内容）</div>';
+    if (!items || !items.length) return '<div class="fh1-ap-empty">（这一段还没有附录内容，可用下方「＋ 自定义」自己写）</div>';
     return items.map(function (t) {
         var text = fh1ItemText(t).trim();
         var added = !!hasMap[text];
@@ -356,51 +401,116 @@ function fh1ApItems(items, hasMap) {
     }).join('');
 }
 
+function fh1ClosestByClass(el, cls) {
+    while (el && el.nodeType === 1) {
+        if ((' ' + el.className + ' ').indexOf(' ' + cls + ' ') !== -1) return el;
+        el = el.parentElement;
+    }
+    return null;
+}
+
+// 取附录数据：平铺段落用 sections[段]，分组段落用 groups[段]
+function fh1ApFlatOf(src, segKey) {
+    return (src && src.appendix && src.appendix.sections && src.appendix.sections[segKey]) || [];
+}
+function fh1ApGroupsOf(src, segKey) {
+    return (src && src.appendix && src.appendix.groups && src.appendix.groups[segKey]) || [];
+}
+
+// 分组段落：一个小标题一块；块头带小标题级勾选框（勾它＝勾上它下面所有子项）
+function fh1ApGroups(groups, segKey) {
+    if (!groups || !groups.length) return '<div class="fh1-ap-empty">（这一段还没有附录内容，可在下方「＋ 自定义」里填小标题＋子项）</div>';
+    return groups.map(function (g) {
+        var rows = (g.items || []).map(function (t) {
+            var text = fh1ItemText(t).trim();
+            var added = fh1GroupHasItem(segKey, g.title, text);
+            return '<label class="fh1-ap-item' + (added ? ' added' : '') + '">' +
+                '<input type="checkbox" class="fh1-ap-itembox" data-gtitle="' + fh1Esc(g.title) + '" value="' + fh1Esc(text) + '"' +
+                    (added ? ' disabled checked' : '') + ' onchange="fh1ApItemToggle(this)">' +
+                '<span>' + fh1Esc(text) + '</span>' +
+                (added ? '<em class="fh1-ap-tag">已添加</em>' : '') +
+            '</label>';
+        }).join('');
+        return '<div class="fh1-ap-sec open">' +
+            '<div class="fh1-ap-sec-head" onclick="fh1ApToggle(this)">' +
+                '<input type="checkbox" class="fh1-ap-groupbox" data-gtitle="' + fh1Esc(g.title) + '"' +
+                    ' onclick="event.stopPropagation()" onchange="fh1ApGroupToggle(this)">' +
+                '<span class="fh1-ap-sec-title">' + fh1Esc(g.title) + '</span>' +
+                '<span class="fh1-ap-caret">\u25BE</span>' +
+            '</div>' +
+            '<div class="fh1-ap-sec-body">' + (rows || '<div class="fh1-ap-empty">（空）</div>') + '</div>' +
+        '</div>';
+    }).join('');
+}
+
+// 草稿里该小标题下是否已有这条
+function fh1GroupHasItem(segKey, gtitle, text) {
+    var g = null;
+    if (segKey === '背景设定') {
+        (FH1_DRAFT.background || []).forEach(function (x) { if (x.title === gtitle) g = x; });
+    } else if (segKey === '社会生态') {
+        ((FH1_DRAFT.ecology && FH1_DRAFT.ecology.blocks) || []).forEach(function (x) { if ((x.title || x.label) === gtitle) g = x; });
+    }
+    if (!g) return false;
+    var hit = false;
+    (g.items || []).forEach(function (t) { if (fh1ItemText(t).trim() === text) hit = true; });
+    return hit;
+}
+
 window.fh1OpenAppendix = function (segKey) {
     if (!segKey) return;
     if (!FH1_DRAFT || !FH1_PRESETS) { showCustomAlert('世界观数据还没准备好'); return; }
     if (typeof fc1isOpenDrawer !== 'function') { showCustomAlert('抽屉组件不可用（fc1isOpenDrawer 缺失）'); return; }
 
     FH1_AP_SEG = segKey;
+    var isGroup = fh1IsGroupSeg(segKey);
 
-    // 正文里已有的条目（用于标「已添加」）
+    // 平铺段落：正文里已有的条目（用于标「已添加」）
     var hasMap = {};
-    (FH1_DRAFT.segments || []).forEach(function (s) {
-        if (s.key !== segKey) return;
-        (s.items || []).forEach(function (t) { hasMap[fh1ItemText(t).trim()] = true; });
-    });
+    if (!isGroup) {
+        (FH1_DRAFT.segments || []).forEach(function (s) {
+            if (s.key !== segKey) return;
+            (s.items || []).forEach(function (t) { hasMap[fh1ItemText(t).trim()] = true; });
+        });
+    }
 
     var html = '';
     var note = (FH1_DRAFT.appendix && FH1_DRAFT.appendix.note) || '';
     if (note) { html += '<div class="fh1-ap-note">' + fh1Esc(note) + '</div>'; }
 
     // ① 当前世界观的这一段（默认展开）
-    var curItems = (FH1_DRAFT.appendix && FH1_DRAFT.appendix.sections && FH1_DRAFT.appendix.sections[segKey]) || [];
     html += '<div class="fh1-ap-sec open">' +
         '<div class="fh1-ap-sec-head" onclick="fh1ApToggle(this)">' +
             '<span class="fh1-ap-sec-title">' + fh1Esc(segKey) + '</span><span class="fh1-ap-caret">\u25BE</span>' +
         '</div>' +
-        '<div class="fh1-ap-sec-body">' + fh1ApItems(curItems, hasMap) + '</div>' +
+        '<div class="fh1-ap-sec-body">' +
+            (isGroup ? fh1ApGroups(fh1ApGroupsOf(FH1_DRAFT, segKey), segKey)
+                     : fh1ApItems(fh1ApFlatOf(FH1_DRAFT, segKey), hasMap)) +
+        '</div>' +
     '</div>';
 
     // ② 其他世界观的同段落（默认折叠）
     (FH1_PRESETS.order || []).forEach(function (n) {
         if (n === FH1_DRAFT.name) return;
         var o = fh1GetPreset(n) || {};
-        var items = (o.appendix && o.appendix.sections && o.appendix.sections[segKey]) || [];
         html += '<div class="fh1-ap-sec">' +
             '<div class="fh1-ap-sec-head" onclick="fh1ApToggle(this)">' +
                 '<span class="fh1-ap-sec-title">' + fh1Esc(n) + '-' + fh1Esc(segKey) + '</span><span class="fh1-ap-caret">\u25B8</span>' +
             '</div>' +
-            '<div class="fh1-ap-sec-body">' + fh1ApItems(items, hasMap) + '</div>' +
+            '<div class="fh1-ap-sec-body">' +
+                (isGroup ? fh1ApGroups(fh1ApGroupsOf(o, segKey), segKey) : fh1ApItems(fh1ApFlatOf(o, segKey), hasMap)) +
+            '</div>' +
         '</div>';
     });
 
-    // ③ 自定义项：点「＋ 自定义」展开输入行
+    // ③ 自定义项：点「＋ 自定义」展开输入行（分组段落要填「小标题 ＋ 子项」）
     html += '<div class="fh1-ap-custom">' +
         '<button class="fh1-ap-custom-btn" onclick="fh1ApCustomToggle()">\uFF0B 自定义</button>' +
-        '<div class="fh1-ap-custom-row" id="fh1-ap-custom-row" style="display:none;">' +
-            '<input type="text" id="fh1-ap-custom-input" class="fh1-ap-custom-input" placeholder="输入要添加的内容，回车即可添加">' +
+        '<div class="fh1-ap-custom-row' + (isGroup ? ' fh1-ap-custom-col' : '') + '" id="fh1-ap-custom-row" style="display:none;">' +
+            (isGroup ? '<input type="text" id="fh1-ap-custom-title" class="fh1-ap-custom-title" placeholder="小标题（如：授精部）">' : '') +
+            (isGroup
+                ? '<textarea id="fh1-ap-custom-input" class="fh1-ap-custom-input" rows="3" placeholder="子项内容，一行一条"></textarea>'
+                : '<input type="text" id="fh1-ap-custom-input" class="fh1-ap-custom-input" placeholder="输入要添加的内容，回车即可添加">') +
             '<button class="fh1-ap-custom-add" onclick="fh1ApCustomAdd()">添加</button>' +
         '</div>' +
         '<div class="fh1-ap-custom-tip" id="fh1-ap-custom-tip"></div>' +
@@ -422,17 +532,34 @@ window.fh1ApCustomToggle = function () {
     }
 };
 
-// 把自定义输入的内容追加进当前世界观的对应段落（草稿），抽屉保持打开可连续添加
+// 「＋ 自定义」：分组段落要先填小标题，子项一行一条
 window.fh1ApCustomAdd = function () {
     if (!FH1_DRAFT || !FH1_AP_SEG) return;
     var inp = document.getElementById('fh1-ap-custom-input');
     var tip = document.getElementById('fh1-ap-custom-tip');
     if (!inp) return;
+
+    // ① 分组段落（背景设定 / 社会生态）：小标题 + 子项
+    if (fh1IsGroupSeg(FH1_AP_SEG)) {
+        var titleEl = document.getElementById('fh1-ap-custom-title');
+        var title = titleEl ? String(titleEl.value || '').trim() : '';
+        if (!title) { if (tip) tip.textContent = '请先填小标题'; return; }
+        var lines = String(inp.value || '').split('\n').map(function (t) { return t.trim(); }).filter(function (t) { return !!t; });
+        if (!lines.length) { if (tip) tip.textContent = '还没输入子项'; return; }
+        var grp = fh1EnsureGroup(FH1_DRAFT, FH1_AP_SEG, title);
+        if (!grp) { if (tip) tip.textContent = '没找到对应段落：' + FH1_AP_SEG; return; }
+        grp.items = (grp.items || []).concat(lines.map(function (t) { return fh1NormItem(t); }));
+        inp.value = '';
+        if (tip) tip.textContent = '已添加到「' + title + '」：' + lines.length + ' 条';
+        fh1RenderOpenCard();
+        try { inp.focus(); } catch (e) {}
+        return;
+    }
+
+    // ② 平铺段落：一次一条
     var text = String(inp.value || '').trim();
     if (!text) { if (tip) tip.textContent = '还没输入内容'; return; }
-
-    var seg = null;
-    (FH1_DRAFT.segments || []).forEach(function (s) { if (s.key === FH1_AP_SEG) seg = s; });
+    var seg = fh1EnsureGroup(FH1_DRAFT, FH1_AP_SEG, '');
     if (!seg) { if (tip) tip.textContent = '没找到对应段落：' + FH1_AP_SEG; return; }
 
     seg.items = (seg.items || []).concat([fh1NormItem(text)]);
@@ -440,6 +567,35 @@ window.fh1ApCustomAdd = function () {
     if (tip) tip.textContent = '已添加：' + text;
     fh1RenderOpenCard();          // 背后的展开页同步刷新（抽屉不动）
     try { inp.focus(); } catch (e) {}
+};
+
+// 勾小标题 → 它下面所有子项一起勾上
+window.fh1ApGroupToggle = function (cb) {
+    var sec = fh1ClosestByClass(cb, 'fh1-ap-sec');
+    if (!sec) return;
+    var on = !!cb.checked;
+    sec.querySelectorAll('input.fh1-ap-itembox').forEach(function (ib) { if (!ib.disabled) ib.checked = on; });
+    cb.indeterminate = false;
+};
+
+// 勾某个子项 → 同步小标题的状态（部分选中显示为半选，添加时会把小标题一起带出）
+window.fh1ApItemToggle = function (cb) {
+    var sec = fh1ClosestByClass(cb, 'fh1-ap-sec');
+    if (!sec) return;
+    var gb = sec.querySelector('input.fh1-ap-groupbox');
+    if (!gb) return;
+    var boxes = Array.prototype.slice.call(sec.querySelectorAll('input.fh1-ap-itembox')).filter(function (b) { return !b.disabled; });
+    var checked = boxes.filter(function (b) { return b.checked; }).length;
+    gb.checked = (boxes.length > 0 && checked === boxes.length);
+    gb.indeterminate = (checked > 0 && checked < boxes.length);
+};
+
+// 社会生态：切换显示哪一块（先把当前块的改动存回草稿）
+window.fh1SelectEcoBlock = function (bi) {
+    if (!FH1_DRAFT) return;
+    fh1SyncDraftFromDOM();
+    FH1_ECO_BLOCK = bi | 0;
+    fh1RenderOpenCard();
 };
 
 window.fh1ApToggle = function (headEl) {
@@ -451,22 +607,52 @@ window.fh1ApToggle = function (headEl) {
 };
 
 // 把勾选的附录项追加进当前世界观的对应段落（草稿），再重画展开页
+//   平铺段落：勾谁加谁
+//   分组段落：勾小标题＝加它下面全部子项；勾某一子项＝加这一条，并连带它的小标题（没有该小标题就新建）
 window.fh1AppendixAdd = function () {
     if (!FH1_DRAFT || !FH1_AP_SEG) return;
     var drawer = document.getElementById('fc1-drawer');
-    var boxes = drawer ? drawer.querySelectorAll('.fh1-ap-item input[type="checkbox"]:checked:not(:disabled)') : [];
-    if (!boxes.length) { showCustomAlert('还没勾选要添加的条目'); return; }
+    if (!drawer) return;
 
-    var seg = null;
-    (FH1_DRAFT.segments || []).forEach(function (s) { if (s.key === FH1_AP_SEG) seg = s; });
-    if (!seg) { showCustomAlert('没找到对应段落：' + FH1_AP_SEG); return; }
+    var segKey = FH1_AP_SEG;
+    var picked = [];
 
-    var texts = [];
-    boxes.forEach(function (b) { texts.push(fh1NormItem(b.value)); });
-    seg.items = (seg.items || []).concat(texts);
+    if (fh1IsGroupSeg(segKey)) {
+        drawer.querySelectorAll('input.fh1-ap-groupbox:checked').forEach(function (gb) {
+            var sec = fh1ClosestByClass(gb, 'fh1-ap-sec');
+            var gt = gb.getAttribute('data-gtitle') || '';
+            if (!sec) return;
+            sec.querySelectorAll('input.fh1-ap-itembox').forEach(function (ib) {
+                if (!ib.disabled) picked.push({ g: gt, t: ib.value });
+            });
+        });
+        drawer.querySelectorAll('input.fh1-ap-itembox:checked:not(:disabled)').forEach(function (ib) {
+            picked.push({ g: ib.getAttribute('data-gtitle') || '', t: ib.value });
+        });
+    } else {
+        drawer.querySelectorAll('.fh1-ap-item input[type="checkbox"]:checked:not(:disabled)').forEach(function (b) {
+            picked.push({ g: '', t: b.value });
+        });
+    }
+
+    if (!picked.length) { showCustomAlert('还没勾选要添加的条目'); return; }
+
+    var added = 0, skipped = 0;
+    picked.forEach(function (p) {
+        var g = fh1EnsureGroup(FH1_DRAFT, segKey, p.g || segKey);
+        if (!g) return;
+        g.items = g.items || [];
+        var exists = false;
+        g.items.forEach(function (t) { if (fh1ItemText(t).trim() === fh1ItemText(p.t).trim()) exists = true; });
+        if (exists) { skipped++; return; }
+        g.items.push(fh1NormItem(p.t));
+        added++;
+    });
 
     if (typeof fc1isCloseDrawer === 'function') { fc1isCloseDrawer(); }
     fh1RenderOpenCard();
+    if (added === 0) { showCustomAlert('勾选的条目都已经在正文里了，没有重复添加。'); }
+    console.log('FH1: 附录添加 → ' + segKey + ' 新增 ' + added + ' 条，跳过重复 ' + skipped + ' 条');
 };
 
 /* ---------------------- 编辑模式（改／删） ---------------------- */

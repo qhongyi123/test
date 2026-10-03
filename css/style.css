@@ -1879,3 +1879,62 @@ textarea.fc1is-desc { min-height: 108px; width: 100%; }
     border-color: var(--color-primary-dark);
 }
 .fh1-gate-btn.primary:hover { background: linear-gradient(135deg, #d4af37 0%, #a17f00 100%); }
+
+/* ===== FH1 · 社会生态的块选择器（浅色内容区：选中谁就显示谁） ===== */
+.fh1-eco-chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 10px 0; }
+.fh1-eco-chip {
+    padding: 3px 12px;
+    font-size: 0.8rem;
+    color: #6b4b1f;
+    background: #fdf6e3;
+    border: 1px solid rgba(184, 134, 11, 0.5);
+    border-radius: 999px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.2s, color 0.2s, border-color 0.2s;
+}
+.fh1-eco-chip:hover { background: rgba(212, 175, 55, 0.25); }
+.fh1-eco-chip.active {
+    background: var(--color-primary-dark);
+    border-color: var(--color-primary-dark);
+    color: #fff;
+    font-weight: bold;
+}
+
+/* ===== FH1 · 抽屉里「分组段落」的小标题勾选框与多行自定义输入 ===== */
+.fh1-ap-sec-head { justify-content: flex-start; gap: 8px; }
+.fh1-ap-sec-head .fh1-ap-caret { margin-left: auto; }
+.fh1-ap-groupbox { flex-shrink: 0; accent-color: var(--color-primary); }
+.fh1-ap-custom-col { flex-direction: column; align-items: stretch; }
+.fh1-ap-custom-title {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 7px 9px;
+    font-family: inherit;
+    font-size: 0.86rem;
+    color: var(--color-text-light);
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(212, 175, 55, 0.5);
+    border-radius: 6px;
+    outline: none;
+}
+.fh1-ap-custom-col .fh1-ap-custom-input {
+    width: 100%;
+    box-sizing: border-box;
+    min-height: 62px;
+    padding: 7px 9px;
+    font-family: inherit;
+    font-size: 0.86rem;
+    line-height: 1.6;
+    color: var(--color-text-light);
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(212, 175, 55, 0.5);
+    border-radius: 6px;
+    outline: none;
+    resize: vertical;
+}
+.fh1-ap-custom-title:focus, .fh1-ap-custom-col .fh1-ap-custom-input:focus { border-color: var(--color-primary); }
+.fh1-ap-custom-title::placeholder,
+.fh1-ap-custom-col .fh1-ap-custom-input::placeholder { color: rgba(253, 246, 227, 0.4); }
+.fh1-ap-custom-col .fh1-ap-custom-add { padding: 8px; }
+.fh1-ap-sec-body .fh1-ap-sec { margin-bottom: 6px; }
