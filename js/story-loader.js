@@ -515,13 +515,15 @@ window.switchCharProfile = function(btn, tabId) {
 
 // ===== 页面启动入口 =====
 window.addEventListener('DOMContentLoaded', function() {
-    initDynamicTabs().then(function() {
-        // 对 tab1 ~ tab3 的静态节点做 Markdown 渲染
-        ['tab1', 'tab2'].forEach(function(tid) {
-            var panelElem = document.getElementById(tid);
-            if (panelElem) window.safeRenderMdOnNodes(panelElem);
-        });
+    // 静态页（前言/鸣谢）的 Markdown 立刻渲染，不等资源加载。
+    // 原先这一步放在 initDynamicTabs().then() 里，要等 7 次远程 fetch 结束才跑，
+    // 于是这两页会长时间显示裸的「#」和错误的字号。
+    ['tab1', 'tab2'].forEach(function(tid) {
+        var panelElem = document.getElementById(tid);
+        if (panelElem && typeof window.safeRenderMdOnNodes === 'function') window.safeRenderMdOnNodes(panelElem);
+    });
 
+    initDynamicTabs().then(function() {
         populateCharSelectors();
         refreshCharManager();
     });

@@ -213,10 +213,18 @@ function goBackCover() {
 }
 
 function switchTab(tabId, btnElement) {
+    // 空值保护：动态界面（故事/FC1/FH1/tab5/tab6）要等资源加载完才创建，
+    // 但故事选项卡按钮与目录卡片在那之前就已经可点。原先直接操作 null 会抛错，
+    // 而那时已经把全部面板的 active 摘掉了 → 内容区一片空白（表现为"卡死"）。
+    var targetPanel = document.getElementById(tabId);
+    if (!targetPanel) {
+        showCustomAlert('这个界面还在加载，请稍等几秒再点。');
+        return;
+    }
     document.querySelectorAll('.tab-btn').forEach(function(btn) { btn.classList.remove('active'); });
     if(btnElement) btnElement.classList.add('active');
     document.querySelectorAll('.tab-panel').forEach(function(panel) { panel.classList.remove('active'); });
-    document.getElementById(tabId).classList.add('active');
+    targetPanel.classList.add('active');
     if (tabId !== 'tab7') {
         var returnBtn = document.getElementById('bookmark-return');
         if (returnBtn) returnBtn.style.display = 'none';
