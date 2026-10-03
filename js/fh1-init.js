@@ -28,6 +28,7 @@ var FH1_SUBTAB = '';           // 当前 FH1 子页 id（如 FH1-sub2）
 var FH1_AP_SEG = '';           // 附录抽屉当前对应的段落（世界风格 / 社会与法治 / 民俗风情 / 背景设定 / 社会生态 / 时代锚点）
 var FH1_APPLIED = false;       // 是否已启用过世界观：启用过后再进「特殊规则」就不再叫玩家回去选
 var FH1_ECO_BLOCK = 0;         // 社会生态当前显示第几块（选中谁显示谁）
+var FH1_FOCUS_LAST = '';       // 形如 "bg:2"：重画后把光标停在该组最后一条上
 
 // 平铺段落：条目直接挂在标题下，标题右侧挂「＋ 添加」
 var FH1_FLAT_SEGS = ['时代锚点', '世界风格', '社会与法治', '民俗风情'];
@@ -76,36 +77,51 @@ function fh1IsBlankItem(t) {
 
 // 段落标题右侧的「＋ 添加」按钮（哪怕这一段没有附录，抽屉里也有「自定义」可用）
 function fh1PlusBtn(key) {
-    return '<button class="fh1-seg-plus" title="打开附录：可勾选现成条目，也可自定义添加" ' +
+    return '<button class="fh1-seg-plus" title="打开附录：可勾选现成条目，也可新建小标题／自定义添加" ' +
         'onclick="fh1OpenAppendix(this.getAttribute(\'data-seg\'))" data-seg="' + fh1Esc(key) + '">\uFF0B 添加</button>';
 }
 
-// 按小标题找到（或新建）一个分组容器：
-//   背景设定 → draft.background[]        社会生态 → draft.ecology.blocks[]（label 按【世界观名-小标题】补全）
-//   平铺段落 → 直接返回该段落本身（整段算一组）
-function fh1EnsureGroup(d, segKey, title) {
+// 编辑模式下：已有小标题旁的「＋ 子项」（新建小标题走抽屉的「＋ 添加」，不在这里做）
+function fh1SubAddBtn(kind, idx) {
+    if (!FH1_EDITING) return '';
+    return '<button class="fh1-sub-add" data-kind="' + kind + '" data-idx="' + idx + '" ' +
+        'onclick="fh1AddSubItem(this)" title="给这个小标题加一条子项">\uFF0B 子项</button>';
+}
+
+// 按小标题找一个分组容器（找不到返回 null）
+function fh1FindGroup(d, segKey, title) {
     if (!d) return null;
+    var hit = null;
+    if (segKey === '背景设定') {
+        (d.background || []).forEach(function (x) { if (x.title === title) hit = x; });
+    } else if (segKey === '社会生态') {
+        ((d.ecology && d.ecology.blocks) || []).forEach(function (x) { if ((x.title || x.label) === title) hit = x; });
+    } else {
+        (d.segments || []).forEach(function (s) { if (s.key === segKey) hit = s; });
+    }
+    return hit;
+}
+
+// 找到（没有就新建）分组容器：
+//   背景设定 → draft.background[]      社会生态 → draft.ecology.blocks[]（label 按【世界观名-小标题】补全）
+//   平铺段落 → 直接命中该段落本身（整段算一组）
+function fh1EnsureGroup(d, segKey, title) {
+    var g = fh1FindGroup(d, segKey, title);
+    if (g || !d) return g;
     if (segKey === '背景设定') {
         d.background = d.background || [];
-        var g = null;
-        d.background.forEach(function (x) { if (x.title === title) g = x; });
-        if (!g) { g = { title: title, items: [] }; d.background.push(g); }
+        g = { title: title, items: [] };
+        d.background.push(g);
         return g;
     }
     if (segKey === '社会生态') {
         d.ecology = d.ecology || { blocks: [] };
         d.ecology.blocks = d.ecology.blocks || [];
-        var b = null;
-        d.ecology.blocks.forEach(function (x) { if ((x.title || x.label) === title) b = x; });
-        if (!b) {
-            b = { label: String(d.name || '') + '-' + title, title: title, items: [] };
-            d.ecology.blocks.push(b);
-        }
-        return b;
+        g = { label: String(d.name || '') + '-' + title, title: title, items: [] };
+        d.ecology.blocks.push(g);
+        return g;
     }
-    var seg = null;
-    (d.segments || []).forEach(function (s) { if (s.key === segKey) seg = s; });
-    return seg;
+    return null;
 }
 
 // 在「本窗口 → 父窗口 → 顶层窗口」里找可用的世界书接口
@@ -340,16 +356,17 @@ window.fh1RenderOpenCard = function () {
             (rows || '<div class="fh1-hint">（这一段还没有条目）</div>') + '</div>';
     }).join('');
 
-    // 背景设定（分组）：「＋ 添加」挂在大标题上；大标题下才是各小标题与子项
+    // 背景设定（分组）：「＋ 添加」挂在大标题上；编辑模式下每个小标题旁再给一个「＋ 子项」
     var bgHTML = '';
     (d.background || []).forEach(function (g, gi) {
         var rows = (g.items || []).map(function (it, ii) {
             return fh1ItemRow(fh1ItemText(it), 'data-kind="bg" data-gi="' + gi + '" data-ii="' + ii + '"');
         }).join('');
-        bgHTML += '<div class="fh1-wv-sub">' + fh1Esc(g.title) + '</div>' + (rows || '<div class="fh1-hint">（这个小标题下还没有条目）</div>');
+        bgHTML += '<div class="fh1-wv-sub"><span>' + fh1Esc(g.title) + '</span>' + fh1SubAddBtn('bg', gi) + '</div>' +
+            (rows || '<div class="fh1-hint">（这个小标题下还没有子项' + (FH1_EDITING ? '，点上面的「＋ 子项」加一条' : '') + '）</div>');
     });
     bgHTML = '<div class="fh1-wv-seg"><div class="fh1-wv-seg-title"><span>背景设定</span>' + fh1PlusBtn('背景设定') + '</div>' +
-        (bgHTML || '<div class="fh1-hint">（还没有小标题，可点右上「＋ 添加」自己写）</div>') + '</div>';
+        (bgHTML || '<div class="fh1-hint">（还没有小标题，可点右上「＋ 添加」新建）</div>') + '</div>';
 
     // 社会生态（对应世界书 uid 69）：大标题 + 块选择器，选中谁就显示谁
     var blocks = (d.ecology && d.ecology.blocks) ? d.ecology.blocks : [];
@@ -361,12 +378,16 @@ window.fh1RenderOpenCard = function () {
             var t = b.title || b.label || ('生态' + (bi + 1));
             return '<span class="fh1-eco-chip' + (bi === sel ? ' active' : '') + '" onclick="fh1SelectEcoBlock(' + bi + ')">' + fh1Esc(t) + '</span>';
         }).join('');
+        if (FH1_EDITING) {
+            chips += '<span class="fh1-eco-chip fh1-eco-chip-add" onclick="fh1AddSubItemIdx(\'eco\',' + sel + ')" title="给当前这块加一条子项">\uFF0B 子项</span>';
+        }
         var ecoRows = (blocks[sel].items || []).map(function (it, ii) {
             return fh1ItemRow(fh1ItemText(it), 'data-kind="eco" data-bi="' + sel + '" data-ii="' + ii + '"');
         }).join('');
-        ecoHTML += '<div class="fh1-eco-chips">' + chips + '</div>' + (ecoRows || '<div class="fh1-hint">（这一块还没有条目）</div>');
+        ecoHTML += '<div class="fh1-eco-chips">' + chips + '</div>' +
+            (ecoRows || '<div class="fh1-hint">（这一块还没有子项' + (FH1_EDITING ? '，点上面的「＋ 子项」加一条' : '') + '）</div>');
     } else {
-        ecoHTML += '<div class="fh1-hint">这套世界观还没有生态内容，可点右上「＋ 添加」自己写一个小标题。</div>';
+        ecoHTML += '<div class="fh1-hint">这套世界观还没有生态内容，可点右上「＋ 添加」新建一个小标题。</div>';
     }
     ecoHTML += '</div>';
 
@@ -383,6 +404,8 @@ window.fh1RenderOpenCard = function () {
             '<div class="fh1-wv-body">' + segHTML + bgHTML + ecoHTML + '</div>' +
             '<button class="fh1-apply-btn" onclick="fh1EnableAndContinue()">\u25B6 启用并继续</button>' +
         '</div>';
+
+    fh1FocusPendingRow(box);   // 刚加了「＋ 子项」的话，把光标停到新行
 };
 
 /* ---------------------- 附录（＋ 抽屉：挑几条加进来） ---------------------- */
@@ -503,15 +526,15 @@ window.fh1OpenAppendix = function (segKey) {
         '</div>';
     });
 
-    // ③ 自定义项：点「＋ 自定义」展开输入行（分组段落要填「小标题 ＋ 子项」）
+    // ③ 自定义项：平铺段落＝自定义一条；分组段落＝新建小标题（子项可留空，之后在编辑模式里加）
     html += '<div class="fh1-ap-custom">' +
-        '<button class="fh1-ap-custom-btn" onclick="fh1ApCustomToggle()">\uFF0B 自定义</button>' +
+        '<button class="fh1-ap-custom-btn" onclick="fh1ApCustomToggle()">' + (isGroup ? '\uFF0B 新建小标题' : '\uFF0B 自定义') + '</button>' +
         '<div class="fh1-ap-custom-row' + (isGroup ? ' fh1-ap-custom-col' : '') + '" id="fh1-ap-custom-row" style="display:none;">' +
-            (isGroup ? '<input type="text" id="fh1-ap-custom-title" class="fh1-ap-custom-title" placeholder="小标题（如：授精部）">' : '') +
+            (isGroup ? '<input type="text" id="fh1-ap-custom-title" class="fh1-ap-custom-title" placeholder="新小标题名称（必填，如：授精部）">' : '') +
             (isGroup
-                ? '<textarea id="fh1-ap-custom-input" class="fh1-ap-custom-input" rows="3" placeholder="子项内容，一行一条"></textarea>'
+                ? '<textarea id="fh1-ap-custom-input" class="fh1-ap-custom-input" rows="3" placeholder="子项内容，一行一条（可留空，先只建小标题）"></textarea>'
                 : '<input type="text" id="fh1-ap-custom-input" class="fh1-ap-custom-input" placeholder="输入要添加的内容，回车即可添加">') +
-            '<button class="fh1-ap-custom-add" onclick="fh1ApCustomAdd()">添加</button>' +
+            '<button class="fh1-ap-custom-add" onclick="fh1ApCustomAdd()">' + (isGroup ? '创建 / 添加' : '添加') + '</button>' +
         '</div>' +
         '<div class="fh1-ap-custom-tip" id="fh1-ap-custom-tip"></div>' +
     '</div>';
@@ -539,18 +562,27 @@ window.fh1ApCustomAdd = function () {
     var tip = document.getElementById('fh1-ap-custom-tip');
     if (!inp) return;
 
-    // ① 分组段落（背景设定 / 社会生态）：小标题 + 子项
+    // ① 分组段落（背景设定 / 社会生态）：新建小标题（子项可留空；已有该小标题则往里加）
     if (fh1IsGroupSeg(FH1_AP_SEG)) {
         var titleEl = document.getElementById('fh1-ap-custom-title');
         var title = titleEl ? String(titleEl.value || '').trim() : '';
-        if (!title) { if (tip) tip.textContent = '请先填小标题'; return; }
+        if (!title) { if (tip) tip.textContent = '请先填小标题名称'; return; }
         var lines = String(inp.value || '').split('\n').map(function (t) { return t.trim(); }).filter(function (t) { return !!t; });
-        if (!lines.length) { if (tip) tip.textContent = '还没输入子项'; return; }
+        var existed = !!fh1FindGroup(FH1_DRAFT, FH1_AP_SEG, title);
         var grp = fh1EnsureGroup(FH1_DRAFT, FH1_AP_SEG, title);
         if (!grp) { if (tip) tip.textContent = '没找到对应段落：' + FH1_AP_SEG; return; }
-        grp.items = (grp.items || []).concat(lines.map(function (t) { return fh1NormItem(t); }));
+        grp.items = grp.items || [];
+        if (lines.length) {
+            grp.items = grp.items.concat(lines.map(function (t) { return fh1NormItem(t); }));
+            if (tip) tip.textContent = (existed ? '已添加到「' : '已新建「') + title + '」：' + lines.length + ' 条';
+        } else {
+            if (tip) {
+                tip.textContent = existed
+                    ? ('「' + title + '」已经存在，可在编辑模式下给它加子项')
+                    : ('已新建小标题「' + title + '」，可在编辑模式下给它加子项');
+            }
+        }
         inp.value = '';
-        if (tip) tip.textContent = '已添加到「' + title + '」：' + lines.length + ' 条';
         fh1RenderOpenCard();
         try { inp.focus(); } catch (e) {}
         return;
@@ -597,6 +629,48 @@ window.fh1SelectEcoBlock = function (bi) {
     FH1_ECO_BLOCK = bi | 0;
     fh1RenderOpenCard();
 };
+
+/* ---------- 编辑模式：给已有小标题加子项（新建小标题走抽屉的「＋ 添加」） ---------- */
+
+window.fh1AddSubItem = function (btn) {
+    if (!btn) return;
+    fh1AddSubItemIdx(btn.getAttribute('data-kind'), parseInt(btn.getAttribute('data-idx'), 10));
+};
+
+window.fh1AddSubItemIdx = function (kind, idx) {
+    if (!FH1_DRAFT) return;
+    fh1SyncDraftFromDOM();            // 先存回现有改动，避免丢失
+    var g = null;
+    if (kind === 'bg') {
+        g = (FH1_DRAFT.background || [])[idx];
+    } else if (kind === 'eco') {
+        g = (FH1_DRAFT.ecology && FH1_DRAFT.ecology.blocks) ? FH1_DRAFT.ecology.blocks[idx] : null;
+    }
+    if (!g) return;
+    g.items = (g.items || []).concat(['- ']);   // 空条目：填入内容前不会写进世界书
+    FH1_FOCUS_LAST = kind + ':' + idx;
+    fh1RenderOpenCard();
+};
+
+// 重画后把光标放到刚才新增的那一行上
+function fh1FocusPendingRow(box) {
+    if (!FH1_FOCUS_LAST) return;
+    var parts = FH1_FOCUS_LAST.split(':');
+    FH1_FOCUS_LAST = '';
+    var attr = (parts[0] === 'bg') ? 'data-gi' : 'data-bi';
+    var rows = box.querySelectorAll('.fh1-wv-item-row[' + attr + '="' + parts[1] + '"]');
+    if (!rows.length) return;
+    var it = rows[rows.length - 1].querySelector('.fh1-wv-item');
+    if (!it) return;
+    try {
+        it.focus();
+        var r = document.createRange();
+        r.selectNodeContents(it);
+        r.collapse(false);
+        var s = window.getSelection();
+        if (s) { s.removeAllRanges(); s.addRange(r); }
+    } catch (e) {}
+}
 
 window.fh1ApToggle = function (headEl) {
     var sec = headEl && headEl.parentElement;
