@@ -1338,18 +1338,18 @@ window.fh1BackStartList = function () {
     fh1RenderStartPanel();
 };
 
-// 「开始剧情」：先把所选规则的指导写进 uid 5，再把开局正文 ＋ 变量（含 rules）发出去
+// 「开始剧情」：先把所选规则的指导写进 uid 5，再把开局正文 ＋ 变量（含 rules 与开局自带变量）发出去
 window.fh1StartStory = async function () {
     if (!FH1_SELECTED) { showCustomAlert('请先到「世界观」页选一套世界观并点「启用并继续」'); return; }
 
-    var text = '';
+    var text = '', open = null;
     if (FH1_START_OPEN === 'custom') {
         var ta = document.getElementById('fh1-st-custom');
         text = ta ? String(ta.value || '') : String(FH1_START_CUSTOM_TEXT || '');
     } else {
         var idx = parseInt(String(FH1_START_OPEN).split(':')[1], 10) || 0;
-        var o = fh1StartOpenings()[idx];
-        text = o ? String(o.text || '') : '';
+        open = fh1StartOpenings()[idx];
+        text = open ? String(open.text || '') : '';
     }
     text = text.trim();
     if (!text) { showCustomAlert('开局内容是空的：先选一个开局，或把自定义内容写上'); return; }
@@ -1367,11 +1367,43 @@ window.fh1StartStory = async function () {
         console.log('FH1: 已把 ' + names.length + ' 条规则的指导写入 uid ' + FH1_RULES_UID);
     }
 
-    // ② 开局正文 ＋ 变量（rules 由 fh1CollectVars 带上）
-    triggerSTSlashSend(text, fh1CollectVars());
+    // ② 开局正文 ＋ 变量。payload = 变量面板里的内容 ＋ rules（fh1CollectVars）
+    //    ＋ **这张开局卡自带的初始变量**（内容源里的 {卡名}.变量.json，见任务书第 51 条）
+    var payload = fh1CollectVars();
+    var varsCount = 0;
+    if (open && open.vars) {
+        // fh1MergeVars 会跳过最外层的 rules / setting，所以开局数据动不了这两样
+        fh1MergeVars(payload, open.vars);
+        varsCount = Object.keys(open.vars).length;
+        // 再把 setting 写死一遍（保险：setting 只归前端）
+        payload.setting = payload.setting || {};
+        payload.setting.mode = (typeof __currentMode !== 'undefined' && __currentMode) ? __currentMode : 'free';
+        payload.setting.worldview = 'hentai';
+    }
+    triggerSTSlashSend(text, payload);
     console.log('FH1: 已发送开局（' + FH1_SELECTED + '｜' + (FH1_START_OPEN === 'custom' ? '自定义' : '预置') +
-        '｜' + text.length + ' 字｜规则 ' + names.length + ' 条）');
+        '｜' + text.length + ' 字｜规则 ' + names.length + ' 条｜开局自带变量 ' + varsCount + ' 组）');
 };
+
+// 深合并：把开局自带的初始变量并进 payload（数组与标量直接覆盖，对象递归）
+// ⚠️ **最外层的 rules / setting 一律跳过**：特殊规则**只能玩家**在「特殊规则」页自己勾
+//    （没勾就根本不该出现 rules 这个键），setting 由前端写。开局数据不许碰这两样——
+//    光靠"内容源里别写"不够，这里做成硬保证。
+function fh1MergeVars(target, src, depth) {
+    if (!src || typeof src !== 'object') { return target; }
+    var root = !(depth > 0);
+    Object.keys(src).forEach(function (k) {
+        if (root && (k === 'rules' || k === 'setting')) { return; }
+        var v = src[k];
+        if (v && typeof v === 'object' && !Array.isArray(v)) {
+            if (!target[k] || typeof target[k] !== 'object' || Array.isArray(target[k])) { target[k] = {}; }
+            fh1MergeVars(target[k], v, (depth || 0) + 1);
+        } else {
+            target[k] = v;
+        }
+    });
+    return target;
+}
 
 window.fh1CollectVars = function () {
     var v = {};
