@@ -2,18 +2,21 @@
  * FH1 · 本子世界（自由模式）界面逻辑
  * ---------------------------------------------------------------------
  * 前置条件
- *   1. index.html 引入顺序：core → presets → app → fc1-init → fh1-init → story-loader
- *   2. 预置数据：data/fh1-presets/worldviews.json
- *      （由 工具\生成世界观预置.ps1 从 状态栏\content\本子世界\世界观\ 生成，勿手改）
+ *   1. index.html 引入顺序：core → presets → app → fc1-init → rules-presets → fh1-init → story-loader
+ *   2. 预置数据：data/fh1-presets/worldviews.json（世界观）
+ *                js/rules-presets.js（特殊规则清单）
+ *      两份都由 工具\生成世界观预置.ps1 从 状态栏\content\本子世界\ 生成，勿手改
  *   3. 界面骨架由 story-loader.js 按 STORY_MANIFEST 的 headers 生成（四页）：
  *        FH1-sub1「世界观概览」 → 介绍 + 「进入本子世界」（HTML 在 story-loader）
  *        FH1-sub2「世界观」     → 卡片列表 → 点选后展开（可开编辑模式改／删）
- *        FH1-sub3「特殊规则」   → 占位（待编写）
- *        FH1-sub4「开局选择」   → 占位（待编写）
+ *        FH1-sub3「特殊规则」   → 规则卡：勾选 / 选模式 / 填常识（只改草稿）
+ *        FH1-sub4「开局选择」   → 开局卡片 → 点「开始剧情」发送正文＋变量
  *
  * 关键规则
  *   · 编辑结果先落进内存草稿 FH1_DRAFT，**只有点「启用并继续」才写世界书**
  *   · 写入内容＝按骨架重新拼装的整套文本（含玩家的编辑与删除），写入世界书 uid 54
+ *   · 特殊规则同理：只改草稿 FH1_RULES，点「开始剧情」时才 ①把所选规则的指导写进 uid 5
+ *     ②把 rules 变量随开局消息一起投递（前端还没开局，没有变量树可写）
  *   · 点「隐藏」→ 右侧书签（以及本页两个侧边按钮）全隐藏，切换选项卡后恢复
  * ===================================================================== */
 
@@ -21,6 +24,7 @@ var FH1_PRESETS = null;        // worldviews.json 内容
 var FH1_SELECTED = '';         // 当前选中的世界观名
 var FH1_WORLDVIEW_UID = 54;    // 本子世界「世界观设定」条目 uid
 var FH1_ECOLOGY_UID = 69;      // 本子世界「社会生态」条目 uid（与世界观同一次写入）
+var FH1_VARRULES_UID = 28;     // 本子世界「自由-变量规则」条目 uid（跟着世界观一起切换）
 var FH1_DRAFT = null;          // 当前世界观的可编辑草稿（含玩家的改与删）
 var FH1_EDITING = false;       // 编辑模式开关状态
 var FH1_SUBTAB = '';           // 当前 FH1 子页 id（如 FH1-sub2）
@@ -32,6 +36,12 @@ var FH1_FOCUS_LAST = '';       // 形如 "bg:2"：重画后把光标停在该组
 var FH1_SUB_SCROLL = { bg: 0, eco: 0 };   // 小标题带的横向位置：重画后要还原，否则每次都跳回开头
 var FH1_START_OPEN = '';       // 开局页当前展开：'' | 'custom' | 'preset:<序号>'
 var FH1_START_CUSTOM_TEXT = '';// 自定义开局正文（重画不丢）
+
+// 特殊规则（跨世界观通用）：草稿 ＋ 界面状态
+var FH1_RULES = {};            // { 规则名: { 模式?: '...', '常识文本': {} } }，与写入 variables 的结构一致
+var FH1_RULES_OPEN = {};       // 哪几张规则卡被展开（重画后保留）
+var FH1_RULES_UID = 5;         // 「内化协议（本子世界）」条目 uid：开局把所选规则的指导写进去
+var FH1_INNER_TAG = '世界观内化协议细节指导';
 
 // 平铺段落：条目直接挂在标题下，标题右侧挂「＋ 添加」
 var FH1_FLAT_SEGS = ['时代锚点', '世界风格', '社会与法治', '民俗风情'];
@@ -926,6 +936,19 @@ window.fh1EnableAndContinue = async function () {
     console.log('FH1: 已写入 uid ' + FH1_WORLDVIEW_UID + '（' + text.length + ' 字）与 uid ' + FH1_ECOLOGY_UID +
         '（' + ecoText.length + ' 字，' + (FH1_DRAFT.ecology && FH1_DRAFT.ecology.blocks ? FH1_DRAFT.ecology.blocks.length : 0) + ' 块）｜' + res.msg);
 
+    // 变量规则写进 uid 28；这套世界观没有变量规则文件（空串）时跳过，保留世界书里现有的
+    var varText = String(FH1_DRAFT.varRulesFree || '').trim();
+    if (varText) {
+        var resVar = await fh1WriteWorldbookEntry(FH1_VARRULES_UID, varText);
+        if (!resVar.ok) {
+            showCustomAlert('世界观与生态已写入，但变量规则写入失败：' + resVar.msg + '\n（可再点一次「启用并继续」重试）');
+            return;
+        }
+        console.log('FH1: 已写入 uid ' + FH1_VARRULES_UID + '（变量规则，' + varText.length + ' 字）');
+    } else {
+        console.log('FH1: 这套世界观没有变量规则文件，跳过 uid ' + FH1_VARRULES_UID);
+    }
+
     // 切换选项卡 → 隐藏的书签由 switchSubTab 恢复；标记「已启用过世界观」
     FH1_APPLIED = true;
     fh1RestoreBookmarks();
@@ -1006,9 +1029,12 @@ window.fh1RenderRulesGate = function () {
     // 只要启用过一次世界观，就不再要求玩家回去选
     if (FH1_APPLIED) {
         // ① 已启用过世界观：推荐跳过（之后可用状态栏加规则）
+        var picked = Object.keys(FH1_RULES).length;
         gate.innerHTML =
             '<div class="fh1-gate-note">刚开始游玩时，为保证游玩体验，<b>推荐跳过特殊规则的选择</b>；' +
-            '之后也可以在<b>状态栏</b>里随时增加特殊规则。</div>' +
+            '之后也可以在<b>状态栏</b>里随时增加特殊规则。' +
+            (picked ? '<br>你已经选了 <b>' + picked + '</b> 条，点「选择特殊规则」可以继续改。' : '') +
+            '</div>' +
             '<div class="fh1-gate-btns">' +
                 '<button class="fh1-gate-btn primary" onclick="fh1RulesSkip()">确认跳过</button>' +
                 '<button class="fh1-gate-btn" onclick="fh1RulesChoose()">选择特殊规则</button>' +
@@ -1031,17 +1057,186 @@ window.fh1RulesSkip = function () {
     if (typeof goToSubTab === 'function') { goToSubTab('FH1', 'FH1-sub4'); }
 };
 
-// 选择特殊规则 → 收起提示，露出规则区（规则本体待编写）
+// 选择特殊规则 → 收起提示，露出规则区（规则卡在 fh1RenderRules 里画）
 window.fh1RulesChoose = function () {
     var gate = document.getElementById('fh1-rules-gate');
     var body = document.getElementById('fh1-rules-body');
     if (gate) gate.style.display = 'none';
-    if (body) body.style.display = '';
+    if (body) { body.style.display = ''; fh1RenderRules(); }
 };
 
 window.fh1GotoWorldview = function () {
     if (typeof goToSubTab === 'function') { goToSubTab('FH1', 'FH1-sub2'); }
 };
+
+/* ================== 特殊规则页：规则卡（只改草稿 FH1_RULES） ==================
+ * 规则清单来自 js/rules-presets.js（window.RULES_PRESETS，生成产物，勿手改）。
+ * 与状态栏第 3 页同一份清单、同一套结构：
+ *   规则名 → 值对象        { '时间暂停': { '模式': '快感累计' } }
+ *   填写式规则用填写内容当键 { 'xx是常识': { '天空是绿色的': {} } }
+ * 差别只在落盘时机：状态栏当场写变量；前端没开局，只能等「开始剧情」时随开局一起发。
+ * ========================================================================== */
+
+function fh1RulePresets() {
+    return (window.RULES_PRESETS && window.RULES_PRESETS.rules) || [];
+}
+
+function fh1RuleByName(name) {
+    var hit = null;
+    fh1RulePresets().forEach(function (p) { if (p.name === name) hit = p; });
+    return hit;
+}
+
+// 单张规则卡的 HTML：默认只显示规则名，点一下才从下方拉出简介/勾选/模式/填写框
+function fh1RuleCardHtml(p) {
+    var v = FH1_RULES[p.name], on = (v !== undefined), open = !!FH1_RULES_OPEN[p.name];
+    var hasModes = !!(p.modes && p.modes.length);
+    var h = '<div class="fh1-rule-card' + (on ? ' on' : '') + '">';
+    h += '<div class="fh1-rule-head" data-rx="expand" data-name="' + fh1Esc(p.name) + '">' +
+            '<span class="fh1-rule-name">' + fh1Esc(p.name) + '</span>' +
+            (on ? '<span class="fh1-rule-on">已启用</span>' : '') +
+            '<span class="fh1-rule-arrow">' + (open ? '\u25BE' : '\u25B8') + '</span>' +
+         '</div>';
+    if (!open) { return h + '</div>'; }
+
+    h += '<div class="fh1-rule-body">';
+    if (p.intro) { h += '<div class="fh1-rule-intro">' + fh1Esc(p.intro) + '</div>'; }
+    h += '<label class="fh1-rule-enable"><input type="checkbox" data-rx="toggle" data-name="' + fh1Esc(p.name) + '"' +
+        (on ? ' checked' : '') + '>启用这条规则</label>';
+    if (hasModes) {
+        h += '<div class="fh1-rule-modes">' + p.modes.map(function (m) {
+            var sel = !!(v && v['模式'] === m);
+            return '<label class="fh1-rule-mode"><input type="radio" name="fh1rm-' + fh1Esc(p.name) + '"' +
+                ' data-rx="mode" data-name="' + fh1Esc(p.name) + '" data-mode="' + fh1Esc(m) + '"' +
+                (sel ? ' checked' : '') + '>' + fh1Esc(m) + '</label>';
+        }).join('') + '</div>';
+    }
+    if (p.fill) {
+        h += '<div class="fh1-rule-fillbar">' +
+                '<input type="text" class="fh1-rule-input" data-rx-input="' + fh1Esc(p.name) + '"' +
+                ' placeholder="' + fh1Esc(p.fill) + '">' +
+                '<button class="fh1-rule-add" data-rx="add-entry" data-name="' + fh1Esc(p.name) + '">添加</button>' +
+             '</div>';
+        var ks = on ? Object.keys(v).filter(function (k) { return k !== '模式'; }) : [];
+        if (ks.length) {
+            h += '<div class="fh1-rule-entries">' + ks.map(function (k) {
+                return '<div class="fh1-rule-entry"><span class="fh1-rule-entry-text">' + fh1Esc(k) + '</span>' +
+                    '<button class="fh1-rule-mini del" data-rx="del-entry" data-name="' + fh1Esc(p.name) + '"' +
+                    ' data-text="' + fh1Esc(k) + '">删除</button></div>';
+            }).join('') + '</div>';
+        }
+    }
+    h += '</div></div>';
+    return h;
+}
+
+window.fh1RenderRules = function () {
+    var body = document.getElementById('fh1-rules-body');
+    if (!body) { return; }
+    var presets = fh1RulePresets();
+
+    if (!presets.length) {
+        body.innerHTML = '<div class="fh1-rules-err">规则清单没加载：确认 <code>js/rules-presets.js</code> 已上传，' +
+            '并且在 <code>index.html</code> 里排在 <code>js/fh1-init.js</code> 之前。</div>';
+        return;
+    }
+
+    var on = Object.keys(FH1_RULES).length;
+    var html = '<div class="fh1-rules-tip">开局前可以先挑几条规则，也可以一条都不挑（点「确认跳过」）。' +
+        '这里改动只是草稿，点「开始剧情」才会生效；<b>游玩中还能在状态栏里随时增删</b>。' +
+        (on ? '　当前已选 <b>' + on + '</b> 条。' : '') + '</div>';
+    html += '<div class="fh1-rule-list">' + presets.map(fh1RuleCardHtml).join('') + '</div>';
+    body.innerHTML = html;
+    fh1BindRules(body);
+};
+
+// 事件只在第一次绑一次；卡片重画不影响（监听挂在容器上）
+function fh1BindRules(body) {
+    if (!body || body.getAttribute('data-rx-bound')) { return; }
+    body.setAttribute('data-rx-bound', '1');
+
+    body.addEventListener('click', function (ev) {
+        var el = ev.target && ev.target.closest ? ev.target.closest('[data-rx]') : null;
+        if (!el || !body.contains(el)) { return; }
+        var act = el.getAttribute('data-rx');
+        var name = el.getAttribute('data-name') || '';
+        if (act === 'expand') { FH1_RULES_OPEN[name] = !FH1_RULES_OPEN[name]; fh1RenderRules(); return; }
+        if (act === 'toggle') { fh1RuleToggle(name); return; }
+        if (act === 'mode') {
+            FH1_RULES[name] = FH1_RULES[name] || {};
+            FH1_RULES[name]['模式'] = el.getAttribute('data-mode') || '';
+            fh1RenderRules();
+            return;
+        }
+        if (act === 'add-entry') { fh1RuleAddEntry(name); return; }
+        if (act === 'del-entry') { fh1RuleDelEntry(name, el.getAttribute('data-text') || ''); return; }
+    });
+
+    // 填写框里按回车＝点「添加」
+    body.addEventListener('keydown', function (ev) {
+        if (ev.key !== 'Enter') { return; }
+        var t = ev.target;
+        if (!t || !t.getAttribute) { return; }
+        var nm = t.getAttribute('data-rx-input');
+        if (!nm) { return; }
+        ev.preventDefault();
+        fh1RuleAddEntry(nm);
+    });
+}
+
+function fh1RuleToggle(name) {
+    // 已在草稿里 → 取消勾选
+    if (FH1_RULES[name] !== undefined) {
+        delete FH1_RULES[name];
+        fh1RenderRules();
+        return;
+    }
+    var p = fh1RuleByName(name);
+    FH1_RULES_OPEN[name] = true;
+    // 有模式 / 要填写的规则，不能靠勾选框直接启用（与状态栏一致）
+    if (p && p.modes && p.modes.length) {
+        showCustomAlert('「' + name + '」需要先在上面选一个模式才算启用。');
+        fh1RenderRules();
+        return;
+    }
+    if (p && p.fill) {
+        showCustomAlert('「' + name + '」需要先在框里填内容、点「添加」，填进去的内容本身就是这条规则。');
+        fh1RenderRules();
+        return;
+    }
+    FH1_RULES[name] = {};
+    fh1RenderRules();
+}
+
+function fh1RuleAddEntry(name) {
+    var body = document.getElementById('fh1-rules-body');
+    var box = body ? body.querySelector('[data-rx-input="' + name + '"]') : null;
+    var text = box ? String(box.value || '').trim() : '';
+    if (!text) { showCustomAlert('先填内容，再点「添加」。'); return; }
+
+    if (FH1_RULES[name] === undefined) {
+        var p = fh1RuleByName(name);
+        if (p && p.modes && p.modes.length) { showCustomAlert('「' + name + '」要先选一个模式。'); return; }
+        FH1_RULES[name] = {};
+    }
+    FH1_RULES[name][text] = {};
+    fh1RenderRules();
+}
+
+function fh1RuleDelEntry(name, text) {
+    if (!FH1_RULES[name]) { return; }
+    delete FH1_RULES[name][text];
+    fh1RenderRules();
+}
+
+// 把所选规则的指导拼成 uid 5 的正文（与状态栏 writeInnerGuidance 同一写法：标签包裹、块间 ---）
+function fh1RulesGuidance() {
+    var blocks = [];
+    fh1RulePresets().forEach(function (p) {
+        if (FH1_RULES[p.name] !== undefined && p.guide) { blocks.push(String(p.guide).trim()); }
+    });
+    return '<' + FH1_INNER_TAG + '>\n' + (blocks.length ? blocks.join('\n---\n') : '') + '\n</' + FH1_INNER_TAG + '>';
+}
 
 /* --------------------- 开局（「开局选择」页） --------------------- */
 /* 卡片列表：这套世界观的预置开局（内容源 世界观\{名}\开局\*.txt）＋ 一张「自定义开局」
@@ -1143,8 +1338,8 @@ window.fh1BackStartList = function () {
     fh1RenderStartPanel();
 };
 
-// 「开始剧情」：直接把开局正文 ＋ 变量发出去
-window.fh1StartStory = function () {
+// 「开始剧情」：先把所选规则的指导写进 uid 5，再把开局正文 ＋ 变量（含 rules）发出去
+window.fh1StartStory = async function () {
     if (!FH1_SELECTED) { showCustomAlert('请先到「世界观」页选一套世界观并点「启用并继续」'); return; }
 
     var text = '';
@@ -1160,8 +1355,22 @@ window.fh1StartStory = function () {
     if (!text) { showCustomAlert('开局内容是空的：先选一个开局，或把自定义内容写上'); return; }
     if (typeof triggerSTSlashSend !== 'function') { showCustomAlert('发送接口不可用（triggerSTSlashSend 缺失）'); return; }
 
+    // ① 规则指导 → uid 5。变量随消息走，指导必须在这一局开始前就位，
+    //    否则 uid 38 只报了规则名，却让 AI 去看「内化协议里对应的规则指导」，而那条是空的。
+    var names = Object.keys(FH1_RULES);
+    var res = await fh1WriteWorldbookEntry(FH1_RULES_UID, fh1RulesGuidance());
+    if (!res.ok) {
+        var go = await showCustomConfirm('规则指导写入世界书 uid ' + FH1_RULES_UID + ' 失败：' + res.msg +
+            '\n\n规则变量仍会随开局发送，但 AI 拿不到每条规则的详细指导。\n要照常开始吗？（可取消，再点一次「开始剧情」重试）');
+        if (!go) { return; }
+    } else {
+        console.log('FH1: 已把 ' + names.length + ' 条规则的指导写入 uid ' + FH1_RULES_UID);
+    }
+
+    // ② 开局正文 ＋ 变量（rules 由 fh1CollectVars 带上）
     triggerSTSlashSend(text, fh1CollectVars());
-    console.log('FH1: 已发送开局（' + FH1_SELECTED + '｜' + (FH1_START_OPEN === 'custom' ? '自定义' : '预置') + '｜' + text.length + ' 字）');
+    console.log('FH1: 已发送开局（' + FH1_SELECTED + '｜' + (FH1_START_OPEN === 'custom' ? '自定义' : '预置') +
+        '｜' + text.length + ' 字｜规则 ' + names.length + ' 条）');
 };
 
 window.fh1CollectVars = function () {
@@ -1179,5 +1388,8 @@ window.fh1CollectVars = function () {
     if (v['背景信息'] && v['背景信息']['地区'] && Object.keys(v['背景信息']['地区']).length === 0) {
         delete v['背景信息'];
     }
+    // 特殊规则：前端开局前没有变量树可写，只能跟开局消息一起投递（<VariableInsert> 里带上 rules）
+    // 结构： { 规则名: { 模式?: '...', '常识文本': {} } }；一条都没选时不带这个键
+    if (Object.keys(FH1_RULES).length) { v.rules = fh1DeepCopy(FH1_RULES); }
     return v;
 };

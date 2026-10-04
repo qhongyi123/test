@@ -1670,8 +1670,21 @@ textarea.fc1is-desc { min-height: 108px; width: 100%; }
 
 @media (max-width: 768px) {
     .fh1-wv-wrap { padding-right: 0; }
-    .bookmark-hide { bottom: 195px; }
-    .bookmark-reselect { bottom: 140px; }
+    /* FH1 这两个书签在手机端必须和原有书签同尺寸、同竖排间距（35px）。
+       关键：本块必须排在桌面那组 .bookmark-hide / .bookmark-reselect 规则「之后」，
+       并把尺寸整套重写——否则后出现的桌面 width/height 会反过来压住移动端设置，
+       这就是它们先前比别的书签明显过大、且和「目录」挤在一起的原因。
+       竖排：角色 30 ／ 翻页 65 ／ 封面 100 ／ 目录 135 ／ 隐藏 170 ／ 重选 205。
+       隐藏占的是「返回」那一格（桌面同理：两者都是 250px）；两者不会同时出现
+       ——「返回」只在角色管理页出现，而进角色页时 fh1SyncSideBookmarks 会把这两个收掉。 */
+    .bookmark-hide, .bookmark-reselect {
+        right: -2px; width: 42px; height: 28px; font-size: 0.75rem;
+        padding-left: 4px; border-width: 1px; border-radius: 3px 0 0 3px;
+    }
+    .bookmark-hide { bottom: 170px; }
+    .bookmark-reselect { bottom: 205px; }
+    .bookmark-hide:hover, .bookmark-reselect:hover { width: 50px; right: 0px; }
+    .bookmark-hide::after, .bookmark-reselect::after { font-size: 0.85rem; margin-left: 2px; }
 }
 
 /* ===== FH1 · 段落标题行的「＋ 附录」与附录抽屉内容 ===== */
@@ -1879,6 +1892,74 @@ textarea.fc1is-desc { min-height: 108px; width: 100%; }
     border-color: var(--color-primary-dark);
 }
 .fh1-gate-btn.primary:hover { background: linear-gradient(135deg, #d4af37 0%, #a17f00 100%); }
+
+/* ===== FH1 · 特殊规则：规则卡（浅色纸面，沿用 FH1 的金 / 深棕配色） ===== */
+.fh1-rules-err {
+    max-width: 560px; margin: 14px auto; padding: 14px 16px;
+    border: 1px dashed rgba(184, 134, 11, 0.5); border-radius: 10px;
+    background: rgba(253, 246, 227, 0.5);
+    color: var(--color-text-dark); font-size: 0.88rem; line-height: 1.7;
+}
+.fh1-rules-tip {
+    margin: 0 0 10px; padding: 10px 12px;
+    border-left: 3px solid rgba(184, 134, 11, 0.6);
+    background: rgba(253, 246, 227, 0.45); border-radius: 0 8px 8px 0;
+    color: var(--color-text-dark); font-size: 0.86rem; line-height: 1.75;
+}
+.fh1-rules-tip b { color: var(--color-primary-dark); }
+.fh1-rule-list { display: block; width: 100%; }
+.fh1-rule-card {
+    width: 100%; box-sizing: border-box; margin-bottom: 8px;
+    border: 1px solid rgba(184, 134, 11, 0.35); border-radius: 8px;
+    background: rgba(255, 255, 255, 0.55); overflow: hidden;
+}
+.fh1-rule-card.on { border-color: var(--color-primary); background: rgba(212, 175, 55, 0.12); }
+/* 卡头默认只显示规则名（点一下才拉出正文），所以留得高一点 */
+.fh1-rule-head { display: flex; align-items: center; gap: 8px; min-height: 58px; padding: 0 14px; cursor: pointer; }
+.fh1-rule-name { font-size: 1.12rem; font-weight: bold; color: var(--color-primary-dark); }
+.fh1-rule-on {
+    font-size: 0.72rem; font-weight: bold; color: #fff;
+    background: var(--color-primary-dark); border-radius: 10px; padding: 2px 8px;
+}
+.fh1-rule-arrow { margin-left: auto; color: var(--color-primary-dark); }
+.fh1-rule-body { padding: 0 14px 14px; }
+.fh1-rule-intro { margin-bottom: 10px; font-size: 0.86rem; line-height: 1.75; color: var(--color-text-dark); }
+.fh1-rule-enable { display: flex; align-items: center; gap: 6px; font-size: 0.88rem; color: var(--color-text-dark); cursor: pointer; }
+.fh1-rule-enable input, .fh1-rule-mode input { accent-color: var(--color-primary-dark); }
+.fh1-rule-modes { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 8px; }
+.fh1-rule-mode { display: flex; align-items: center; gap: 5px; font-size: 0.86rem; color: var(--color-text-dark); cursor: pointer; }
+.fh1-rule-fillbar { display: flex; gap: 8px; margin-top: 10px; }
+.fh1-rule-input {
+    flex: 1; min-width: 0; padding: 7px 10px;
+    font-family: inherit; font-size: 0.86rem; color: #3e2723;
+    background: #fdf6e3; border: 1px solid rgba(184, 134, 11, 0.5); border-radius: 6px;
+}
+.fh1-rule-add {
+    flex: none; padding: 7px 16px;
+    font-family: inherit; font-size: 0.86rem; font-weight: bold; color: #6b4b1f;
+    background: #fdf6e3; border: 1px solid rgba(184, 134, 11, 0.6); border-radius: 6px; cursor: pointer;
+}
+.fh1-rule-add:hover { background: var(--color-primary-dark); border-color: var(--color-primary-dark); color: #fff; }
+.fh1-rule-entries { margin-top: 8px; }
+.fh1-rule-entry {
+    display: flex; align-items: center; gap: 8px; padding: 5px 0;
+    border-bottom: 1px dashed rgba(184, 134, 11, 0.25);
+    font-size: 0.86rem; color: var(--color-text-dark);
+}
+.fh1-rule-entry-text { flex: 1; min-width: 0; word-break: break-all; }
+.fh1-rule-mini {
+    flex: none; padding: 3px 10px;
+    font-family: inherit; font-size: 0.76rem; color: #6b4b1f;
+    background: #fdf6e3; border: 1px solid rgba(184, 134, 11, 0.5); border-radius: 5px; cursor: pointer;
+}
+.fh1-rule-mini.del { color: #8b1a1a; border-color: rgba(139, 26, 26, 0.45); }
+.fh1-rule-mini.del:hover { background: #8b1a1a; border-color: #8b1a1a; color: #fff; }
+@media (max-width: 768px) {
+    .fh1-rule-head { min-height: 50px; padding: 0 10px; }
+    .fh1-rule-name { font-size: 1rem; }
+    .fh1-rule-body { padding: 0 10px 12px; }
+    .fh1-rule-fillbar { flex-wrap: wrap; }
+}
 
 /* ===== FH1 · 小标题带（左右箭头 / 可拖动 / 不换行；选中谁就显示谁） ===== */
 .fh1-sub-strip { display: flex; align-items: center; gap: 4px; margin: 6px 0 8px 0; }
