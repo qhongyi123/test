@@ -948,13 +948,18 @@ window.fh1EnableAndContinue = async function () {
         console.log('FH1: 已写入 uid ' + FH1_VARRULES_UID + '（变量规则，' + varText.length + ' 字）');
     } else {
         console.log('FH1: 这套世界观没有变量规则文件，跳过 uid ' + FH1_VARRULES_UID);
-        var dispText = String(FH1_DRAFT.varDisplay || '').trim();
-        if (dispText) {
-            var resDisp = await fh1WriteWorldbookEntry(FH1_VARDISPLAY_UID, dispText);
-            console.log('FH1: uid ' + FH1_VARDISPLAY_UID + ' 写入结果', resDisp, '（变量信息展示，' + dispText.length + ' 字）');
-        } else {
-            console.log('FH1: 这套世界观没有变量信息展示文件，跳过 uid ' + FH1_VARDISPLAY_UID);
+    }
+    // 变量信息展示写进 uid 11（「最新状态·本子世界」）；这套世界观没有该文件（空串）时跳过
+    var dispText = String(FH1_DRAFT.varDisplay || '').trim();
+    if (dispText) {
+        var resDisp = await fh1WriteWorldbookEntry(FH1_VARDISPLAY_UID, dispText);
+        if (!resDisp.ok) {
+            showCustomAlert('变量信息展示写入失败：' + resDisp.msg + '\n（可再点一次「启用并继续」重试）');
+            return;
         }
+        console.log('FH1: 已写入 uid ' + FH1_VARDISPLAY_UID + '（变量信息展示，' + dispText.length + ' 字）');
+    } else {
+        console.log('FH1: 这套世界观没有变量信息展示文件，跳过 uid ' + FH1_VARDISPLAY_UID);
     }
 
     // 切换选项卡 → 隐藏的书签由 switchSubTab 恢复；标记「已启用过世界观」
