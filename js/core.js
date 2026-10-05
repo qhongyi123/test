@@ -42,6 +42,8 @@ window.applyWorldviewLorebook = async function(worldviewId, mode) {
     WORLDVIEW_IDS.forEach(function(id, W) {
         var isCurrent = (id === worldviewId);
         worldviewCoreUids(W).forEach(function(uid) { updates.push({ uid: uid, enabled: isCurrent }); });
+        // 最新状态·{世界观}（本子世界的「变量信息展示」＝ uid 11 ＝ 9 + W）：跟着世界观一起启停
+        updates.push({ uid: 9 + W, enabled: isCurrent });
         updates.push({ uid: 26 + W, enabled: isCurrent && mode === 'free' });
         updates.push({ uid: 31 + W, enabled: isCurrent && mode === 'script' });
         updates.push({ uid: 36 + W, enabled: isCurrent && mode === 'free' });

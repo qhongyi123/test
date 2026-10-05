@@ -24,7 +24,8 @@ var FH1_PRESETS = null;        // worldviews.json 内容
 var FH1_SELECTED = '';         // 当前选中的世界观名
 var FH1_WORLDVIEW_UID = 54;    // 本子世界「世界观设定」条目 uid
 var FH1_ECOLOGY_UID = 69;      // 本子世界「社会生态」条目 uid（与世界观同一次写入）
-var FH1_VARRULES_UID = 28;     // 本子世界「自由-变量规则」条目 uid（跟着世界观一起切换）
+var FH1_VARRULES_UID = 28;
+var FH1_VARDISPLAY_UID = 11;   // 「最新状态·本子世界」条目 uid（变量信息展示，同样跟着世界观切换）     // 本子世界「自由-变量规则」条目 uid（跟着世界观一起切换）
 var FH1_DRAFT = null;          // 当前世界观的可编辑草稿（含玩家的改与删）
 var FH1_EDITING = false;       // 编辑模式开关状态
 var FH1_SUBTAB = '';           // 当前 FH1 子页 id（如 FH1-sub2）
@@ -947,6 +948,13 @@ window.fh1EnableAndContinue = async function () {
         console.log('FH1: 已写入 uid ' + FH1_VARRULES_UID + '（变量规则，' + varText.length + ' 字）');
     } else {
         console.log('FH1: 这套世界观没有变量规则文件，跳过 uid ' + FH1_VARRULES_UID);
+        var dispText = String(FH1_DRAFT.varDisplay || '').trim();
+        if (dispText) {
+            var resDisp = await fh1WriteWorldbookEntry(FH1_VARDISPLAY_UID, dispText);
+            console.log('FH1: uid ' + FH1_VARDISPLAY_UID + ' 写入结果', resDisp, '（变量信息展示，' + dispText.length + ' 字）');
+        } else {
+            console.log('FH1: 这套世界观没有变量信息展示文件，跳过 uid ' + FH1_VARDISPLAY_UID);
+        }
     }
 
     // 切换选项卡 → 隐藏的书签由 switchSubTab 恢复；标记「已启用过世界观」
