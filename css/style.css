@@ -2156,3 +2156,13 @@ textarea.fc1is-desc { min-height: 108px; width: 100%; }
     resize: vertical;
 }
 .fh1-st-custom:focus { border-color: var(--color-primary-dark); }
+
+/* ===== 世界观列表分组：可游玩 / 开发中... ===== */
+.fh1-wv-group { margin-bottom: 18px; }
+.fh1-wv-group-title {
+    display: flex; align-items: center; gap: 8px;
+    margin: 4px 0 10px 0; padding-bottom: 5px;
+    font-size: 0.95rem; font-weight: bold; letter-spacing: 3px; color: var(--color-primary-dark);
+    border-bottom: 1px dashed rgba(184, 134, 11, 0.5);
+}
+.fh1-wv-group-title::before { content: '\25C6'; font-size: 0.7rem; color: var(--color-primary); }

@@ -377,7 +377,7 @@ function fh1EcologyAssemble(d) {
 window.loadFh1Presets = async function () {
     if (FH1_PRESETS) return FH1_PRESETS;
     try {
-        var res = await fetch('data/fh1-presets/worldviews.json');
+        var res = await fetch('data/fh1-presets/worldviews.json?v=' + Date.now(), { cache: 'no-store' });   // 防缓存：预置改了必须立刻生效
         if (!res.ok) throw new Error('HTTP ' + res.status);
         FH1_PRESETS = await res.json();
     } catch (e) {
@@ -410,7 +410,12 @@ window.fh1InitWorldviewPage = function () {
         }
         if (FH1_SELECTED && FH1_DRAFT) { fh1RenderOpenCard(); fh1SyncSideBookmarks(); return; }
         fh1SyncSideBookmarks();
-        box.innerHTML = FH1_PRESETS.order.map(function (n) {
+        // 分两组显示：可游玩 / 开发中...（没归类的自动落到「开发中...」）
+        var FH1_WV_GROUPS = [
+            { title: '可游玩', names: ['少子化'] },
+            { title: '开发中...', names: ['伊菈优待', '大小之争'] }
+        ];
+        var card = function (n) {
             var p = fh1GetPreset(n) || {};
             return '<div class="fh1-wv-card" data-wv="' + fh1Esc(n) + '" onclick="fh1SelectWorldview(this.getAttribute(\'data-wv\'))">' +
                 '<div class="fh1-wv-card-top">' +
@@ -419,7 +424,21 @@ window.fh1InitWorldviewPage = function () {
                 '</div>' +
                 '<div class="fh1-wv-sum">' + fh1Esc(p.summary || '') + '</div>' +
             '</div>';
-        }).join('');
+        };
+        var used = {}, groupsHtml = '';
+        FH1_WV_GROUPS.forEach(function (g) {
+            var names = g.names.filter(function (n) { return FH1_PRESETS.order.indexOf(n) >= 0 && !used[n]; });
+            if (!names.length) return;
+            names.forEach(function (n) { used[n] = 1; });
+            groupsHtml += '<div class="fh1-wv-group"><div class="fh1-wv-group-title">' + fh1Esc(g.title) + '</div>' +
+                names.map(card).join('') + '</div>';
+        });
+        var rest = FH1_PRESETS.order.filter(function (n) { return !used[n]; });
+        if (rest.length) {
+            groupsHtml += '<div class="fh1-wv-group"><div class="fh1-wv-group-title">开发中...</div>' +
+                rest.map(card).join('') + '</div>';
+        }
+        box.innerHTML = groupsHtml;
     };
 
     if (FH1_PRESETS) {
