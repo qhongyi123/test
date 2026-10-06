@@ -27,6 +27,7 @@ var FH1_ECOLOGY_UID = 69;      // 本子世界「社会生态」条目 uid（与
 var FH1_VARRULES_UID = 28;
 var FH1_VARDISPLAY_UID = 11;   // 「最新状态·本子世界」条目 uid（变量信息展示，同样跟着世界观切换）     // 本子世界「自由-变量规则」条目 uid（跟着世界观一起切换）
 var FH1_DRAFT = null;          // 当前世界观的可编辑草稿（含玩家的改与删）
+var FH1_WV_VERSION = '';       // 当前选中的「版本」名（世界观文件夹下有 `版本\` 时才有；没有版本＝空串）
 var FH1_EDITING = false;       // 编辑模式开关状态
 var FH1_SUBTAB = '';           // 当前 FH1 子页 id（如 FH1-sub2）
 var FH1_AP_SEG = '';           // 附录抽屉当前对应的段落（世界风格 / 社会与法治 / 民俗风情 / 背景设定 / 社会生态 / 时代锚点）
@@ -317,7 +318,9 @@ async function fh1WriteWorldbookEntry(uid, content) {
 /* -------------------- 拼装：草稿 → uid 54 正文 -------------------- */
 /* 与 工具\生成世界观预置.ps1 的组装规则逐字一致：
    时代锚点不包裹；世界风格/社会与法治/民俗风情 = --- + 标签：{世界观名} + 条目 + ---；
-   背景设定 = # 大标题 + ## 小标题 + 条目。段落之间空一行。 */
+   背景设定 = # 大标题 + ## 小标题 + 条目。段落之间空一行。
+   ⚠️ **0 条的段落整段不写**（2026-10-06 起，和生成器同规则）：这套世界观没有这一段，
+   写进 uid 54 时就不该出现 `## 世界风格` 这样的空标题，否则界面会显示一个空段落带「＋ 添加」。 */
 function fh1Assemble(d) {
     if (!d) return '';
     var labels = { '世界风格': '风格', '社会与法治': '社会与法治', '民俗风情': '民俗风情' };
@@ -326,14 +329,13 @@ function fh1Assemble(d) {
     L.push('# 世界观与基调设定');
     L.push('');
     (d.segments || []).forEach(function (s) {
-        L.push('## ' + s.key);
         var items = (s.items || []).filter(function (t) { return !fh1IsBlankItem(t); });
+        if (!items.length) { return; }          // ← 没有条目＝没有这一段
+        L.push('## ' + s.key);
         var label = labels[s.key] || null;
-        if (items.length) {
-            if (label) { L.push('---'); L.push(label + '：' + d.name); }
-            items.forEach(function (t) { L.push(fh1NormItem(t)); });
-            if (label) { L.push('---'); }
-        }
+        if (label) { L.push('---'); L.push(label + '：' + d.name); }
+        items.forEach(function (t) { L.push(fh1NormItem(t)); });
+        if (label) { L.push('---'); }
         L.push('');
     });
     L.push('</本子>');
@@ -413,7 +415,7 @@ window.fh1InitWorldviewPage = function () {
         // 分两组显示：可游玩 / 开发中...（没归类的自动落到「开发中...」）
         var FH1_WV_GROUPS = [
             { title: '可游玩', names: ['少子化'] },
-            { title: '开发中...', names: ['伊菈优待', '大小之争'] }
+            { title: '开发中...', names: ['常识扭曲', '大小之争'] }
         ];
         var card = function (n) {
             var p = fh1GetPreset(n) || {};
@@ -449,12 +451,57 @@ window.fh1InitWorldviewPage = function () {
     }
 };
 
+/* ---------- 版本（世界观文件夹下有 `版本\` 时才有） ----------
+   预置里的 versions[] 由 工具\生成世界观预置.ps1 生成；每个版本自带 segments／background／ecology／assembled。
+   没有 versions 的世界观＝按老样子（整份预置就是唯一一份内容）。 */
+function fh1VersionsOf(name) {
+    var p = fh1GetPreset(name);
+    return (p && p.versions && p.versions.length) ? p.versions : null;
+}
+// 用某个版本的内容拼出草稿；⚠ 标签行要用**世界观名**，不是版本名
+function fh1DraftFromVersion(name, vName) {
+    var p = fh1GetPreset(name);
+    if (!p) return null;
+    var vers = fh1VersionsOf(name);
+    if (!vers) return fh1DeepCopy(p);
+    var v = null;
+    vers.forEach(function (x) { if (x.name === vName) v = x; });
+    if (!v) v = vers[0];
+    var d = fh1DeepCopy(p);
+    d.name = p.name || name;
+    d.segments = fh1DeepCopy(v.segments || []);
+    d.background = fh1DeepCopy(v.background || []);
+    d.ecology = fh1DeepCopy(v.ecology || { blocks: [], assembled: '' });
+    d.era = v.era; d.eraShort = v.eraShort;
+    d.version = v.name;
+    return d;
+}
+// 标题下方的版本按钮：点了就切（切换会丢掉还没「启用并继续」的改动，所以先问一句）
+window.fh1SelectWorldviewVersion = async function (vName) {
+    if (!FH1_SELECTED || !vName || vName === FH1_WV_VERSION) return;
+    if (FH1_EDITING && typeof showCustomConfirm === 'function') {
+        var go = await showCustomConfirm('切到「' + vName + '」会丢掉当前的改动（还没点「启用并继续」），继续吗？');
+        if (!go) return;
+    }
+    FH1_WV_VERSION = vName;
+    FH1_DRAFT = fh1DraftFromVersion(FH1_SELECTED, vName);
+    FH1_EDITING = false;
+    FH1_ECO_BLOCK = 0;
+    FH1_BG_GROUP = 0;
+    var chk = document.getElementById('fh1-edit-chk');
+    if (chk) chk.checked = false;
+    fh1RenderOpenCard();
+    console.log('FH1: 已切到版本「' + vName + '」（' + fh1Assemble(FH1_DRAFT).length + ' 字）');
+};
+
 // 选中：进入草稿 + 展开
 window.fh1SelectWorldview = function (name) {
     var p = fh1GetPreset(name);
     if (!p) return;
+    var vers = fh1VersionsOf(name);
     FH1_SELECTED = name;
-    FH1_DRAFT = fh1DeepCopy(p);
+    FH1_WV_VERSION = vers ? vers[0].name : '';     // 有版本时默认选第一个（「什么都没写」）
+    FH1_DRAFT = fh1DraftFromVersion(name, FH1_WV_VERSION);
     FH1_EDITING = false;
     FH1_ECO_BLOCK = 0;         // 社会生态回到第一块
     FH1_BG_GROUP = 0;          // 背景设定回到第一个小标题
@@ -478,8 +525,9 @@ window.fh1RenderOpenCard = function () {
     fh1CaptureSubScroll(box);   // 记住标题带当前位置，重画后还原（不然每次点标题都跳回开头）
     var d = FH1_DRAFT;
 
-    // 平铺段落：标题 + 条目，标题右侧一律挂「＋ 添加」（含「时代锚点」）
-    var segHTML = (d.segments || []).map(function (s, si) {
+    // 平铺段落：标题 + 条目，标题右侧挂「＋ 添加」。
+    // **0 条的段落整段不画**：这套世界观没有这一段，连「＋ 添加」一起不显示（2026-10-06 用户要求）
+    var segHTML = (d.segments || []).filter(function (s) { return (s.items || []).length > 0; }).map(function (s, si) {
         var rows = (s.items || []).map(function (it, ii) {
             return fh1ItemRow(fh1ItemText(it), 'data-kind="seg" data-si="' + si + '" data-ii="' + ii + '"');
         }).join('');
@@ -487,10 +535,12 @@ window.fh1RenderOpenCard = function () {
             (rows || '<div class="fh1-hint">（这一段还没有条目）</div>') + '</div>';
     }).join('');
 
-    // 背景设定（分组）：第一行＝小标题带（左右箭头／可拖／不换行），编辑模式下多一行操作，再下面是选中那小标题的子项
+    // 背景设定（分组）：第一行＝小标题带（左右箭头／可拖／不换行），编辑模式下多一行操作，再下面是选中那小标题的子项。
+    // 没有小标题就整段不画（连「＋ 添加」一起）
     var bgGroups = d.background || [];
-    var bgHTML = '<div class="fh1-wv-seg"><div class="fh1-wv-seg-title"><span>背景设定</span>' + fh1PlusBtn('背景设定') + '</div>';
+    var bgHTML = '';
     if (bgGroups.length) {
+        bgHTML = '<div class="fh1-wv-seg"><div class="fh1-wv-seg-title"><span>背景设定</span>' + fh1PlusBtn('背景设定') + '</div>';
         var bgSel = Math.min(Math.max(FH1_BG_GROUP | 0, 0), bgGroups.length - 1);
         FH1_BG_GROUP = bgSel;
         var bgRows = (bgGroups[bgSel].items || []).map(function (it, ii) {
@@ -499,15 +549,14 @@ window.fh1RenderOpenCard = function () {
         bgHTML += fh1SubStrip('bg', bgGroups.map(function (g) { return g.title; }), bgSel) +
             fh1SubActions('bg', bgSel, (bgGroups[bgSel].items || []).length) +
             (bgRows || '<div class="fh1-hint">（这个小标题下还没有子项' + (FH1_EDITING ? '，点上面的「＋ 子项」加一条' : '') + '）</div>');
-    } else {
-        bgHTML += '<div class="fh1-hint">（还没有小标题，可点右上「＋ 添加」新建）</div>';
+        bgHTML += '</div>';
     }
-    bgHTML += '</div>';
 
-    // 社会生态（对应世界书 uid 69）：同样「小标题带 ＋ 操作行 ＋ 选中那块的子项」
+    // 社会生态（对应世界书 uid 69）：同样「小标题带 ＋ 操作行 ＋ 选中那块的子项」；没有块就整段不画
     var blocks = (d.ecology && d.ecology.blocks) ? d.ecology.blocks : [];
-    var ecoHTML = '<div class="fh1-wv-seg"><div class="fh1-wv-seg-title"><span>社会生态</span>' + fh1PlusBtn('社会生态') + '</div>';
+    var ecoHTML = '';
     if (blocks.length) {
+        ecoHTML = '<div class="fh1-wv-seg"><div class="fh1-wv-seg-title"><span>社会生态</span>' + fh1PlusBtn('社会生态') + '</div>';
         var sel = Math.min(Math.max(FH1_ECO_BLOCK | 0, 0), blocks.length - 1);
         FH1_ECO_BLOCK = sel;
         var ecoRows = (blocks[sel].items || []).map(function (it, ii) {
@@ -516,10 +565,22 @@ window.fh1RenderOpenCard = function () {
         ecoHTML += fh1SubStrip('eco', blocks.map(function (b, bi) { return b.title || b.label || ('生态' + (bi + 1)); }), sel) +
             fh1SubActions('eco', sel, (blocks[sel].items || []).length) +
             (ecoRows || '<div class="fh1-hint">（这一块还没有子项' + (FH1_EDITING ? '，点上面的「＋ 子项」加一条' : '') + '）</div>');
-    } else {
-        ecoHTML += '<div class="fh1-hint">这套世界观还没有生态内容，可点右上「＋ 添加」新建一个小标题。</div>';
+        ecoHTML += '</div>';
     }
-    ecoHTML += '</div>';
+
+    // 版本按钮（点开卡牌后、标题下方）：只有这套世界观有 `版本\` 时才画
+    var versList = fh1VersionsOf(FH1_SELECTED);
+    var versHTML = '';
+    if (versList) {
+        versHTML = '<div class="fh1-wv-vers">' + versList.map(function (v) {
+            var on = (v.name === FH1_WV_VERSION);
+            var cnt = (v.segments || []).reduce(function (a, s) { return a + (s.items || []).length; }, 0) +
+                (v.background || []).reduce(function (a, g) { return a + (g.items || []).length; }, 0);
+            return '<button class="fh1-wv-ver' + (on ? ' active' : '') + '" data-ver="' + fh1Esc(v.name) + '"' +
+                ' onclick="fh1SelectWorldviewVersion(this.getAttribute(\'data-ver\'))" title="' + fh1Esc(v.name + '（' + cnt + ' 条）') + '">' +
+                fh1Esc(v.name) + '</button>';
+        }).join('') + '</div>';
+    }
 
     box.innerHTML =
         '<div class="fh1-wv-detail' + (FH1_EDITING ? ' fh1-editing' : '') + '">' +
@@ -528,6 +589,7 @@ window.fh1RenderOpenCard = function () {
                     '<span class="fh1-wv-name">' + fh1Esc(d.name) + '</span>' +
                     '<span class="fh1-wv-era-tag">' + fh1Esc(d.eraShort || '') + '</span>' +
                 '</div>' +
+                versHTML +
                 '<div class="fh1-wv-era-full">' + fh1Esc(d.era || '') + '</div>' +
                 '<div class="fh1-wv-sum">' + fh1Esc(d.summary || '') + '</div>' +
             '</div>' +
