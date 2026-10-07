@@ -333,7 +333,7 @@ function fh1Assemble(d) {
         if (!items.length) { return; }          // ← 没有条目＝没有这一段
         L.push('## ' + s.key);
         var label = labels[s.key] || null;
-        if (label) { L.push('---'); L.push(label + '：' + d.name); }
+        if (label) { L.push('---'); }   // 不再写「段落：世界观名」
         items.forEach(function (t) { L.push(fh1NormItem(t)); });
         if (label) { L.push('---'); }
         L.push('');
@@ -349,8 +349,7 @@ function fh1Assemble(d) {
         items.forEach(function (t) { bgLines.push(fh1NormItem(t)); });
     });
     if (bgLines.length) {
-        L.push('# ' + d.name);
-        bgLines.forEach(function (l) { L.push(l); });
+        bgLines.forEach(function (l) { L.push(l); });   // 不再写「# 世界观名」
     }
     L.push('</背景设定>');
     return L.join('\n');
