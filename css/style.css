@@ -2159,10 +2159,11 @@ textarea.fc1is-desc { min-height: 108px; width: 100%; }
 .fh1-st-custom:focus { border-color: var(--color-primary-dark); }
 
 /* ===== 世界观列表分组：可游玩 / 开发中... ===== */
-.fh1-wv-group { margin-bottom: 18px; }
+/* 分组本身也排成竖列并留出卡片间距 —— 不然同一个分组下的两张卡会贴在一起（.fh1-wv-list 的 gap 只作用在"分组之间"） */
+.fh1-wv-group { margin-bottom: 18px; display: flex; flex-direction: column; gap: 10px; }
 .fh1-wv-group-title {
     display: flex; align-items: center; gap: 8px;
-    margin: 4px 0 10px 0; padding-bottom: 5px;
+    margin: 4px 0 0 0; padding-bottom: 5px;
     font-size: 0.95rem; font-weight: bold; letter-spacing: 3px; color: var(--color-primary-dark);
     border-bottom: 1px dashed rgba(184, 134, 11, 0.5);
 }
