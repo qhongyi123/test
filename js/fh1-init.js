@@ -458,6 +458,21 @@ function fh1VersionsOf(name) {
     var p = fh1GetPreset(name);
     return (p && p.versions && p.versions.length) ? p.versions : null;
 }
+// 这一版有没有内容（三样都空＝空版本，界面上不出按钮、也不当默认）
+function fh1VersionHasContent(v) {
+    if (!v) return false;
+    var n = 0;
+    (v.segments || []).forEach(function (s) { n += (s.items || []).length; });
+    (v.background || []).forEach(function (g) { n += (g.items || []).length; });
+    n += ((v.ecology && v.ecology.blocks) || []).reduce(function (a, b) { return a + (b.items || []).length; }, 0);
+    return n > 0;
+}
+// 默认版本＝第一个有内容的版本；一个都没有才退回第一个（如「什么都没写」）
+function fh1DefaultVersionName(vers) {
+    if (!vers || !vers.length) return '';
+    for (var i = 0; i < vers.length; i++) { if (fh1VersionHasContent(vers[i])) return vers[i].name; }
+    return vers[0].name;
+}
 // 用某个版本的内容拼出草稿；⚠ 标签行要用**世界观名**，不是版本名
 function fh1DraftFromVersion(name, vName) {
     var p = fh1GetPreset(name);
@@ -476,6 +491,8 @@ function fh1DraftFromVersion(name, vName) {
     d.version = v.name;
     // 变量规则：优先用这一版自己的（版本\{名}\变量规则\自由.txt），没写才回退到世界观级那份
     d.varRulesFree = (v.varRulesFree || d.varRulesFree || '');
+    // 变量信息展示（uid 11 的 EJS）：同样优先用这一版自己的（变量信息展示\{世界观}\{版本名}.txt）
+    d.varDisplay = (v.varDisplay || d.varDisplay || '');
     return d;
 }
 // 标题下方的版本按钮：点了就切（切换会丢掉还没「启用并继续」的改动，所以先问一句）
@@ -502,7 +519,7 @@ window.fh1SelectWorldview = function (name) {
     if (!p) return;
     var vers = fh1VersionsOf(name);
     FH1_SELECTED = name;
-    FH1_WV_VERSION = vers ? vers[0].name : '';     // 有版本时默认选第一个（「什么都没写」）
+    FH1_WV_VERSION = fh1DefaultVersionName(vers);   // 有版本时默认选第一个**有内容的**（「什么都没写」这种空的跳过）
     FH1_DRAFT = fh1DraftFromVersion(name, FH1_WV_VERSION);
     FH1_EDITING = false;
     FH1_ECO_BLOCK = 0;         // 社会生态回到第一块
@@ -571,10 +588,12 @@ window.fh1RenderOpenCard = function () {
     }
 
     // 版本按钮（点开卡牌后、标题下方）：只有这套世界观有 `版本\` 时才画
+    //   空版本（什么都没写那种）不出按钮——点了也是一片空，只留能玩的那几版
     var versList = fh1VersionsOf(FH1_SELECTED);
     var versHTML = '';
     if (versList) {
-        versHTML = '<div class="fh1-wv-vers">' + versList.map(function (v) {
+        var shown = versList.filter(function (v) { return fh1VersionHasContent(v) || v.name === FH1_WV_VERSION; });
+        versHTML = '<div class="fh1-wv-vers">' + shown.map(function (v) {
             var on = (v.name === FH1_WV_VERSION);
             var cnt = (v.segments || []).reduce(function (a, s) { return a + (s.items || []).length; }, 0) +
                 (v.background || []).reduce(function (a, g) { return a + (g.items || []).length; }, 0);
