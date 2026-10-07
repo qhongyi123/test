@@ -474,6 +474,8 @@ function fh1DraftFromVersion(name, vName) {
     d.ecology = fh1DeepCopy(v.ecology || { blocks: [], assembled: '' });
     d.era = v.era; d.eraShort = v.eraShort;
     d.version = v.name;
+    // 变量规则：优先用这一版自己的（版本\{名}\变量规则\自由.txt），没写才回退到世界观级那份
+    d.varRulesFree = (v.varRulesFree || d.varRulesFree || '');
     return d;
 }
 // 标题下方的版本按钮：点了就切（切换会丢掉还没「启用并继续」的改动，所以先问一句）
@@ -634,6 +636,22 @@ function fh1ApGroupsOf(src, segKey) {
     return (src && src.appendix && src.appendix.groups && src.appendix.groups[segKey]) || [];
 }
 
+// 一个附录分组（本世界观、本世界观的其他版本、其他世界观、其他世界观的各版本，都用这一个函数画）
+function fh1ApHasContent(src, segKey, isGroup) {
+    return isGroup ? fh1ApGroupsOf(src, segKey).length > 0 : fh1ApFlatOf(src, segKey).length > 0;
+}
+function fh1ApSecHtml(label, src, segKey, isGroup, hasMap, open) {
+    return '<div class="fh1-ap-sec' + (open ? ' open' : '') + '">' +
+        '<div class="fh1-ap-sec-head" onclick="fh1ApToggle(this)">' +
+            '<span class="fh1-ap-sec-title">' + fh1Esc(label) + '</span>' +
+            '<span class="fh1-ap-caret">' + (open ? '\u25BE' : '\u25B8') + '</span>' +
+        '</div>' +
+        '<div class="fh1-ap-sec-body">' +
+            (isGroup ? fh1ApGroups(fh1ApGroupsOf(src, segKey), segKey) : fh1ApItems(fh1ApFlatOf(src, segKey), hasMap)) +
+        '</div>' +
+    '</div>';
+}
+
 // 分组段落：一个小标题一块；块头带小标题级勾选框（勾它＝勾上它下面所有子项）
 function fh1ApGroups(groups, segKey) {
     if (!groups || !groups.length) return '<div class="fh1-ap-empty">（这一段还没有附录内容，可在下方「＋ 自定义」里填小标题＋子项）</div>';
@@ -696,28 +714,24 @@ window.fh1OpenAppendix = function (segKey) {
     if (note) { html += '<div class="fh1-ap-note">' + fh1Esc(note) + '</div>'; }
 
     // ① 当前世界观的这一段（默认展开）
-    html += '<div class="fh1-ap-sec open">' +
-        '<div class="fh1-ap-sec-head" onclick="fh1ApToggle(this)">' +
-            '<span class="fh1-ap-sec-title">' + fh1Esc(segKey) + '</span><span class="fh1-ap-caret">\u25BE</span>' +
-        '</div>' +
-        '<div class="fh1-ap-sec-body">' +
-            (isGroup ? fh1ApGroups(fh1ApGroupsOf(FH1_DRAFT, segKey), segKey)
-                     : fh1ApItems(fh1ApFlatOf(FH1_DRAFT, segKey), hasMap)) +
-        '</div>' +
-    '</div>';
+    html += fh1ApSecHtml(segKey, FH1_DRAFT, segKey, isGroup, hasMap, true);
 
-    // ② 其他世界观的同段落（默认折叠）
+    // ①-B 同一个世界观的其他「版本」（例：常识扭曲的另外几个版本）——只列有内容的
+    (fh1VersionsOf(FH1_DRAFT.name) || []).forEach(function (v) {
+        if (v.name === FH1_WV_VERSION) return;          // 当前选中的那个版本不重复列
+        if (!fh1ApHasContent(v, segKey, isGroup)) return;
+        html += fh1ApSecHtml(FH1_DRAFT.name + '\u00B7' + v.name + '-' + segKey, v, segKey, isGroup, hasMap, false);
+    });
+
+    // ② 其他世界观：本体 ＋ 它的各个版本（默认折叠）
     (FH1_PRESETS.order || []).forEach(function (n) {
         if (n === FH1_DRAFT.name) return;
         var o = fh1GetPreset(n) || {};
-        html += '<div class="fh1-ap-sec">' +
-            '<div class="fh1-ap-sec-head" onclick="fh1ApToggle(this)">' +
-                '<span class="fh1-ap-sec-title">' + fh1Esc(n) + '-' + fh1Esc(segKey) + '</span><span class="fh1-ap-caret">\u25B8</span>' +
-            '</div>' +
-            '<div class="fh1-ap-sec-body">' +
-                (isGroup ? fh1ApGroups(fh1ApGroupsOf(o, segKey), segKey) : fh1ApItems(fh1ApFlatOf(o, segKey), hasMap)) +
-            '</div>' +
-        '</div>';
+        html += fh1ApSecHtml(n + '-' + segKey, o, segKey, isGroup, hasMap, false);
+        (o.versions || []).forEach(function (v) {
+            if (!fh1ApHasContent(v, segKey, isGroup)) return;
+            html += fh1ApSecHtml(n + '\u00B7' + v.name + '-' + segKey, v, segKey, isGroup, hasMap, false);
+        });
     });
 
     // ③ 自定义项：平铺段落＝自定义一条；分组段落＝新建小标题（子项可留空，之后在编辑模式里加）
@@ -1019,14 +1033,16 @@ window.fh1EnableAndContinue = async function () {
         '（' + ecoText.length + ' 字，' + (FH1_DRAFT.ecology && FH1_DRAFT.ecology.blocks ? FH1_DRAFT.ecology.blocks.length : 0) + ' 块）｜' + res.msg);
 
     // 变量规则写进 uid 28；这套世界观没有变量规则文件（空串）时跳过，保留世界书里现有的
-    var varText = String(FH1_DRAFT.varRulesFree || '').trim();
-    if (varText) {
-        var resVar = await fh1WriteWorldbookEntry(FH1_VARRULES_UID, varText);
+    // ⚠ trim 只用来判空，写进去的必须是**原串**：规则文件末尾那个换行也是内容的一部分
+    //   （生成器 2026-10-04 为同一个坑改过一次，前端这里当时漏了，会让 uid 28 比母本少 1 个字）
+    var varRaw = String(FH1_DRAFT.varRulesFree || '');
+    if (varRaw.trim()) {
+        var resVar = await fh1WriteWorldbookEntry(FH1_VARRULES_UID, varRaw);
         if (!resVar.ok) {
             showCustomAlert('世界观与生态已写入，但变量规则写入失败：' + resVar.msg + '\n（可再点一次「启用并继续」重试）');
             return;
         }
-        console.log('FH1: 已写入 uid ' + FH1_VARRULES_UID + '（变量规则，' + varText.length + ' 字）');
+        console.log('FH1: 已写入 uid ' + FH1_VARRULES_UID + '（变量规则，' + varRaw.length + ' 字）');
     } else {
         console.log('FH1: 这套世界观没有变量规则文件，跳过 uid ' + FH1_VARRULES_UID);
     }
