@@ -20,11 +20,11 @@ var WORLDVIEW_IDS = ["medieval", "colony", "hentai", "xianxia", "magic"];
 var WORLDVIEW_NAMES = ["中世纪童话", "开拓新大陆与殖民贸易", "本子世界", "东方修仙", "西方魔法"];
 
 // 世界观槽位公式（世界书重排后）
-// 六槽：内化协议 3+W / 世界观设定 52+W / 种族·势力 57+W / 伊菈称呼 62+W / 社会生态 67+W / 文风 72+W
-// 变量规则：26+W（自由）/ 31+W（剧情）
-// 思维链：36+W（自由）/ 41+W（剧情）
+// 七槽（2026-10-08 世界书重构后的新基数）：内化协议 152+W / 世界观设定 4+W / 婚恋结构 20+W / 种族·势力 10+W / 伊菈称呼 158+W / 社会生态 15+W / 文风 195+W
+// 变量规则：214+W（自由）/ 219+W（剧情）
+// 思维链：251+W（自由）/ 256+W（剧情）
 function worldviewCoreUids(W) {
-    return [3 + W, 52 + W, 57 + W, 62 + W, 67 + W, 72 + W];
+    return [152 + W, 4 + W, 10 + W, 20 + W, 158 + W, 15 + W, 195 + W];
 }
 
 var WORLDVIEWS = [];
@@ -35,19 +35,19 @@ for (var __wi = 0; __wi < WORLDVIEW_IDS.length; __wi++) {
     });
 }
 
-// 根据世界观 + 模式开关世界书条目：六槽随世界观；变量规则/思维链随世界观+模式
+// 根据世界观 + 模式开关世界书条目：七槽随世界观（含按世界分条的婚恋结构）；变量规则/思维链随世界观+模式
 window.applyWorldviewLorebook = async function(worldviewId, mode) {
     if (!mode) mode = __currentMode;
     var updates = [];
     WORLDVIEW_IDS.forEach(function(id, W) {
         var isCurrent = (id === worldviewId);
         worldviewCoreUids(W).forEach(function(uid) { updates.push({ uid: uid, enabled: isCurrent }); });
-        // 最新状态·{世界观}（本子世界的「变量信息展示」＝ uid 11 ＝ 9 + W）：跟着世界观一起启停
-        updates.push({ uid: 9 + W, enabled: isCurrent });
-        updates.push({ uid: 26 + W, enabled: isCurrent && mode === 'free' });
-        updates.push({ uid: 31 + W, enabled: isCurrent && mode === 'script' });
-        updates.push({ uid: 36 + W, enabled: isCurrent && mode === 'free' });
-        updates.push({ uid: 41 + W, enabled: isCurrent && mode === 'script' });
+        // 最新状态·{世界观}（本子世界的「变量信息展示」＝ uid 227 ＝ 225 + W）：跟着世界观一起启停
+        updates.push({ uid: 225 + W, enabled: isCurrent });
+        updates.push({ uid: 214 + W, enabled: isCurrent && mode === 'free' });
+        updates.push({ uid: 219 + W, enabled: isCurrent && mode === 'script' });
+        updates.push({ uid: 251 + W, enabled: isCurrent && mode === 'free' });
+        updates.push({ uid: 256 + W, enabled: isCurrent && mode === 'script' });
     });
     if (updates.length > 0 && typeof setLorebookEntries === 'function') {
         try { await setLorebookEntries(LOREBOOK_NAME, updates); } catch(e) { console.warn("开关世界书条目失败：", e); }
@@ -63,8 +63,8 @@ var CONTROL_PANEL_CONFIG = {
         title: "初始设置",
         defaultSingle: true,
         items: [
-            { id: "cps1-1", name: "正文美化", desc: "启用正文的美化排版与装饰效果。", enableUids: [ 47 ], disableUids: [], defaultChecked: true },
-            { id: "cps1-2", name: "纯文字", desc: "使用简洁的纯文字模式，关闭所有美化效果。", enableUids: [ 48 ], disableUids: [] }
+            { id: "cps1-1", name: "正文美化", desc: "启用正文的美化排版与装饰效果。", enableUids: [ 201 ], disableUids: [], defaultChecked: true },
+            { id: "cps1-2", name: "纯文字", desc: "使用简洁的纯文字模式，关闭所有美化效果。", enableUids: [ 202 ], disableUids: [] }
         ]
     }
 };

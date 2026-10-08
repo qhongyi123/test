@@ -14,18 +14,18 @@
  *
  * 关键规则
  *   · 编辑结果先落进内存草稿 FH1_DRAFT，**只有点「启用并继续」才写世界书**
- *   · 写入内容＝按骨架重新拼装的整套文本（含玩家的编辑与删除），写入世界书 uid 54
- *   · 特殊规则同理：只改草稿 FH1_RULES，点「开始剧情」时才 ①把所选规则的指导写进 uid 5
+ *   · 写入内容＝按骨架重新拼装的整套文本（含玩家的编辑与删除），写入世界书 uid 6
+ *   · 特殊规则同理：只改草稿 FH1_RULES，点「开始剧情」时才 ①把所选规则的指导写进 uid 154
  *     ②把 rules 变量随开局消息一起投递（前端还没开局，没有变量树可写）
  *   · 点「隐藏」→ 右侧书签（以及本页两个侧边按钮）全隐藏，切换选项卡后恢复
  * ===================================================================== */
 
 var FH1_PRESETS = null;        // worldviews.json 内容
 var FH1_SELECTED = '';         // 当前选中的世界观名
-var FH1_WORLDVIEW_UID = 54;    // 本子世界「世界观设定」条目 uid
-var FH1_ECOLOGY_UID = 69;      // 本子世界「社会生态」条目 uid（与世界观同一次写入）
-var FH1_VARRULES_UID = 28;
-var FH1_VARDISPLAY_UID = 11;   // 「最新状态·本子世界」条目 uid（变量信息展示，同样跟着世界观切换）     // 本子世界「自由-变量规则」条目 uid（跟着世界观一起切换）
+var FH1_WORLDVIEW_UID = 6;    // 本子世界「世界观设定」条目 uid
+var FH1_ECOLOGY_UID = 17;      // 本子世界「社会生态」条目 uid（与世界观同一次写入）
+var FH1_VARRULES_UID = 216;
+var FH1_VARDISPLAY_UID = 227;   // 「最新状态·本子世界」条目 uid（变量信息展示，同样跟着世界观切换）     // 本子世界「自由-变量规则」条目 uid（跟着世界观一起切换）
 var FH1_DRAFT = null;          // 当前世界观的可编辑草稿（含玩家的改与删）
 var FH1_WV_VERSION = '';       // 当前选中的「版本」名（世界观文件夹下有 `版本\` 时才有；没有版本＝空串）
 var FH1_EDITING = false;       // 编辑模式开关状态
@@ -42,7 +42,7 @@ var FH1_START_CUSTOM_TEXT = '';// 自定义开局正文（重画不丢）
 // 特殊规则（跨世界观通用）：草稿 ＋ 界面状态
 var FH1_RULES = {};            // { 规则名: { 模式?: '...', '常识文本': {} } }，与写入 variables 的结构一致
 var FH1_RULES_OPEN = {};       // 哪几张规则卡被展开（重画后保留）
-var FH1_RULES_UID = 5;         // 「内化协议（本子世界）」条目 uid：开局把所选规则的指导写进去
+var FH1_RULES_UID = 154;         // 「内化协议（本子世界）」条目 uid：开局把所选规则的指导写进去
 var FH1_INNER_TAG = '世界观内化协议细节指导';
 
 // 平铺段落：条目直接挂在标题下，标题右侧挂「＋ 添加」
@@ -315,12 +315,12 @@ async function fh1WriteWorldbookEntry(uid, content) {
     return { ok: false, msg: '可用接口不支持写入条目 content' };
 }
 
-/* -------------------- 拼装：草稿 → uid 54 正文 -------------------- */
+/* -------------------- 拼装：草稿 → uid 6 正文 -------------------- */
 /* 与 工具\生成世界观预置.ps1 的组装规则逐字一致：
    时代锚点不包裹；世界风格/社会与法治/民俗风情 = --- + 标签：{世界观名} + 条目 + ---；
    背景设定 = # 大标题 + ## 小标题 + 条目。段落之间空一行。
    ⚠️ **0 条的段落整段不写**（2026-10-06 起，和生成器同规则）：这套世界观没有这一段，
-   写进 uid 54 时就不该出现 `## 世界风格` 这样的空标题，否则界面会显示一个空段落带「＋ 添加」。 */
+   写进 uid 6 时就不该出现 `## 世界风格` 这样的空标题，否则界面会显示一个空段落带「＋ 添加」。 */
 function fh1Assemble(d) {
     if (!d) return '';
     var labels = { '世界风格': '风格', '社会与法治': '社会与法治', '民俗风情': '民俗风情' };
@@ -355,10 +355,10 @@ function fh1Assemble(d) {
     return L.join('\n');
 }
 
-/* -------------------- 拼装：草稿 → uid 69 正文（社会生态） -------------------- */
+/* -------------------- 拼装：草稿 → uid 17 正文（社会生态） -------------------- */
 /* 与 工具\生成世界观预置.ps1 的组装规则逐字一致：
    <社会生态> ＋ 每个块前一个空行 ＋ 【块标题】 ＋ 条目 ＋ </社会生态>
-   没有任何块时返回空串——表示该世界观没有生态，写入时应清空 uid 69。 */
+   没有任何块时返回空串——表示该世界观没有生态，写入时应清空 uid 17。 */
 function fh1EcologyAssemble(d) {
     var blocks = (d && d.ecology && d.ecology.blocks) ? d.ecology.blocks : [];
     if (!blocks.length) return '';
@@ -490,7 +490,7 @@ function fh1DraftFromVersion(name, vName) {
     d.version = v.name;
     // 变量规则：优先用这一版自己的（版本\{名}\变量规则\自由.txt），没写才回退到世界观级那份
     d.varRulesFree = (v.varRulesFree || d.varRulesFree || '');
-    // 变量信息展示（uid 11 的 EJS）：同样优先用这一版自己的（变量信息展示\{世界观}\{版本名}.txt）
+    // 变量信息展示（uid 227 的 EJS）：同样优先用这一版自己的（变量信息展示\{世界观}\{版本名}.txt）
     d.varDisplay = (v.varDisplay || d.varDisplay || '');
     return d;
 }
@@ -570,7 +570,7 @@ window.fh1RenderOpenCard = function () {
         bgHTML += '</div>';
     }
 
-    // 社会生态（对应世界书 uid 69）：同样「小标题带 ＋ 操作行 ＋ 选中那块的子项」；没有块就整段不画
+    // 社会生态（对应世界书 uid 17）：同样「小标题带 ＋ 操作行 ＋ 选中那块的子项」；没有块就整段不画
     var blocks = (d.ecology && d.ecology.blocks) ? d.ecology.blocks : [];
     var ecoHTML = '';
     if (blocks.length) {
@@ -1040,7 +1040,7 @@ window.fh1EnableAndContinue = async function () {
         showCustomAlert('写入世界书失败：' + res.msg + '\n（请确认本环境加载了 Tavern Helper 或兼容脚本）');
         return;
     }
-    // 社会生态写进 uid 69；这套世界观没有生态时写空串，清掉上一套留下的生态
+    // 社会生态写进 uid 17；这套世界观没有生态时写空串，清掉上一套留下的生态
     var ecoText = fh1EcologyAssemble(FH1_DRAFT);
     var resEco = await fh1WriteWorldbookEntry(FH1_ECOLOGY_UID, ecoText);
     if (!resEco.ok) {
@@ -1050,9 +1050,9 @@ window.fh1EnableAndContinue = async function () {
     console.log('FH1: 已写入 uid ' + FH1_WORLDVIEW_UID + '（' + text.length + ' 字）与 uid ' + FH1_ECOLOGY_UID +
         '（' + ecoText.length + ' 字，' + (FH1_DRAFT.ecology && FH1_DRAFT.ecology.blocks ? FH1_DRAFT.ecology.blocks.length : 0) + ' 块）｜' + res.msg);
 
-    // 变量规则写进 uid 28；这套世界观没有变量规则文件（空串）时跳过，保留世界书里现有的
+    // 变量规则写进 uid 216；这套世界观没有变量规则文件（空串）时跳过，保留世界书里现有的
     // ⚠ trim 只用来判空，写进去的必须是**原串**：规则文件末尾那个换行也是内容的一部分
-    //   （生成器 2026-10-04 为同一个坑改过一次，前端这里当时漏了，会让 uid 28 比母本少 1 个字）
+    //   （生成器 2026-10-04 为同一个坑改过一次，前端这里当时漏了，会让 uid 216 比母本少 1 个字）
     var varRaw = String(FH1_DRAFT.varRulesFree || '');
     if (varRaw.trim()) {
         var resVar = await fh1WriteWorldbookEntry(FH1_VARRULES_UID, varRaw);
@@ -1064,7 +1064,7 @@ window.fh1EnableAndContinue = async function () {
     } else {
         console.log('FH1: 这套世界观没有变量规则文件，跳过 uid ' + FH1_VARRULES_UID);
     }
-    // 变量信息展示写进 uid 11（「最新状态·本子世界」）；这套世界观没有该文件（空串）时跳过
+    // 变量信息展示写进 uid 227（「最新状态·本子世界」）；这套世界观没有该文件（空串）时跳过
     var dispText = String(FH1_DRAFT.varDisplay || '').trim();
     if (dispText) {
         var resDisp = await fh1WriteWorldbookEntry(FH1_VARDISPLAY_UID, dispText);
@@ -1357,7 +1357,7 @@ function fh1RuleDelEntry(name, text) {
     fh1RenderRules();
 }
 
-// 把所选规则的指导拼成 uid 5 的正文（与状态栏 writeInnerGuidance 同一写法：标签包裹、块间 ---）
+// 把所选规则的指导拼成 uid 154 的正文（与状态栏 writeInnerGuidance 同一写法：标签包裹、块间 ---）
 function fh1RulesGuidance() {
     var blocks = [];
     fh1RulePresets().forEach(function (p) {
@@ -1466,7 +1466,7 @@ window.fh1BackStartList = function () {
     fh1RenderStartPanel();
 };
 
-// 「开始剧情」：先把所选规则的指导写进 uid 5，再把开局正文 ＋ 变量（含 rules 与开局自带变量）发出去
+// 「开始剧情」：先把所选规则的指导写进 uid 154，再把开局正文 ＋ 变量（含 rules 与开局自带变量）发出去
 window.fh1StartStory = async function () {
     if (!FH1_SELECTED) { showCustomAlert('请先到「世界观」页选一套世界观并点「启用并继续」'); return; }
 
@@ -1483,8 +1483,8 @@ window.fh1StartStory = async function () {
     if (!text) { showCustomAlert('开局内容是空的：先选一个开局，或把自定义内容写上'); return; }
     if (typeof triggerSTSlashSend !== 'function') { showCustomAlert('发送接口不可用（triggerSTSlashSend 缺失）'); return; }
 
-    // ① 规则指导 → uid 5。变量随消息走，指导必须在这一局开始前就位，
-    //    否则 uid 38 只报了规则名，却让 AI 去看「内化协议里对应的规则指导」，而那条是空的。
+    // ① 规则指导 → uid 154。变量随消息走，指导必须在这一局开始前就位，
+    //    否则 uid 253 只报了规则名，却让 AI 去看「内化协议里对应的规则指导」，而那条是空的。
     var names = Object.keys(FH1_RULES);
     var res = await fh1WriteWorldbookEntry(FH1_RULES_UID, fh1RulesGuidance());
     if (!res.ok) {

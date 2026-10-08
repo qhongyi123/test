@@ -1408,7 +1408,7 @@ async function fetchCharEntries() {
     try {
         if(typeof getLorebookEntries === 'function') {
             var entries = await getLorebookEntries(LOREBOOK_NAME, {fields:['uid','comment','content','enabled','order']});
-            return entries.filter(function(e) { return e.order >= 125 && e.order <= 149; });
+            return entries.filter(function(e) { return e.order >= 76 && e.order <= 148; });   // 人物区＝uid 76–148（75/149 是人物区标记）
         }
     } catch(e) { console.warn("未能读取世界书记录：", e); }
     return [];
