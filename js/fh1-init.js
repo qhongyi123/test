@@ -1383,7 +1383,15 @@ window.fh1InitStartPanel = function () {
 
 function fh1StartOpenings() {
     var p = fh1GetPreset(FH1_SELECTED);
-    return (p && p.openings) ? p.openings : [];
+    if (!p) return [];
+    // 版本级开局优先：当前选中的版本自带 openings 就用它，没有就回落到世界观级
+    if (FH1_WV_VERSION && p.versions) {
+        for (var i = 0; i < p.versions.length; i++) {
+            var v = p.versions[i];
+            if (v.name === FH1_WV_VERSION && v.openings && v.openings.length) return v.openings;
+        }
+    }
+    return p.openings ? p.openings : [];
 }
 
 window.fh1RenderStartPanel = function () {
