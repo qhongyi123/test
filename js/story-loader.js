@@ -1361,3 +1361,50 @@ window.saveInfoCardEdit = function() {
     set.dirty = false;
     _flashToast();
 };
+
+
+// ===== 任务指导书第 103 条：事件委托（按钮/卡片是后渲染的，逐元素绑定会扫到空集） =====
+(function installStoryDelegation() {
+    if (window.__storyDelegationInstalled) return;
+    window.__storyDelegationInstalled = true;
+
+    // 开启童话物语：按故事卡点亮对应角色（改为委托，点击必中）
+    document.addEventListener('click', function (e) {
+        var btn = e.target && e.target.closest ? e.target.closest('.start-game-btn') : null;
+        if (!btn) return;
+        var tid = btn.getAttribute('data-tid');
+        if (!tid) return;
+        var storyName = '';
+        try {
+            var sd = (typeof originalDataCache !== 'undefined' && originalDataCache[tid]) || null;
+            if (sd && sd.name) storyName = sd.name;
+        } catch (err) { }
+        if (!storyName) {
+            // 兜底：从该故事面板里找名字（data-story-name / 标题 / 缓存失效时）
+            try {
+                var panel = document.getElementById(tid);
+                if (panel) {
+                    var holder = panel.querySelector('[data-story-name]');
+                    if (holder) storyName = holder.getAttribute('data-story-name');
+                    if (!storyName) {
+                        var h = panel.querySelector('.data-field-title, h1, h2, h3');
+                        if (h) storyName = (h.textContent || '').trim();
+                    }
+                }
+            } catch (err2) { }
+        }
+        // 再兜底：tid 里若含故事名（例如 "FC1-灰姑娘"）
+        if (!storyName) storyName = tid.replace(/^[^\u4e00-\u9fa5]*/, '').trim();
+        console.log('[童话] 开启故事：', tid, '→', storyName);
+        if (typeof enableStoryCharacters === 'function') enableStoryCharacters(storyName);
+    }, true);
+
+    // 点目录卡片进入故事：按当前「模式＋世界观」再溯源点亮一次（任务指导书第 102 条①）
+    document.addEventListener('click', function (e) {
+        var card = e.target && e.target.closest ? e.target.closest('.toc-img-card') : null;
+        if (!card) return;
+        setTimeout(function () {
+            if (typeof syncWorldviewLorebook === 'function') syncWorldviewLorebook(true);
+        }, 60);
+    }, true);
+})();
