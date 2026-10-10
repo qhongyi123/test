@@ -336,11 +336,9 @@ async function initDynamicTabs() {
             var tid = this.getAttribute('data-tid');
             if(!tid) return;
 
-            // 开启童话物语：点亮该故事卡对应的角色，关掉其他卡片的角色（任务指导书第 101 条）
-            try {
-                var _sd = (typeof originalDataCache !== 'undefined' && originalDataCache[tid]) || {};
-                if (typeof enableStoryCharacters === 'function') enableStoryCharacters(_sd.name);
-            } catch (err) { console.warn('切换故事角色失败：', err); }
+            // 「开启童话物语」点亮该故事卡角色的事，统一交给文末的事件委托（第 103 条）——
+            // 那里按 data-tid 查分组表，比在这里读缓存可靠（此处原先读 originalDataCache[tid].name，
+            // 而名字在 .story.name 里，永远取到 undefined）。
 
             var pContainer = document.getElementById(tid);
             var baseFullData = JSON.parse(JSON.stringify(originalDataCache[tid]));
@@ -1368,35 +1366,19 @@ window.saveInfoCardEdit = function() {
     if (window.__storyDelegationInstalled) return;
     window.__storyDelegationInstalled = true;
 
-    // 开启童话物语：按故事卡点亮对应角色（改为委托，点击必中）
+    // 开启童话物语：按故事卡点亮对应角色（委托 + 按 data-tid 查分组表，点击必中）
     document.addEventListener('click', function (e) {
         var btn = e.target && e.target.closest ? e.target.closest('.start-game-btn') : null;
         if (!btn) return;
         var tid = btn.getAttribute('data-tid');
-        if (!tid) return;
-        var storyName = '';
+        if (!tid) return;   // FC1 的「开始自由模式」按钮没有 data-tid，不归这条管
+        var nameHint = '';
         try {
             var sd = (typeof originalDataCache !== 'undefined' && originalDataCache[tid]) || null;
-            if (sd && sd.name) storyName = sd.name;
+            if (sd && sd.story && sd.story.name) nameHint = sd.story.name;
         } catch (err) { }
-        if (!storyName) {
-            // 兜底：从该故事面板里找名字（data-story-name / 标题 / 缓存失效时）
-            try {
-                var panel = document.getElementById(tid);
-                if (panel) {
-                    var holder = panel.querySelector('[data-story-name]');
-                    if (holder) storyName = holder.getAttribute('data-story-name');
-                    if (!storyName) {
-                        var h = panel.querySelector('.data-field-title, h1, h2, h3');
-                        if (h) storyName = (h.textContent || '').trim();
-                    }
-                }
-            } catch (err2) { }
-        }
-        // 再兜底：tid 里若含故事名（例如 "FC1-灰姑娘"）
-        if (!storyName) storyName = tid.replace(/^[^\u4e00-\u9fa5]*/, '').trim();
-        console.log('[童话] 开启故事：', tid, '→', storyName);
-        if (typeof enableStoryCharacters === 'function') enableStoryCharacters(storyName);
+        console.log('[童话] 开启故事：', tid, '（显示名 ' + nameHint + '）');
+        if (typeof enableStoryCharactersByTab === 'function') enableStoryCharactersByTab(tid, nameHint);
     }, true);
 
     // 点目录卡片进入故事：按当前「模式＋世界观」再溯源点亮一次（任务指导书第 102 条①）

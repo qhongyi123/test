@@ -930,8 +930,16 @@ function nextPage() {
 }
 
 function toggleToc() {
-    document.getElementById('tocMenu').classList.toggle('active');
-    // 点目录书签：条目回到基础态（保留模式/世界观的选择，任务指导书第 101 条）
+    var menu = document.getElementById('tocMenu');
+    // 「目录」书签兼作开 / 关：只有「打开目录」时才把条目恢复基础态（任务指导书第 101 条①）。
+    // 关闭时绝不能再重置 —— 玩家从目录里选界面时，selectFromToc 的顺序是
+    //   先 switchTab（按当前「模式+世界观」点亮条目）→ 再 toggleToc（关掉目录）；
+    // 若关闭也重置，刚点亮的世界观条目会被立刻关掉，接着玩就是一局没有世界观的剧情。
+    // （2026-10-11：这条顺序问题原先被"重置根本没生效"掩盖着，见任务指导书第 103 条。）
+    var opening = !menu.classList.contains('active');
+    menu.classList.toggle('active');
+    if (!opening) return;
+    __appliedCombo = "";   // 清掉"已应用过"的缓存，下一次切页才会按当前选择重新点亮
     if (typeof resetLorebookToBase === 'function') resetLorebookToBase();
 }
 

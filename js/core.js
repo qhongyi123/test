@@ -35,6 +35,39 @@ for (var __wi = 0; __wi < WORLDVIEW_IDS.length; __wi++) {
     });
 }
 
+// 开拓新大陆（colony）额外附带的两条：uid 26〈参考〉、uid 27（大洲/地理），随该世界观一起启停。
+// ⚠️ 必须是公共变量：applyWorldviewLorebook 要开它，resetLorebookToBase 要关它。
+// （2026-10-11 教训：它原先定义在 applyWorldviewLorebook 函数体内，resetLorebookToBase 引用不到，
+//   一点目录书签就抛 ReferenceError，重置整个中断 —— 见任务指导书第 103 条。）
+var COLONY_EXTRA_UIDS = [26, 27];
+
+// 世界书写入统一入口：接口缺失或被拒时不再静默。
+// （原先 `if (typeof setLorebookEntries === 'function')` 一包，接口不在就什么都不做、也不报错，
+//   界面表现为"点了没反应"，无从排查。）
+var __lorebookWriteWarned = false;
+async function writeLorebookEntries(updates) {
+    if (!updates || updates.length === 0) return true;
+    var reason = "";
+    if (typeof setLorebookEntries !== 'function') {
+        reason = "没找到世界书接口 setLorebookEntries —— 本环境没有加载 Tavern Helper（或兼容脚本）";
+    } else {
+        try {
+            await setLorebookEntries(LOREBOOK_NAME, updates);
+            return true;
+        } catch (e) {
+            reason = "世界书接口调用被拒：" + (e && e.message ? e.message : e);
+        }
+    }
+    console.error("[世界书] " + reason);
+    if (!__lorebookWriteWarned) {
+        __lorebookWriteWarned = true;
+        if (typeof showCustomAlert === 'function') {
+            showCustomAlert("世界书条目没能写入：" + reason + "\n（请确认酒馆里已加载 Tavern Helper 后重试）");
+        }
+    }
+    return false;
+}
+
 // 根据世界观 + 模式开关世界书条目：七槽随世界观（含按世界分条的婚恋结构）；变量规则/思维链随世界观+模式
 window.applyWorldviewLorebook = async function(worldviewId, mode) {
     if (!mode) mode = __currentMode;
@@ -49,8 +82,7 @@ window.applyWorldviewLorebook = async function(worldviewId, mode) {
         updates.push({ uid: 251 + W, enabled: isCurrent && mode === 'free' });
         updates.push({ uid: 256 + W, enabled: isCurrent && mode === 'script' });
     });
-    // 开拓新大陆（colony）额外附带的两条：uid 26〈参考〉、uid 27（大洲/地理），随该世界观一起启停
-    var COLONY_EXTRA_UIDS = [26, 27];
+    // 开拓新大陆（colony）额外附带的两条：uid 26〈参考〉、uid 27（大洲/地理），随该世界观一起启停（见文件上方定义）
     WORLDVIEW_IDS.forEach(function (id, W) {
         if (id !== 'colony') return;
         COLONY_EXTRA_UIDS.forEach(function (uid) { updates.push({ uid: uid, enabled: id === worldviewId }); });
@@ -58,9 +90,7 @@ window.applyWorldviewLorebook = async function(worldviewId, mode) {
     // 剧情阶段（uid 249）是全局条目，不按世界观分条：跟着模式启停（剧本模式开、自由模式关）。
     // 它的正文是 EJS，会自己按 setting.mode 决定输出什么；但条目本身必须先开着，才轮得到它输出。
     updates.push({ uid: 249, enabled: mode === 'script' });
-    if (updates.length > 0 && typeof setLorebookEntries === 'function') {
-        try { await setLorebookEntries(LOREBOOK_NAME, updates); } catch(e) { console.warn("开关世界书条目失败：", e); }
-    }
+    await writeLorebookEntries(updates);
 };
 
 var CH_NUMS = ["", "一","二","三","四","五","六","七","八","九","十",
@@ -185,7 +215,8 @@ window.extractMdFromNode = function(origNode) {
 // ===== 任务指导书第 101 条：基础态与童话角色分组 =====
 // 常开的基础条目（只留这 15 条，其余全关）
 var LOREBOOK_BASE_UIDS = [0, 1, 2, 3, 9, 25, 75, 149, 150, 151, 157, 200, 201, 213, 250];
-// 童话五张故事卡 → 人物区条目 uid（用户给定）
+// 童话五张故事卡 → 人物区条目 uid（用户给定；87「薇格弗德」归「小裁缝一次干七个！」，
+// 2026-10-11 用户再次确认——早先"灰姑娘 84-87"的说法作废）
 var STORY_CHARACTERS = {
     '卖火柴的小女孩': [76],
     '小红帽': [77, 78, 79, 80, 88],
@@ -195,8 +226,50 @@ var STORY_CHARACTERS = {
 };
 var STORY_CHARACTER_UIDS_ALL = [76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88];
 
+// 「故事卡界面 id → 角色分组名」。必须硬编码，不能从故事 JSON 推：
+//   · 故事 JSON 里的 story.name 是给玩家看的标题，实际写着《灰姑娘》/白雪公主（制作中）/《一下干七个！》，
+//     跟分组表的键对不上；而且它在「修改模式」里玩家能随手改。
+//   · 卡片 id（SM1…SM5）才是稳定标识，与 story-loader.js 的 STORY_MANIFEST 一一对应。
+var STORY_TAB_STORY_KEY = {
+    'SM1': '灰姑娘',
+    'SM2': '小红帽',
+    'SM3': '卖火柴的小女孩',
+    'SM4': '小裁缝一次干七个！',
+    'SM5': '白雪公主'
+};
+
+// 把显示名（《灰姑娘》/白雪公主（制作中））归一成 STORY_CHARACTERS 的键；归不出来返回空串
+function normalizeStoryName(name) {
+    if (typeof name !== 'string') return '';
+    var s = name.replace(/[《》〈〉「」『』【】\[\]（）()\s]/g, '');
+    s = s.replace(/(制作中|待制作|未完成|制作完成)$/g, '');
+    if (STORY_CHARACTERS[s]) return s;
+    var keys = Object.keys(STORY_CHARACTERS);
+    for (var i = 0; i < keys.length; i++) {
+        if (s === keys[i].replace(/[！!？?。．.]/g, '')) return keys[i];
+    }
+    return '';
+}
+
+// 先认卡片 id，再退回名字归一（卡片 id 认不出来时才用名字）
+function resolveStoryKey(tabId, nameHint) {
+    if (tabId && STORY_TAB_STORY_KEY[tabId]) return STORY_TAB_STORY_KEY[tabId];
+    return normalizeStoryName(nameHint);
+}
+
+// 把一次世界书写入挂到 app.js 那条串行队列的末尾。
+// 为什么：applyWorldviewLorebook 是排队写入的（app.js 的 __lorebookChain），而重置/点亮角色
+// 原先各写各的。两者若同时在飞，落到酒馆的先后就不确定了 —— 表现为"偶尔没重置/角色没开"。
+// 挂到同一条队列上，先后就固定了。（core.js 不声明 __lorebookChain，赋值即写进全局，与 app.js 共用同一条）
+function queueLorebookWrite(task) {
+    var chain = (typeof __lorebookChain === 'undefined' || !__lorebookChain) ? Promise.resolve() : __lorebookChain;
+    var next = chain.then(task).catch(function (e) { console.error('[世界书] 写入失败：', e); });
+    __lorebookChain = next;
+    return next;
+}
+
 // 点目录书签 / 进入「模式选择与世界观调整」时调用：条目恢复"什么都没开、只留基础"的状态
-window.resetLorebookToBase = async function () {
+window.resetLorebookToBase = function () {
     var updates = [], seen = {};
     var push = function (uid, enabled) { if (seen[uid]) return; seen[uid] = 1; updates.push({ uid: uid, enabled: enabled }); };
     // 按世界观分条的各类槽位全关
@@ -207,22 +280,33 @@ window.resetLorebookToBase = async function () {
     COLONY_EXTRA_UIDS.forEach(function (u) { push(u, false); });
     // 人物区所有角色
     STORY_CHARACTER_UIDS_ALL.forEach(function (u) { push(u, false); });
+    // 初始设置那一对：重置＝回到「正文美化」（201 在基础清单里会开），纯文字 202 必须关掉，
+    // 否则两个输出格式条目会同时开着互相打架（2026-10-11 用户拍板：重置后变成美化）
+    push(202, false);
     // 基础条目一律打开
     LOREBOOK_BASE_UIDS.forEach(function (u) { push(u, true); });
-    if (typeof setLorebookEntries === 'function') {
-        try { await setLorebookEntries(LOREBOOK_NAME, updates); } catch (e) { console.warn('恢复基础条目失败：', e); }
-    }
+    return queueLorebookWrite(function () { return writeLorebookEntries(updates); });
 };
 
 // 点童话卡片的「开启童话物语」时调用：点亮该卡角色，关掉其他卡的
-window.enableStoryCharacters = async function (storyName) {
-    if (!storyName) return;
-    var mine = STORY_CHARACTERS[storyName];
-    if (!mine) { console.warn('没有「' + storyName + '」的角色分组，跳过'); return; }
+window.enableStoryCharacters = function (storyName) {
+    var key = STORY_CHARACTERS[storyName] ? storyName : normalizeStoryName(storyName);
+    if (!key) { console.warn('没有「' + storyName + '」的角色分组，跳过'); return Promise.resolve(false); }
+    var mine = STORY_CHARACTERS[key];
     var updates = STORY_CHARACTER_UIDS_ALL.map(function (u) {
         return { uid: u, enabled: mine.indexOf(u) !== -1 };
     });
-    if (typeof setLorebookEntries === 'function') {
-        try { await setLorebookEntries(LOREBOOK_NAME, updates); } catch (e) { console.warn('切换故事角色失败：', e); }
-    }
+    return queueLorebookWrite(function () { return writeLorebookEntries(updates); });
 };
+
+// 「开启童话物语」按钮的正式入口：按卡片 id 认角色组（按钮是后渲染的，只有 id 一直可靠）
+window.enableStoryCharactersByTab = function (tabId, nameHint) {
+    var key = resolveStoryKey(tabId, nameHint);
+    if (!key) {
+        // 自定义开局(tab5)/自定义剧本(tab6) 也有「开启童话物语」按钮，但它们不对应任何童话角色组，静默跳过
+        console.log('[童话] 界面 ' + tabId + ' 没有对应角色分组，跳过');
+        return Promise.resolve(false);
+    }
+    return enableStoryCharacters(key);
+};
+
