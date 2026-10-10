@@ -49,6 +49,12 @@ window.applyWorldviewLorebook = async function(worldviewId, mode) {
         updates.push({ uid: 251 + W, enabled: isCurrent && mode === 'free' });
         updates.push({ uid: 256 + W, enabled: isCurrent && mode === 'script' });
     });
+    // 开拓新大陆（colony）额外附带的两条：uid 26〈参考〉、uid 27（大洲/地理），随该世界观一起启停
+    var COLONY_EXTRA_UIDS = [26, 27];
+    WORLDVIEW_IDS.forEach(function (id, W) {
+        if (id !== 'colony') return;
+        COLONY_EXTRA_UIDS.forEach(function (uid) { updates.push({ uid: uid, enabled: id === worldviewId }); });
+    });
     // 剧情阶段（uid 249）是全局条目，不按世界观分条：跟着模式启停（剧本模式开、自由模式关）。
     // 它的正文是 EJS，会自己按 setting.mode 决定输出什么；但条目本身必须先开着，才轮得到它输出。
     updates.push({ uid: 249, enabled: mode === 'script' });
@@ -196,8 +202,9 @@ window.resetLorebookToBase = async function () {
     // 按世界观分条的各类槽位全关
     [[4, 8], [10, 14], [15, 19], [20, 24], [152, 156], [158, 162], [195, 199], [214, 223], [225, 229], [251, 260]]
         .forEach(function (r) { for (var u = r[0]; u <= r[1]; u++) push(u, false); });
-    // 全局条目：最新状态说明 224、剧情阶段 249
+    // 全局条目：最新状态说明 224、剧情阶段 249、开拓新大陆附带的 26/27
     push(224, false); push(249, false);
+    COLONY_EXTRA_UIDS.forEach(function (u) { push(u, false); });
     // 人物区所有角色
     STORY_CHARACTER_UIDS_ALL.forEach(function (u) { push(u, false); });
     // 基础条目一律打开
