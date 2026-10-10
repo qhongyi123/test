@@ -412,9 +412,10 @@ window.fh1InitWorldviewPage = function () {
         if (FH1_SELECTED && FH1_DRAFT) { fh1RenderOpenCard(); fh1SyncSideBookmarks(); return; }
         fh1SyncSideBookmarks();
         // 分两组显示：可游玩 / 开发中...（没归类的自动落到「开发中...」）
+        // 2026-10-11 用户要求：常识扭曲的四个版本都做完了，从「开发中」挪到「可游玩」。
         var FH1_WV_GROUPS = [
-            { title: '可游玩', names: ['少子化'] },
-            { title: '开发中...', names: ['常识扭曲', '大小之争'] }
+            { title: '可游玩', names: ['少子化', '常识扭曲'] },
+            { title: '开发中...', names: ['大小之争'] }
         ];
         var card = function (n) {
             var p = fh1GetPreset(n) || {};
