@@ -49,6 +49,9 @@ window.applyWorldviewLorebook = async function(worldviewId, mode) {
         updates.push({ uid: 251 + W, enabled: isCurrent && mode === 'free' });
         updates.push({ uid: 256 + W, enabled: isCurrent && mode === 'script' });
     });
+    // 剧情阶段（uid 249）是全局条目，不按世界观分条：跟着模式启停（剧本模式开、自由模式关）。
+    // 它的正文是 EJS，会自己按 setting.mode 决定输出什么；但条目本身必须先开着，才轮得到它输出。
+    updates.push({ uid: 249, enabled: mode === 'script' });
     if (updates.length > 0 && typeof setLorebookEntries === 'function') {
         try { await setLorebookEntries(LOREBOOK_NAME, updates); } catch(e) { console.warn("开关世界书条目失败：", e); }
     }
