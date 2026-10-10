@@ -52,7 +52,7 @@ function renderModeAndWorldviewPanel() {
     WORLDVIEWS.forEach(function(wv) {
         var isComingSoon = isWorldviewComingSoon(__currentMode, wv.id);
         var isCurrent = (wv.id === __currentWorldviewId) && !isComingSoon;
-        var nameText = mtH(wv.name) + (isComingSoon ? '（敬请期待）' : '');
+        var nameText = worldviewDisplayName(wv, isComingSoon);
         var clickAttr = isComingSoon ? '' : ' onclick="selectWorldview(\'' + wv.id + '\')"';
         var itemCls = 'worldview-item' + (isCurrent ? ' active' : '') + (isComingSoon ? ' disabled' : '');
         wvItemsHtml +=
@@ -87,7 +87,7 @@ function renderTocModeWorldview() {
     WORLDVIEWS.forEach(function(wv) {
         var isComingSoon = isWorldviewComingSoon(__currentMode, wv.id);
         var isActive = (wv.id === __currentWorldviewId) && !isComingSoon;
-        var nameText = mtH(wv.name) + (isComingSoon ? '（敬请期待）' : '');
+        var nameText = worldviewDisplayName(wv, isComingSoon);
         var clickAttr = isComingSoon ? '' : ' onclick="selectWorldview(\'' + wv.id + '\')"';
         var itemCls = 'toc-mw-item' + (isActive ? ' active' : '') + (isComingSoon ? ' disabled' : '');
         wvHtml += '<span class="' + itemCls + '" data-wv-id="' + wv.id + '"' + clickAttr + '>' + nameText + '</span>';

@@ -18,6 +18,8 @@ function isWorldviewComingSoon(mode, worldview) {
 // 注意：hentai = 本子世界。2026-10-02 由旧「西部拓荒 / western」改名而来，uid 序号 W=2 不变。
 var WORLDVIEW_IDS = ["medieval", "colony", "hentai", "xianxia", "magic"];
 var WORLDVIEW_NAMES = ["中世纪童话", "开拓新大陆与殖民贸易", "本子世界", "东方修仙", "西方魔法"];
+// 还在开发中的世界观：名称后面标「（开发中）」，先告诉玩家内容还没做完（2026-10-11 用户要求）
+var WORLDVIEW_IN_DEVELOPMENT = ["colony"];
 
 // 世界观槽位公式（世界书重排后）
 // 七槽（2026-10-08 世界书重构后的新基数）：内化协议 152+W / 世界观设定 4+W / 婚恋结构 20+W / 种族·势力 10+W / 伊菈称呼 158+W / 社会生态 15+W / 文风 195+W
@@ -31,8 +33,20 @@ var WORLDVIEWS = [];
 for (var __wi = 0; __wi < WORLDVIEW_IDS.length; __wi++) {
     WORLDVIEWS.push({
         id: WORLDVIEW_IDS[__wi],
-        name: WORLDVIEW_NAMES[__wi]
+        name: WORLDVIEW_NAMES[__wi],
+        inDevelopment: WORLDVIEW_IN_DEVELOPMENT.indexOf(WORLDVIEW_IDS[__wi]) !== -1
     });
+}
+
+// 世界观的显示名。后缀统一在这里拼：tab4 的「模式与世界观」界面和目录弹窗里的
+// 同一份世界观列表都用它 —— 那两处以前是各自复制一份拼接代码，改一处漏一处。
+// 「敬请期待」＝这个模式下标还没做、点不动；「开发中」＝内容还在做、但已经能选。
+// 两者同时成立时只显示「敬请期待」（2026-10-11 用户要求：能选的时候才提「开发中」）。
+function worldviewDisplayName(wv, isComingSoon) {
+    var suffix = "";
+    if (isComingSoon) suffix += "（敬请期待）";
+    else if (wv.inDevelopment) suffix += "（开发中）";
+    return mtH(wv.name) + suffix;
 }
 
 // 开拓新大陆（colony）额外附带的两条：uid 26〈参考〉、uid 27（大洲/地理），随该世界观一起启停。
