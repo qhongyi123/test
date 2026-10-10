@@ -66,7 +66,7 @@ function renderModeAndWorldviewPanel() {
         '<div class="cp-header-row" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; border-bottom:1px dashed rgba(212,175,55,0.4); padding-bottom:10px;">' +
             '<div style="font-style:italic; font-size:0.95em; color:#8b5a2b; font-weight:bold;">' +
                 '\u2756 模式与世界观 \u2756 <br>' +
-                '<span style="font-weight:normal; font-size:0.8em; opacity:0.9; color:var(--color-text-dark);">先选模式，再选世界观，按选择开关对应条目</span>' +
+                '<span style="font-weight:bold; font-size:0.85em; color:#d32f2f;">先选模式，再选世界观，最后就可以翻页了</span>' +
             '</div>' +
         '</div>' +
         '<div style="font-weight:bold; color:var(--color-primary-dark); margin:5px 0 8px; font-size:0.95rem;">\u2756 模式</div>' +
