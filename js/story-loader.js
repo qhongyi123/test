@@ -336,6 +336,12 @@ async function initDynamicTabs() {
             var tid = this.getAttribute('data-tid');
             if(!tid) return;
 
+            // 开启童话物语：点亮该故事卡对应的角色，关掉其他卡片的角色（任务指导书第 101 条）
+            try {
+                var _sd = (typeof originalDataCache !== 'undefined' && originalDataCache[tid]) || {};
+                if (typeof enableStoryCharacters === 'function') enableStoryCharacters(_sd.name);
+            } catch (err) { console.warn('切换故事角色失败：', err); }
+
             var pContainer = document.getElementById(tid);
             var baseFullData = JSON.parse(JSON.stringify(originalDataCache[tid]));
 

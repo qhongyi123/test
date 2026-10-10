@@ -238,6 +238,12 @@ function goBackCover() {
 }
 
 function switchTab(tabId, btnElement) {
+    // 进入「模式选择与世界观调整」＝回到未选择状态：清空模式/世界观、条目恢复基础态（任务指导书第 101 条）
+    if (tabId === 'tab4') {
+        __currentMode = ""; __currentWorldviewId = ""; __selectionConfirmed = false; __appliedCombo = "";
+        if (typeof resetLorebookToBase === 'function') resetLorebookToBase();
+        if (typeof renderModeAndWorldviewPanel === 'function') renderModeAndWorldviewPanel();
+    }
     // 每次切页（翻页 / 目录卡片 / 角色 / 返回）都按当前「模式 + 世界观」对一次世界书条目
     if (typeof syncWorldviewLorebook === 'function') syncWorldviewLorebook();
     // 空值保护：动态界面（故事/FC1/FH1/tab5/tab6）要等资源加载完才创建，
@@ -923,7 +929,11 @@ function nextPage() {
     }
 }
 
-function toggleToc() { document.getElementById('tocMenu').classList.toggle('active'); }
+function toggleToc() {
+    document.getElementById('tocMenu').classList.toggle('active');
+    // 点目录书签：条目回到基础态（保留模式/世界观的选择，任务指导书第 101 条）
+    if (typeof resetLorebookToBase === 'function') resetLorebookToBase();
+}
 
 function selectFromToc(tabId) {
     var btn = document.querySelector('.tab-btn[data-target="' + tabId + '"]');

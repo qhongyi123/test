@@ -174,3 +174,48 @@ window.extractMdFromNode = function(origNode) {
     helper.innerHTML = "";
     return finalStr;
 };
+
+
+// ===== 任务指导书第 101 条：基础态与童话角色分组 =====
+// 常开的基础条目（只留这 15 条，其余全关）
+var LOREBOOK_BASE_UIDS = [0, 1, 2, 3, 9, 25, 75, 149, 150, 151, 157, 200, 201, 213, 250];
+// 童话五张故事卡 → 人物区条目 uid（用户给定）
+var STORY_CHARACTERS = {
+    '卖火柴的小女孩': [76],
+    '小红帽': [77, 78, 79, 80, 88],
+    '白雪公主': [81, 82, 83],
+    '灰姑娘': [84, 85, 86],
+    '小裁缝一次干七个！': [87]
+};
+var STORY_CHARACTER_UIDS_ALL = [76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88];
+
+// 点目录书签 / 进入「模式选择与世界观调整」时调用：条目恢复"什么都没开、只留基础"的状态
+window.resetLorebookToBase = async function () {
+    var updates = [], seen = {};
+    var push = function (uid, enabled) { if (seen[uid]) return; seen[uid] = 1; updates.push({ uid: uid, enabled: enabled }); };
+    // 按世界观分条的各类槽位全关
+    [[4, 8], [10, 14], [15, 19], [20, 24], [152, 156], [158, 162], [195, 199], [214, 223], [225, 229], [251, 260]]
+        .forEach(function (r) { for (var u = r[0]; u <= r[1]; u++) push(u, false); });
+    // 全局条目：最新状态说明 224、剧情阶段 249
+    push(224, false); push(249, false);
+    // 人物区所有角色
+    STORY_CHARACTER_UIDS_ALL.forEach(function (u) { push(u, false); });
+    // 基础条目一律打开
+    LOREBOOK_BASE_UIDS.forEach(function (u) { push(u, true); });
+    if (typeof setLorebookEntries === 'function') {
+        try { await setLorebookEntries(LOREBOOK_NAME, updates); } catch (e) { console.warn('恢复基础条目失败：', e); }
+    }
+};
+
+// 点童话卡片的「开启童话物语」时调用：点亮该卡角色，关掉其他卡的
+window.enableStoryCharacters = async function (storyName) {
+    if (!storyName) return;
+    var mine = STORY_CHARACTERS[storyName];
+    if (!mine) { console.warn('没有「' + storyName + '」的角色分组，跳过'); return; }
+    var updates = STORY_CHARACTER_UIDS_ALL.map(function (u) {
+        return { uid: u, enabled: mine.indexOf(u) !== -1 };
+    });
+    if (typeof setLorebookEntries === 'function') {
+        try { await setLorebookEntries(LOREBOOK_NAME, updates); } catch (e) { console.warn('切换故事角色失败：', e); }
+    }
+};
